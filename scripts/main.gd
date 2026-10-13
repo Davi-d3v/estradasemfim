@@ -2774,6 +2774,39 @@ func _capturar_modelos() -> void:
 		await _salvar("124_acoes_jogador")
 		for h in bonecos:
 			h.queue_free()
+	if etapa == "" or etapa == "5":
+		# vila e assentamento: do alto e da rua
+		hora = 15.8
+		_atualizar_ceu()
+		var n_print := 126
+		for tipo in ["vila", "assentamento"]:
+			var lg := _achar_lugar(tipo)
+			if lg.is_empty():
+				continue
+			mundo.atualizar(lg.pos)
+			await get_tree().process_frame
+			_limpar_zumbis_perto(lg.pos, 80.0)
+			var raiz: Node3D = mundo.lugares_ativos.get(lg.id)
+			jogador.visible = false
+			for f in 10:
+				await get_tree().process_frame
+			var b := raiz.global_transform.basis
+			var c := raiz.global_position
+			var de_alto := c + b.z * 48.0 + b.x * 22.0 + Vector3(0, 40.0, 0)
+			cam.fov = 60.0
+			cam.look_at_from_position(de_alto, c + b.z * 2.0, Vector3.UP)
+			cam.current = true
+			await _salvar("%d_%s_do_alto" % [n_print, tipo])
+			var de_rua := c + b.z * 14.0 + b.x * 2.2 + Vector3(0, 1.75, 0)
+			_abrir_vista(de_rua, c - b.z * 20.0)
+			cam.fov = 62.0
+			cam.look_at_from_position(de_rua, c - b.z * 20.0 + Vector3(0, 3.0, 0), Vector3.UP)
+			await _salvar("%d_%s_rua" % [n_print, tipo])
+			if tipo == "vila":
+				var de_ig := c - b.z * 6.0 + b.x * 9.0 + Vector3(0, 3.5, 0)
+				cam.look_at_from_position(de_ig, c - b.z * 26.0 + Vector3(0, 4.0, 0), Vector3.UP)
+				await _salvar("%d_vila_igreja" % n_print)
+			n_print += 1
 	if etapa == "" or etapa == "4":
 		var pc := mundo.ponto_estrada(3300.0, -40.0)
 		mundo.atualizar(pc)

@@ -230,9 +230,11 @@ static func _vila(p: Node3D, f: Dictionary, r: RandomNumberGenerator, m: WorldGe
 	_placa(p, Vector3(0, 3.6, raio + 0.4), 0.0, j.nome.to_upper())
 	# rua principal de terra e praça
 	var chao := B.mat(Color(0.36, 0.29, 0.21), 1.0, 0.0, "rua_vila")
-	B.box(p, Vector3(5.0, 0.04, raio * 2.0 - 4.0), Vector3(0, 0.03, 0), chao)
-	B.box(p, Vector3(raio * 1.4, 0.04, 4.0), Vector3(0, 0.03, -6.0), chao)
-	B.cyl(p, 8.0, 0.05, Vector3(0, 0.035, 4.0), chao, Vector3.ZERO, 24)
+	# rua principal de paralelepípedo com calçadas; transversal de terra batida
+	VilaExtra.rua(p, Vector3(0, 0, raio + 2.0), Vector3(0, 0, -raio + 19.0), 5.0, r)
+	VilaExtra.rua(p, Vector3(-raio * 0.7, 0, -6.0), Vector3(-3.4, 0, -6.0), 4.0, r, true)
+	VilaExtra.rua(p, Vector3(3.4, 0, -6.0), Vector3(raio * 0.7, 0, -6.0), 4.0, r, true)
+	B.cyl(p, 8.0, 0.07, Vector3(0, 0.04, 4.0), Texturas.material("pedra", Color(0.38, 0.36, 0.32), 0.95), Vector3.ZERO, 28)
 	# casas em duas fileiras ao longo das ruas
 	var cores := [Color(0.75, 0.68, 0.55), Color(0.6, 0.66, 0.6), Color(0.78, 0.6, 0.45), Color(0.65, 0.6, 0.7), Color(0.8, 0.76, 0.66), Color(0.7, 0.5, 0.42)]
 	var lotes: Array = []
@@ -260,23 +262,12 @@ static func _vila(p: Node3D, f: Dictionary, r: RandomNumberGenerator, m: WorldGe
 			2:
 				_caixas(p, atras + Vector3(-0.8, 0, 0), r, 4)
 		idx += 1
-	# igreja com torre do sino (fundo da vila)
+	# igreja com torre do sino, cemitério ao lado (fundo da vila)
 	var ig := Node3D.new()
 	ig.position = Vector3(0, _altura_local(p, m, Vector3(0, 0, -raio + 11.0)), -raio + 11.0)
 	p.add_child(ig)
-	var branco := B.mat(B.worn(Color(0.88, 0.86, 0.8), 0.5), 0.9)
-	B.box(ig, Vector3(8.0, 5.0, 12.0), Vector3(0, 2.5, 0), branco)
-	var tri := PackedVector2Array([Vector2(-6.3, 5), Vector2(6.3, 5), Vector2(0, 7.8)])
-	var tel := B.extruded(ig, tri, 8.6, Vector3.ZERO, B.mat(Color(0.5, 0.24, 0.15), 0.85))
-	tel.rotation.y = PI * 0.5
-	tel.position = Vector3(0, 0, 0)
-	B.box(ig, Vector3(3.0, 11.0, 3.0), Vector3(0, 5.5, 6.5), branco)
-	B.box(ig, Vector3(3.3, 0.3, 3.3), Vector3(0, 11.1, 6.5), B.mat(Color(0.5, 0.24, 0.15), 0.85))
-	B.cyl(ig, 0.0, 2.5, Vector3(0, 12.5, 6.5), B.mat(Color(0.5, 0.24, 0.15), 0.85), Vector3.ZERO, 4, 2.1)
-	B.box(ig, Vector3(0.12, 1.2, 0.12), Vector3(0, 14.3, 6.5), madeira)
-	B.box(ig, Vector3(0.7, 0.12, 0.12), Vector3(0, 14.4, 6.5), madeira)
-	B.box(ig, Vector3(1.6, 2.6, 0.08), Vector3(0, 1.3, 8.01), B.mat(Color(0.3, 0.2, 0.12), 0.8))
-	B.cyl(ig, 0.4, 0.5, Vector3(0, 9.4, 6.5), B.mat(Color(0.6, 0.5, 0.25), 0.4, 0.8), Vector3.ZERO, 10, 0.25)
+	VilaExtra.igreja(ig, r, m)
+	_vasculhavel(p, Vector3(0, 1.0, -raio + 11.0), "Sacristia da igreja", "casa", 1.0, m, j.id + ":igreja")
 	# praça: poço, fogueira, bancos
 	var concreto := B.mat(Color(0.5, 0.48, 0.45), 0.95)
 	B.cyl(p, 0.9, 0.8, Vector3(0, 0.4, 4.0), concreto, Vector3.ZERO, 14)
@@ -344,6 +335,35 @@ static func _vila(p: Node3D, f: Dictionary, r: RandomNumberGenerator, m: WorldGe
 	for q in [Vector3(3.2, 0, raio - 6.0), Vector3(-3.2, 0, 16.0), Vector3(3.2, 0, -10.0), Vector3(-3.2, 0, -26.0), Vector3(14.0, 0, -4.0), Vector3(-18.0, 0, -4.0)]:
 		if q.length() < raio - 2.0:
 			_poste_luz(p, q, m)
+	# espaços vazios: parquinho, torres internas, hortas, galinheiro, árvores...
+	var ocup: Array = [[Vector3(0, 0, 0), 0.0]]
+	for z in range(int(-raio), int(raio) + 1, 3):
+		ocup.append([Vector3(0, 0, z), 4.6])            # rua principal + calçadas
+	for x in range(int(-raio * 0.7), int(raio * 0.7) + 1, 3):
+		ocup.append([Vector3(x, 0, -6.0), 3.8])          # rua transversal
+	ocup.append([Vector3(0, 0, 4.0), 9.5])               # praça
+	for lt in lotes:
+		ocup.append([lt[0], 7.5])
+		ocup.append([lt[0] + Vector3(lt[0].x * 0.0, 0, 0) + (Vector3(-sin(lt[1]), 0, -cos(lt[1])) * 4.8), 3.0])
+	ocup.append([Vector3(0, 0, -raio + 11.0), 10.5])     # igreja
+	ocup.append([Vector3(-12.0, 0, -raio + 10.0), 7.5])  # cemitério
+	ocup.append([Vector3(-9.0, 0, -2.5), 5.0])           # mercado
+	ocup.append([Vector3(7.0, 0, -2.5), 3.0])
+	ocup.append([Vector3(raio - 14.0, 0, -22.0), 5.5])   # oficina
+	ocup.append([Vector3(-raio + 12.0, 0, -20.0), 3.0])  # caixa d'água
+	for tx in [-9.0, 9.0]:
+		ocup.append([Vector3(tx, 0, raio - 1.5), 3.0])
+	ocup.append([Vector3(-4.0, 0, 15.0), 2.5])           # carroça
+	for q in [Vector3(-13.5, 0, 8.5), Vector3(14.5, 0, 9.5)]:
+		ocup.append([q, 3.0])                            # varais
+	var feitos := VilaExtra.preencher(p, raio, ocup, r, m, {"grandes": [["parquinho", 6.0], ["horta", 4.2], ["galinheiro", 3.2], ["torre", 2.2], ["torre", 2.2], ["cisterna", 1.6], ["horta", 4.2]]})
+	var nt := 0
+	for fz in feitos:
+		if fz[0] == "torre":
+			_pessoa(fz[2], Vector3(0.3, 5.6, 0.3), 0.0, "vigia", r, m, "%s:torre%d" % [j.id, nt])
+			nt += 1
+		elif fz[0] == "parquinho":
+			_pessoa(p, fz[1] + Vector3(-4.5, 0, 3.0), r.randf() * TAU, "morador", r, m, j.id + ":parque")
 	# guardas e moradores
 	_pessoa(p, Vector3(-9.0, 4.7, raio - 1.5), 0.0, "vigia", r, m, j.id + ":vigia")
 	_pessoa(p, Vector3(9.0, 4.7, raio - 1.5), 0.0, "vigia", r, m, j.id + ":vigia2")
@@ -615,7 +635,7 @@ static func _assentamento(p: Node3D, f: Dictionary, r: RandomNumberGenerator, m:
 	var madeira := B.mat(Color(0.32, 0.23, 0.15), 0.9)
 	var chao := B.mat(Color(0.36, 0.29, 0.21), 1.0, 0.0, "rua_vila")
 	# caminho do portão até a praça e a praça
-	B.box(p, Vector3(4.5, 0.04, R), Vector3(0, 0.03, R * 0.5), chao)
+	VilaExtra.rua(p, Vector3(0, 0, R + 1.0), Vector3(0, 0, 5.0), 4.5, r, true)
 	B.cyl(p, 7.5, 0.05, Vector3(0, 0.035, 2.0), chao, Vector3.ZERO, 24)
 	# placa na estrada de chegada
 	var placa := Node3D.new()
@@ -703,6 +723,20 @@ static func _assentamento(p: Node3D, f: Dictionary, r: RandomNumberGenerator, m:
 	for q in 6:
 		B.box(p, Vector3(6.0, 0.22, 0.7), Vector3(10.0, 0.11 + _altura_local(p, m, Vector3(10, 0, -12)), -15.0 + q * 1.2), B.mat(Color(0.2, 0.3, 0.1) if not caido else Color(0.22, 0.18, 0.12), 0.9, 0.0, "horta_a" if not caido else "horta_morta"))
 	_varal(p, Vector3(-8, 0, 6), Vector3(-4, 0, 9), r)
+	# vazios do assentamento: árvores, parquinho, galinheiro, lenha, barricadas
+	if not caido:
+		var oc: Array = []
+		for z in range(0, int(R) + 2, 3):
+			oc.append([Vector3(0, 0, z), 3.6])
+		oc.append([Vector3(0, 0, 2.0), 8.0])
+		oc.append([Vector3(0, 0, -6.0), 6.0])
+		oc.append([Vector3(-11.0, 0, -12.0), 3.0])
+		oc.append([Vector3(10.0, 0, -12.0), 5.0])
+		for k in angs.size():
+			var an4: float = angs[k]
+			oc.append([Vector3(sin(an4) * 19.0, 0, cos(an4) * 19.0), 5.2])
+		oc.append([Vector3(-6, 0, 7.5), 3.0])
+		VilaExtra.preencher(p, R - 2.0, oc, r, m, {"grandes": [["parquinho", 5.5], ["horta", 4.0], ["galinheiro", 3.0], ["barricada", 2.6], ["barricada", 2.6], ["cisterna", 1.6]], "denso": true})
 	_caixas(p, Vector3(6.5, 0, -2.0), r, 5)
 	_caixas(p, Vector3(-6.0, 0, 14.0), r, 4)
 	for q in [Vector3(2.8, 0, 15.0), Vector3(-2.8, 0, 22.0), Vector3(-9.0, 0, -2.0), Vector3(9.0, 0, 3.0)]:

@@ -1,0 +1,8 @@
+Modelos 3D prontos usados no jogo (todos CC0 / domínio público):
+- personagens_u/ — Universal Base Characters + Modular Character Outfits (Fantasy), Quaternius
+  (obtidos de github.com/OpenAgentsInc/openagents, assets/verse/characters/quaternius)
+- personagens/UAL1.glb, UAL2.glb — Universal Animation Library 1 e 2, Quaternius (github.com/tilakpatell/tilakverse-assets)
+- animais/ — Ultimate Animated Animals, Quaternius (github.com/Fialuxe/MouthOfGod_System)
+- armas/*.glb (revolver, shotgun, sniper, smg...) — Ultimate Guns Pack, Quaternius (github.com/Karnak19/bagarre);
+  armas/tool-*.glb — Survival Kit, Kenney (github.com/hakyong-tae/game-asset-library-3d)
+Licenças originais em licencas/.
