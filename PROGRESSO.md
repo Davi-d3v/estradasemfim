@@ -9,7 +9,12 @@
 - [x] Trailer: despensa de 4 portinholas, caixa de ferramentas e bagageiro viraram inventário (E abre, painel por compartimento)
 - [x] Vila/assentamento: rua de paralelepípedo com meio-fio e calçada, igreja detalhada com cemitério, parquinho, torres de vigia internas, horta com espantalho, galinheiro, cisterna, árvores, bancos, lenha, lixo (scripts/vila_extra.gd)
 
+## 13/10 noite — versão de teste v0.6 (Windows)
+- [x] Javali e capivara com modelo (porco Quaternius recolorido; javali com presas e crina)
+- [x] Noite com luar mais claro
+- [x] Lâmina das armas brancas no sentido dos golpes; espingarda/rifle nas costas quando não estão em uso
+- [x] Tutorial (scripts/tutorial.gd): 11 passos que completam sozinhos; F1 reabre; salvo em user://config.cfg
+- [x] Export Windows: ../build/windows/EstradaSemFim.exe (templates 4.5.1 em ~/.local/share/godot/export_templates)
+
 ## Próximos
-- javali e capivara ainda procedurais
-- rever print noturno de defesa (escuro)
-- facão: conferir ângulo da lâmina em todos os golpes
+- ouvir o retorno do teste no PC do Davi

@@ -66,7 +66,7 @@ d366843ee7d9e9f37ec87a0e1c98c7f2e45573c08eeb80a51a6d9344e68cf288.png::Compressed
 df680cbc1967a61e85998bfafb8f7bc0a36dd604bb3266486c4b06b1a184bb45.png::CompressedTexture2D::2216579274078163606::1791932153::1791932178::1::::<><><>0<>0<>002a48c174b097bbb0204904f82aa427<>res://.godot/imported/df680cbc1967a61e85998bfafb8f7bc0a36dd604bb3266486c4b06b1a184bb45.png-c27fae1bddf7bbd5da0faaa68c6175de.ctex::
 e1932f5f91104afca89c501416a5fec09069b8552734237fc09045fabc4ca9b4.png::CompressedTexture2D::6918315603637602181::1791932157::1791932178::1::::<><><>0<>0<>fb1ced7c5bd584ecd5ab25d647f1028c<>res://.godot/imported/e1932f5f91104afca89c501416a5fec09069b8552734237fc09045fabc4ca9b4.png-57ad1c2992968953a1b8898a816dd874.ctex::
 f9f4f2fb3eeeefb0b6f0fdef38b0770fd6607640c1c680b8139dd76697e9f9b3.png::CompressedTexture2D::827138341010223222::1791932159::1791932178::1::::<><><>0<>0<>a9c46859ee7de59937cb12c6e428ae23<>res://.godot/imported/f9f4f2fb3eeeefb0b6f0fdef38b0770fd6607640c1c680b8139dd76697e9f9b3.png-04abf2affeb5b9789dedbd2487b4c75d.ctex::
-::res://prints/::1791935706
+::res://prints/::1791935892
 119_zumbis_modelo.png::CompressedTexture2D::3994063043350873346::1791932959::1791933203::1::::<><><>0<>0<>c90f20363dbe56b15646b6dc943020a2<>res://.godot/imported/119_zumbis_modelo.png-51a0f864e2cef78f8dc899c8ec972707.ctex::
 120_combate_de_perto.png::CompressedTexture2D::4486773025121629619::1791933137::1791933203::1::::<><><>0<>0<>97a643ed87ba4695f0d100161342f15b<>res://.godot/imported/120_combate_de_perto.png-9c432cbecf67667c60b8c14f83875c20.ctex::
 121b_vila_moradores.png::CompressedTexture2D::91921045007968033::1791932829::1791932910::1::::<><><>0<>0<>41cda9640106e400d15cacc17341f6c6<>res://.godot/imported/121b_vila_moradores.png-837f27ef42c94ea16ae9ddf30122c993.ctex::
@@ -79,6 +79,8 @@ f9f4f2fb3eeeefb0b6f0fdef38b0770fd6607640c1c680b8139dd76697e9f9b3.png::Compressed
 126_vila_rua.png::CompressedTexture2D::4704567526459542756::1791934232::1791935345::1::::<><><>0<>0<>8c23db4de742c28ad6e3448e6d6de11a<>res://.godot/imported/126_vila_rua.png-61f33b4650faf59aab9d688ba1c5161c.ctex::
 127_assentamento_do_alto.png::CompressedTexture2D::7188139567030457115::1791934270::1791935346::1::::<><><>0<>0<>45dcdbed20f5def0590d7123ed5a3e88<>res://.godot/imported/127_assentamento_do_alto.png-84190d38cce2d1af6483a15406f8ec11.ctex::
 127_assentamento_rua.png::CompressedTexture2D::5535858812467749133::1791934289::1791935347::1::::<><><>0<>0<>bb58e8bb44900ad9489f20c7552c92f2<>res://.godot/imported/127_assentamento_rua.png-e342afdfab705dc0715baa130fa7bf7d.ctex::
+128_tutorial_1.png::CompressedTexture2D::2956483520316262806::1791935785::1791935891::1::::<><><>0<>0<>844a2baf000ab112e04e212d45b84228<>res://.godot/imported/128_tutorial_1.png-1127d174eecce7a2f7798fd776b42e2e.ctex::
+128_tutorial_2.png::CompressedTexture2D::1014899896773891555::1791935809::1791935892::1::::<><><>0<>0<>0d3e182af348d961aeb89580a5b81e2f<>res://.godot/imported/128_tutorial_2.png-84a7007e84941da257b7266c8ea3fff8.ctex::
 armas_check1.png::CompressedTexture2D::3345342701185337342::1791935282::1791935347::1::::<><><>0<>0<>5ab05181ab81ae248594236f7be6e2f0<>res://.godot/imported/armas_check1.png-d9e5904a422bc7536e592995f70ceb45.ctex::
 armas_check2.png::CompressedTexture2D::6362773522770868033::1791935286::1791935347::1::::<><><>0<>0<>24380a480b58b93afeeb2800886bcf67<>res://.godot/imported/armas_check2.png-6e2ef8cbd7a4bb6222407c3c056b177d.ctex::
 armas_check3.png::CompressedTexture2D::2398670621145371418::1791935305::1791935347::1::::<><><>0<>0<>1cfa2adfce5b30d51e85cca29f363867<>res://.godot/imported/armas_check3.png-07b118dfd949849f6ee7ebe4d0b6529e.ctex::
@@ -152,12 +154,13 @@ road.gdshader::Shader::6603574880594174671::1791823652::0::1::::<><><>0<>0<><>::
 sky.gdshader::Shader::1179444671705810597::1791822998::0::1::::<><><>0<>0<><>::
 superficie.gdshader::Shader::5419671211315771789::1791840044::0::1::::<><><>0<>0<><>::
 terrain.gdshader::Shader::5335705434077073507::1791856602::0::1::::<><><>0<>0<><>::
-::res://tools/::1791935599
+::res://tools/::1791935891
 bench.gd::GDScript::6736149002304110940::1791829759::0::1::::<>SceneTree<><>0<>0<><>::
 dirt.gd::GDScript::4136477984950640334::1791830341::0::1::::<>SceneTree<><>0<>0<><>::
 insp_pig.gd::GDScript::3521960772901896747::1791935458::0::1::::<>SceneTree<><>0<>0<><>::
 predio_teste.gd::GDScript::3012540704849037319::1791839974::0::1::::<>SceneTree<><>0<>0<><>::
 teste_bicho.gd::GDScript::5662190079315263087::1791935599::0::1::::<>SceneTree<><>0<>0<><>::
 teste_humanoide.gd::GDScript::8757859550514222176::1791935375::0::1::::<>SceneTree<><>0<>0<><>::
+teste_tutorial.gd::GDScript::802988735676214631::1791935867::0::1::::<>SceneTree<><>0<>0<><>::
 teste_u.gd::GDScript::8984124513877019524::1791932226::0::1::::<>SceneTree<><>0<>0<><>::
 zpose.gd::GDScript::2154907386793737938::1791836482::0::1::::<>SceneTree<><>0<>0<><>::
