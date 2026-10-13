@@ -1,0 +1,21 @@
+ESTRADA SEM FIM — versão de teste (Windows 64 bits)
+
+Como jogar: descompacte a pasta e abra EstradaSemFim.exe.
+(O Windows pode mostrar "O Windows protegeu o computador": clique em "Mais informações" > "Executar assim mesmo". O jogo não é assinado.)
+
+Precisa de placa de vídeo com Vulkan (a maioria das placas de 2016 para cá).
+Se abrir uma tela preta ou fechar sozinho, crie um atalho e adicione no final do destino:
+    --rendering-driver opengl3
+
+CONTROLES
+  W A S D ........ andar          Shift ...... correr       Ctrl ...... agachar
+  Mouse .......... olhar          Botão esq. . golpear/atirar/usar
+  Botão dir. ..... mirar          R .......... recarregar
+  1-9 / roda ..... barra rápida   E .......... interagir / entrar / vasculhar
+  F .............. dirigir / sair do veículo    Espaço ..... freio
+  V .............. câmera do carro              Tab ........ oficina
+  B .............. criação        H .......... curar       C ........ acampar
+  G .............. engatar reboque              L .......... luz do trailer
+  F1 ............. tutorial       Esc ........ soltar o mouse
+
+O tutorial aparece no primeiro jogo. Enter pula um passo; Backspace encerra.
