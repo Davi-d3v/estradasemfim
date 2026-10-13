@@ -4,5 +4,5 @@ cd "$(dirname "$0")/.."
 d=$(TZ=America/Sao_Paulo date +%Y-%m-%d_%Hh%M)
 mkdir -p /mnt/user-data/outputs
 out=/mnt/user-data/outputs/EstradaSemFim_backup_$d.zip
-zip -q -r "$out" trailer_game -x "trailer_game/.godot/*" "trailer_game/prints/*" "trailer_game/.git/*"
+zip -q -r "$out" estradasemfim -x "estradasemfim/.godot/*" "estradasemfim/prints/*" "estradasemfim/.git/*"
 echo "$out"

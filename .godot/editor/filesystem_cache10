@@ -1,6 +1,8 @@
 63f7b34db8d8cdea90c76aacccf841ec
-::res://::1791928418
+::res://::1791929508
+CLAUDE.md::TextFile::-1::1791929494::0::1::::<><><>0<>0<><>::
 export_presets.cfg::TextFile::-1::1791856619::0::1::::<><><>0<>0<><>::
+PROGRESSO.md::TextFile::-1::1791929494::0::1::::<><><>0<>0<><>::
 ::res://assets/::1791928418
 ::res://assets/animais/::1791928456
 Deer.gltf::PackedScene::2804924295555773399::1791928422::1791928456::1::::<><><>0<>0<>c684f36b1f27d3b1764c0e41f4997f8f<>res://.godot/imported/Deer.gltf-f34ca44c58932d7e8753cc444b67037f.scn::
@@ -41,8 +43,8 @@ OldClassy_Female.gltf::PackedScene::2998148340773431931::1791928418::1791928453:
 OldClassy_Male.gltf::PackedScene::6130978708942119367::1791928418::1791928453::1::::<><><>0<>0<>48c0d9701115f598ef5604ea93cf6bc0<>res://.godot/imported/OldClassy_Male.gltf-249bd33a7027817b98c739caefb59afb.scn::
 Soldier_Female.gltf::PackedScene::1887580583306290598::1791928418::1791928453::1::::<><><>0<>0<>a1c65503068bc682bd4125e29dcb583c<>res://.godot/imported/Soldier_Female.gltf-e6bc164945ed5b38b002ddf321b1f056.scn::
 Soldier_Male.gltf::PackedScene::7228882131560514498::1791928418::1791928453::1::::<><><>0<>0<>95eec5c0a2ce2738bd4d1a54a15434d5<>res://.godot/imported/Soldier_Male.gltf-631505032c923460875ee5a5a1b528b2.scn::
-UAL1.glb::PackedScene::2594690245639363430::1791928418::1791928454::1::::<><><>0<>0<>6197e9a43574ec059eb5b59a1b04d81f<>res://.godot/imported/UAL1.glb-5e02577ff1158a8708200d9f641fcb4f.scn::
-UAL2.glb::PackedScene::1983583304666639243::1791928418::1791928455::1::::<><><>0<>0<>711780471f683cc5b10ba7643fa10cd7<>res://.godot/imported/UAL2.glb-527feaaa3275d683bd8ec5bd874680bf.scn::
+UAL1.glb::PackedScene::2594690245639363430::1791929542::1791929550::1::::<><><>0<>0<>6197e9a43574ec059eb5b59a1b04d81f<>res://.godot/imported/UAL1.glb-5e02577ff1158a8708200d9f641fcb4f.scn::
+UAL2.glb::PackedScene::1983583304666639243::1791929542::1791929552::1::::<><><>0<>0<>711780471f683cc5b10ba7643fa10cd7<>res://.godot/imported/UAL2.glb-527feaaa3275d683bd8ec5bd874680bf.scn::
 Worker_Female.gltf::PackedScene::8169155955104805501::1791928418::1791928455::1::::<><><>0<>0<>d25a20f1d1c7f43a15a5bfa1a9c71c49<>res://.godot/imported/Worker_Female.gltf-e96c17a13dcd5caffb8e5468a730d8f4.scn::
 Worker_Male.gltf::PackedScene::1914534399021454710::1791928418::1791928455::1::::<><><>0<>0<>945e41bca4d632e55a5f343215da1c05<>res://.godot/imported/Worker_Male.gltf-fece43cdd6f3cdd26b065256d404b4c8.scn::
 Zombie_Female.gltf::PackedScene::7961627789258751673::1791928418::1791928455::1::::<><><>0<>0<>62e53dd791cfa27a806c8aac6ad79f04<>res://.godot/imported/Zombie_Female.gltf-13a2b440af69b5f7f846fb2d54906338.scn::
@@ -92,8 +94,11 @@ road.gdshader::Shader::6603574880594174671::1791823652::0::1::::<><><>0<>0<><>::
 sky.gdshader::Shader::1179444671705810597::1791822998::0::1::::<><><>0<>0<><>::
 superficie.gdshader::Shader::5419671211315771789::1791840044::0::1::::<><><>0<>0<><>::
 terrain.gdshader::Shader::5335705434077073507::1791856602::0::1::::<><><>0<>0<><>::
-::res://tools/::1791856213
+::res://tools/::1791928622
 bench.gd::GDScript::6736149002304110940::1791829759::0::1::::<>SceneTree<><>0<>0<><>::
 dirt.gd::GDScript::4136477984950640334::1791830341::0::1::::<>SceneTree<><>0<>0<><>::
+insp_bind.gd::GDScript::1111771249322046602::1791928586::0::1::::<>SceneTree<><>0<>0<><>::
+insp_esq.gd::GDScript::7227223323923252770::1791928567::0::1::::<>SceneTree<><>0<>0<><>::
+insp_ual.gd::GDScript::6593941505858663192::1791928622::0::1::::<>SceneTree<><>0<>0<><>::
 predio_teste.gd::GDScript::3012540704849037319::1791839974::0::1::::<>SceneTree<><>0<>0<><>::
 zpose.gd::GDScript::2154907386793737938::1791836482::0::1::::<>SceneTree<><>0<>0<><>::
