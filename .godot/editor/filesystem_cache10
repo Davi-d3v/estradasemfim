@@ -5,9 +5,10 @@ export_presets.cfg::TextFile::-1::1791856619::0::1::::<><><>0<>0<><>::
 PROGRESSO.md::TextFile::-1::1791934399::0::1::::<><><>0<>0<><>::
 ::res://assets/::1791934399
 LEIA-ME.txt::TextFile::-1::1791934399::0::1::::<><><>0<>0<><>::
-::res://assets/animais/::1791928456
+::res://assets/animais/::1791935445
 Deer.gltf::PackedScene::2804924295555773399::1791928422::1791928456::1::::<><><>0<>0<>c684f36b1f27d3b1764c0e41f4997f8f<>res://.godot/imported/Deer.gltf-f34ca44c58932d7e8753cc444b67037f.scn::
 Fox.gltf::PackedScene::3449848165699509315::1791928422::1791928456::1::::<><><>0<>0<>7be979bf76f964fd9da4582f14c6ecbb<>res://.godot/imported/Fox.gltf-93c41cc88a9f7ec44385300b7b9f71a2.scn::
+Porco.fbx::PackedScene::3222508653229840057::1791935440::1791935445::1::::<><><>0<>0<>c57029f886ae9a1772caca0545a780ac<>res://.godot/imported/Porco.fbx-dbfbbd254073d6021dff912b87d33e3a.scn::
 Stag.gltf::PackedScene::3496502245686873463::1791928422::1791928456::1::::<><><>0<>0<>eb19a31f8be7bd5dbb05c8f2984bd1d5<>res://.godot/imported/Stag.gltf-222f82112d426acbeeeb450025cc8928.scn::
 Wolf.gltf::PackedScene::2778681531539026326::1791928422::1791928456::1::::<><><>0<>0<>f38d850180f1f8a32e2b6901009de4bf<>res://.godot/imported/Wolf.gltf-36aab3e26e8fca70180fe10cbb7d9434.scn::
 ::res://assets/armas/::1791930655
@@ -65,7 +66,7 @@ d366843ee7d9e9f37ec87a0e1c98c7f2e45573c08eeb80a51a6d9344e68cf288.png::Compressed
 df680cbc1967a61e85998bfafb8f7bc0a36dd604bb3266486c4b06b1a184bb45.png::CompressedTexture2D::2216579274078163606::1791932153::1791932178::1::::<><><>0<>0<>002a48c174b097bbb0204904f82aa427<>res://.godot/imported/df680cbc1967a61e85998bfafb8f7bc0a36dd604bb3266486c4b06b1a184bb45.png-c27fae1bddf7bbd5da0faaa68c6175de.ctex::
 e1932f5f91104afca89c501416a5fec09069b8552734237fc09045fabc4ca9b4.png::CompressedTexture2D::6918315603637602181::1791932157::1791932178::1::::<><><>0<>0<>fb1ced7c5bd584ecd5ab25d647f1028c<>res://.godot/imported/e1932f5f91104afca89c501416a5fec09069b8552734237fc09045fabc4ca9b4.png-57ad1c2992968953a1b8898a816dd874.ctex::
 f9f4f2fb3eeeefb0b6f0fdef38b0770fd6607640c1c680b8139dd76697e9f9b3.png::CompressedTexture2D::827138341010223222::1791932159::1791932178::1::::<><><>0<>0<>a9c46859ee7de59937cb12c6e428ae23<>res://.godot/imported/f9f4f2fb3eeeefb0b6f0fdef38b0770fd6607640c1c680b8139dd76697e9f9b3.png-04abf2affeb5b9789dedbd2487b4c75d.ctex::
-::res://prints/::1791935380
+::res://prints/::1791935519
 119_zumbis_modelo.png::CompressedTexture2D::3994063043350873346::1791932959::1791933203::1::::<><><>0<>0<>c90f20363dbe56b15646b6dc943020a2<>res://.godot/imported/119_zumbis_modelo.png-51a0f864e2cef78f8dc899c8ec972707.ctex::
 120_combate_de_perto.png::CompressedTexture2D::4486773025121629619::1791933137::1791933203::1::::<><><>0<>0<>97a643ed87ba4695f0d100161342f15b<>res://.godot/imported/120_combate_de_perto.png-9c432cbecf67667c60b8c14f83875c20.ctex::
 121b_vila_moradores.png::CompressedTexture2D::91921045007968033::1791932829::1791932910::1::::<><><>0<>0<>41cda9640106e400d15cacc17341f6c6<>res://.godot/imported/121b_vila_moradores.png-837f27ef42c94ea16ae9ddf30122c993.ctex::
@@ -81,9 +82,10 @@ f9f4f2fb3eeeefb0b6f0fdef38b0770fd6607640c1c680b8139dd76697e9f9b3.png::Compressed
 armas_check1.png::CompressedTexture2D::3345342701185337342::1791935282::1791935347::1::::<><><>0<>0<>5ab05181ab81ae248594236f7be6e2f0<>res://.godot/imported/armas_check1.png-d9e5904a422bc7536e592995f70ceb45.ctex::
 armas_check2.png::CompressedTexture2D::6362773522770868033::1791935286::1791935347::1::::<><><>0<>0<>24380a480b58b93afeeb2800886bcf67<>res://.godot/imported/armas_check2.png-6e2ef8cbd7a4bb6222407c3c056b177d.ctex::
 armas_check3.png::CompressedTexture2D::2398670621145371418::1791935305::1791935347::1::::<><><>0<>0<>1cfa2adfce5b30d51e85cca29f363867<>res://.godot/imported/armas_check3.png-07b118dfd949849f6ee7ebe4d0b6529e.ctex::
-armas_costas2.png::CompressedTexture2D::1643050005243061053::1791935380::1791935401::1::::<><><>0<>0<>1b04c79a2208977ed404dff6e8cd99d7<>res://.godot/imported/armas_costas2.png-32b1267baeded27d1c7532a2fd714f75.ctex::
-armas_costas.png::CompressedTexture2D::4984714734328766070::1791935377::1791935401::1::::<><><>0<>0<>e4840b54afda30ce7ed6168d70cec3d3<>res://.godot/imported/armas_costas.png-bfbf1654e148924be94e85fe39863172.ctex::
+armas_costas2.png::CompressedTexture2D::1643050005243061053::1791935408::1791935445::1::::<><><>0<>0<>1b04c79a2208977ed404dff6e8cd99d7<>res://.godot/imported/armas_costas2.png-32b1267baeded27d1c7532a2fd714f75.ctex::
+armas_costas.png::CompressedTexture2D::4984714734328766070::1791935405::1791935445::1::::<><><>0<>0<>e4840b54afda30ce7ed6168d70cec3d3<>res://.godot/imported/armas_costas.png-bfbf1654e148924be94e85fe39863172.ctex::
 teste_anims.png::CompressedTexture2D::9037805565762629205::1791929636::1791929862::1::::<><><>0<>0<>60b2809c724c182844d949d395698bef<>res://.godot/imported/teste_anims.png-896ff1909f3756d7825e8c8b80de9ed6.ctex::
+teste_bichos.png::CompressedTexture2D::8009455716832543670::1791935577::1791935597::1::::<><><>0<>0<>99f8919f98acfe3da1ff93af044c8ef0<>res://.godot/imported/teste_bichos.png-b0b52529be9a4d59a50fb9bd3152aac5.ctex::
 teste_brancas.png::CompressedTexture2D::9049541621316377681::1791931469::1791932182::1::::<><><>0<>0<>9c7a354ee99b0ee03815fec9a703da88<>res://.godot/imported/teste_brancas.png-b8fcaa0ff01eb05ca2ff6ff0e78142ea.ctex::
 teste_humanoide.png::CompressedTexture2D::107402710839341998::1791932518::1791932547::1::::<><><>0<>0<>4e72743c2e5f75864a626c28afe3436e<>res://.godot/imported/teste_humanoide.png-78e3c334a94d4dc45ec4fad1979ee7e9.ctex::
 teste_humanoide_lado.png::CompressedTexture2D::6265478290328374120::1791932521::1791932547::1::::<><><>0<>0<>ce7d0c4e788f3ce08f59ebfd090a40e2<>res://.godot/imported/teste_humanoide_lado.png-1287b154302a58987e683658ec9c2e5b.ctex::
@@ -103,7 +105,7 @@ trailer_tras_aberto.png::CompressedTexture2D::298773707861271373::1791933499::17
 ::res://scenes/::1791842836
 main.tscn::PackedScene::-1::1791823304::0::1::::<><><>0<>0<><>::res://scripts/main.gd
 ::res://scripts/::1791935303
-animal.gd::GDScript::1691719281063188070::1791933198::0::1::::Animal<>Node3D<><>0<>0<><>::
+animal.gd::GDScript::1691719281063188070::1791935593::0::1::::Animal<>Node3D<><>0<>0<><>::
 apocalipse.gd::GDScript::1354270410514729523::1791855278::0::1::::Apocalipse<>RefCounted<><>0<>0<><>::
 armas.gd::GDScript::8445563669593955703::1791854630::0::1::::Armas<>RefCounted<><>0<>0<><>::
 arremesso.gd::GDScript::5909984050767468502::1791855342::0::1::::Arremesso<>Node3D<><>0<>0<><>::
@@ -149,10 +151,12 @@ road.gdshader::Shader::6603574880594174671::1791823652::0::1::::<><><>0<>0<><>::
 sky.gdshader::Shader::1179444671705810597::1791822998::0::1::::<><><>0<>0<><>::
 superficie.gdshader::Shader::5419671211315771789::1791840044::0::1::::<><><>0<>0<><>::
 terrain.gdshader::Shader::5335705434077073507::1791856602::0::1::::<><><>0<>0<><>::
-::res://tools/::1791934399
+::res://tools/::1791935484
 bench.gd::GDScript::6736149002304110940::1791829759::0::1::::<>SceneTree<><>0<>0<><>::
 dirt.gd::GDScript::4136477984950640334::1791830341::0::1::::<>SceneTree<><>0<>0<><>::
+insp_pig.gd::GDScript::3521960772901896747::1791935458::0::1::::<>SceneTree<><>0<>0<><>::
 predio_teste.gd::GDScript::3012540704849037319::1791839974::0::1::::<>SceneTree<><>0<>0<><>::
+teste_bicho.gd::GDScript::5662190079315263087::1791935576::0::1::::<>SceneTree<><>0<>0<><>::
 teste_humanoide.gd::GDScript::8757859550514222176::1791935375::0::1::::<>SceneTree<><>0<>0<><>::
 teste_u.gd::GDScript::8984124513877019524::1791932226::0::1::::<>SceneTree<><>0<>0<><>::
 zpose.gd::GDScript::2154907386793737938::1791836482::0::1::::<>SceneTree<><>0<>0<><>::

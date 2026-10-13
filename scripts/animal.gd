@@ -173,6 +173,9 @@ func _perceber(main: Node) -> void:
 
 # ------------------------------------------------------------ corpo
 func _montar() -> void:
+	if tipo in ["javali", "capivara"] and ResourceLoader.exists("res://assets/animais/Porco.fbx"):
+		_montar_porco()
+		return
 	if Modelos.disponivel():
 		var qual := tipo
 		if tipo == "veado":
@@ -268,6 +271,63 @@ func _montar() -> void:
 			_pernas.append(pv)
 	scale = Vector3.ONE * esc * r.randf_range(0.9, 1.1)
 
+## Javali e capivara: corpo do porco animado da Quaternius, recolorido e com detalhes.
+var _porco: Node3D
+func _montar_porco() -> void:
+	_corpo = Node3D.new()
+	add_child(_corpo)
+	_cabeca = Node3D.new()
+	_corpo.add_child(_cabeca)
+	var m: Node3D = load("res://assets/animais/Porco.fbx").instantiate()
+	_porco = m
+	_corpo.add_child(m)
+	var jav := tipo == "javali"
+	# mede o modelo e ajusta: javali ~0,75 m de altura, capivara ~0,55 m
+	var caixa := AABB()
+	var primeira := true
+	for mi in m.find_children("*", "MeshInstance3D", true, false):
+		var t: Transform3D = Transform3D()
+		var n: Node = mi
+		while n != m:
+			t = (n as Node3D).transform * t
+			n = n.get_parent()
+		var bb: AABB = t * (mi as MeshInstance3D).get_aabb()
+		caixa = bb if primeira else caixa.merge(bb)
+		primeira = false
+	var alvo_h := 0.78 if jav else 0.55
+	var k: float = alvo_h / maxf(caixa.size.y, 0.001)
+	m.scale = Vector3(1.0, 1.0 if jav else 0.85, 1.1 if jav else 1.2) * k
+	m.position.y = -caixa.position.y * k * (1.0 if jav else 0.85)
+	var frente: float = (caixa.position.z + caixa.size.z) * k * (1.1 if jav else 1.2)
+	var tras: float = caixa.position.z * k * (1.1 if jav else 1.2)
+	var h: float = alvo_h
+	if jav:
+		# presas e crina eriçada no lombo
+		var marfim := B.mat(Color(0.92, 0.88, 0.75), 0.4, 0.0, "presa")
+		for sx in [-1.0, 1.0]:
+			B.cyl(_corpo, 0.018, 0.12, Vector3(sx * 0.07, h * 0.42, frente - 0.1), marfim, Vector3(-60, 0, sx * 20), 6, 0.004)
+		var crina := B.mat(Color(0.08, 0.06, 0.05), 1.0, 0.0, "crina")
+		for q in 14:
+			var t: float = q / 13.0
+			var z: float = lerpf(frente - 0.4, tras + 0.35, t)
+			B.box(_corpo, Vector3(0.04, 0.09 - t * 0.04, 0.06), Vector3(0, h * (0.86 - t * 0.06), z), crina, Vector3(-25, 0, 0))
+	var pelo := StandardMaterial3D.new()
+	pelo.albedo_color = Color(0.2, 0.15, 0.11) if jav else Color(0.45, 0.3, 0.18)
+	pelo.roughness = 1.0
+	var pelo2 := StandardMaterial3D.new()
+	pelo2.albedo_color = Color(0.12, 0.09, 0.07) if jav else Color(0.3, 0.2, 0.12)
+	pelo2.roughness = 1.0
+	for mi in m.find_children("*", "MeshInstance3D", true, false):
+		mi.set_surface_override_material(0, pelo)
+		if mi.mesh.get_surface_count() > 1:
+			mi.set_surface_override_material(1, pelo2)
+	_ap = m.find_children("*", "AnimationPlayer", true, false)[0]
+	for n in _ap.get_animation_list():
+		_ap.get_animation(n).loop_mode = Animation.LOOP_LINEAR
+	_ap.play(_ap.get_animation_list()[0])
+	_ap = null   # controle procedural (o porco só tem Idle e Jump)
+	scale = Vector3.ONE * _rng.randf_range(0.9, 1.1)
+
 func _tocar(nome: String, vel := 1.0, unica := false) -> void:
 	if _ap == null or not _ap.has_animation(nome):
 		return
@@ -286,6 +346,16 @@ func _tocar(nome: String, vel := 1.0, unica := false) -> void:
 	_ap.speed_scale = vel
 
 func _animar(vel: float, dt: float) -> void:
+	if _porco:
+		_fase += dt * (3.0 + vel * 3.0)
+		var k := clampf(vel / 3.0, 0.0, 1.0)
+		_corpo.position.y = absf(sin(_fase)) * 0.06 * k
+		_corpo.rotation.x = sin(_fase * 2.0) * 0.06 * k
+		_corpo.rotation.z = sin(_fase) * 0.04 * k
+		if _t_reacao > 0.0:
+			_t_reacao = maxf(0.0, _t_reacao - dt)
+			_corpo.rotation.z = sin(_t_reacao * 30.0) * 0.15
+		return
 	if _ap:
 		if _t_reacao > 0.0:
 			_t_reacao = maxf(0.0, _t_reacao - dt)
@@ -315,6 +385,16 @@ func _animar(vel: float, dt: float) -> void:
 	_cabeca.rotation.x = lerpf(_cabeca.rotation.x, alvo, minf(1.0, dt * 3.0))
 
 func _morte(dt: float) -> void:
+	if _porco:
+		_t_morto += dt
+		_corpo.rotation.z = lerpf(_corpo.rotation.z, PI * 0.5, minf(1.0, dt * 6.0))
+		_corpo.position.y = lerpf(_corpo.position.y, 0.15, minf(1.0, dt * 6.0))
+		if _t_morto > 0.8 and not _poca:
+			_poca = true
+			Sangue.poca(get_parent(), global_position, 0.7)
+		if _t_morto > 600.0:
+			queue_free()
+		return
 	if _ap:
 		if _t_morto == 0.0:
 			_oneshot = false
