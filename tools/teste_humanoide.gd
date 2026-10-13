@@ -45,10 +45,12 @@ func _init() -> void:
 		if lado:
 			h.rotation.y = PI * 0.5
 		mundo.add_child(h)
-		hs.append([h, p[0], float(p[2]) if p.size() > 2 else 0.3])
+		hs.append([h, p[0], float(p[2]) if p.size() > 2 else 0.3, p.size() > 3])
 	await process_frame
 	for e in hs:
 		e[0].fixar(e[1], e[2])
+		if e[3]:
+			e[0].arma_costas(true)
 	var cam := Camera3D.new()
 	cam.position = Vector3(0, 1.3, (dist if dist > 0.0 else 2.6 + n * 0.55))
 	cam.fov = 50

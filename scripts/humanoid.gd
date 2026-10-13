@@ -502,7 +502,28 @@ func _mochila_modelo() -> void:
 func _arma_modelo() -> void:
 	if mao_d == null:
 		return
+	_nas_costas = false
 	Modelos.arma_na_mao(mao_d, arma)
+
+var _nas_costas := false
+## Espingarda e rifle vão para as costas (bandoleira) quando não estão em uso.
+func arma_costas(sim: bool) -> void:
+	if not modelo or sim == _nas_costas:
+		return
+	var a: Node3D = (costas if _nas_costas else mao_d).get_node_or_null("Arma")
+	if a == null:
+		return
+	_nas_costas = sim
+	a.get_parent().remove_child(a)
+	if sim:
+		costas.add_child(a)
+		# atravessada nas costas, cano para cima à direita (osso spine_03: +Y sobe, +Z frente)
+		var by := Vector3(-0.57, 0.82, 0.0)
+		var bz := Vector3(0, 0, -1)
+		a.transform = Transform3D(Basis(by.cross(bz), by, bz), Vector3(0.2, -0.3, -0.21))
+	else:
+		mao_d.add_child(a)
+		a.transform = Transform3D()
 
 func trocar_arma(id: String) -> void:
 	arma = id

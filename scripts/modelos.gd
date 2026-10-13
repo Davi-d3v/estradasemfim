@@ -150,7 +150,7 @@ static func arma_na_mao(mao: Node3D, id: String) -> Node3D:
 		return arma
 	# armas brancas: lâmina/cabo ao longo de +Z do osso (sai pelo polegar), gume para +Y
 	var lam := Node3D.new()
-	lam.transform = Transform3D(Basis(Vector3(-1, 0, 0), Vector3(0, 0, 1), Vector3(0, 1, 0)), CENTRO_MAO)
+	lam.transform = Transform3D(Basis(Vector3(1, 0, 0), Vector3(0, 0, -1), Vector3(0, 1, 0)), CENTRO_MAO)
 	arma.add_child(lam)
 	# no espaço "lam": +Y = ao longo do cabo para a ponta, +Z = gume
 	match id:
