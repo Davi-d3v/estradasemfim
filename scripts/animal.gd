@@ -8,6 +8,7 @@ enum Estado { PASTANDO, FUGINDO, ATACANDO, MORTO }
 const TIPOS := {
 	"veado": {"nome": "veado", "vida": 70.0, "andar": 1.1, "correr": 7.5, "carne": 4, "pele": 2, "escala": 1.0, "agressivo": 0.0, "dano": 0.0, "medo": 22.0},
 	"javali": {"nome": "javali", "vida": 120.0, "andar": 0.9, "correr": 5.8, "carne": 5, "pele": 2, "escala": 1.0, "agressivo": 0.6, "dano": 14.0, "medo": 14.0},
+	"lobo": {"nome": "lobo", "vida": 90.0, "andar": 1.0, "correr": 7.2, "carne": 3, "pele": 2, "escala": 1.0, "agressivo": 0.85, "dano": 12.0, "medo": 20.0},
 	"capivara": {"nome": "capivara", "vida": 60.0, "andar": 0.6, "correr": 4.2, "carne": 4, "pele": 1, "escala": 1.0, "agressivo": 0.0, "dano": 0.0, "medo": 12.0},
 }
 
@@ -31,6 +32,12 @@ var _corpo: Node3D
 var _cabeca: Node3D
 var _pernas: Array = []
 var _t_morto := 0.0
+var _poca := false
+var _t_reacao := 0.0
+var _mod := {}             # modelo animado (veado, cervo, lobo)
+var _ap: AnimationPlayer
+var _anim := ""
+var _oneshot := false
 
 func info() -> Dictionary:
 	return TIPOS[tipo]
@@ -39,10 +46,10 @@ func vivo() -> bool:
 	return estado != Estado.MORTO
 
 func altura_alvo() -> float:
-	return {"veado": 1.0, "javali": 0.55, "capivara": 0.4}[tipo]
+	return {"veado": 1.0, "javali": 0.55, "capivara": 0.4, "lobo": 0.6}[tipo]
 
 func raio_alvo() -> float:
-	return {"veado": 0.55, "javali": 0.5, "capivara": 0.45}[tipo]
+	return {"veado": 0.55, "javali": 0.5, "capivara": 0.45, "lobo": 0.45}[tipo]
 
 func _ready() -> void:
 	_rng.seed = semente
@@ -59,6 +66,9 @@ func ferir(dano: float, empurrao := Vector3.ZERO, origem := Vector3.ZERO) -> voi
 		return
 	vida -= dano
 	_empurrao = empurrao * 0.4
+	_t_reacao = 0.35
+	if is_inside_tree():
+		Sangue.jorro(get_parent(), global_position + Vector3(0, altura_alvo() * scale.x, 0), empurrao, 0.8)
 	if origem != Vector3.ZERO:
 		_assustar(origem, true)
 	if vida <= 0.0:
@@ -163,6 +173,22 @@ func _perceber(main: Node) -> void:
 
 # ------------------------------------------------------------ corpo
 func _montar() -> void:
+	if Modelos.disponivel():
+		var qual := tipo
+		if tipo == "veado":
+			qual = "cervo" if _rng.randf() < 0.35 else "veado"
+		_mod = Modelos.animal(qual)
+	if not _mod.is_empty():
+		_corpo = Node3D.new()
+		add_child(_corpo)
+		_cabeca = Node3D.new()
+		_corpo.add_child(_cabeca)
+		add_child(_mod.raiz)
+		_ap = _mod.player
+		_ap.animation_finished.connect(func(_n): _oneshot = false)
+		scale = Vector3.ONE * _rng.randf_range(0.9, 1.1)
+		_tocar("Idle")
+		return
 	var r := _rng
 	var pelo: Color
 	var esc := 1.0
@@ -242,7 +268,40 @@ func _montar() -> void:
 			_pernas.append(pv)
 	scale = Vector3.ONE * esc * r.randf_range(0.9, 1.1)
 
+func _tocar(nome: String, vel := 1.0, unica := false) -> void:
+	if _ap == null or not _ap.has_animation(nome):
+		return
+	if unica:
+		_oneshot = true
+		_anim = nome
+		_ap.play(nome, 0.1)
+		_ap.seek(0.0, true)
+		_ap.speed_scale = vel
+		return
+	if _oneshot:
+		return
+	if _anim != nome:
+		_anim = nome
+		_ap.play(nome, 0.25)
+	_ap.speed_scale = vel
+
 func _animar(vel: float, dt: float) -> void:
+	if _ap:
+		if _t_reacao > 0.0:
+			_t_reacao = maxf(0.0, _t_reacao - dt)
+		if _t_reacao > 0.25:
+			_tocar("Idle_HitReact1", 1.3, true)
+		elif estado == Estado.ATACANDO and _t_ataque > 1.2:
+			_tocar("Attack" if _ap.has_animation("Attack") else "Attack_Headbutt", 1.2, true)
+		elif vel > 3.0:
+			_tocar("Gallop", clampf(vel / 6.5, 0.7, 1.5))
+		elif vel > 0.1:
+			_tocar("Walk", clampf(vel / 1.1, 0.6, 1.5))
+		elif estado == Estado.PASTANDO and fmod(_t + semente % 10, 14.0) < 6.0:
+			_tocar("Eating")
+		else:
+			_tocar("Idle" if estado == Estado.PASTANDO else "Idle_2")
+		return
 	_fase += dt * (2.0 + vel * 2.2)
 	var k := clampf(vel / 2.0, 0.0, 1.0)
 	for i in _pernas.size():
@@ -256,7 +315,26 @@ func _animar(vel: float, dt: float) -> void:
 	_cabeca.rotation.x = lerpf(_cabeca.rotation.x, alvo, minf(1.0, dt * 3.0))
 
 func _morte(dt: float) -> void:
+	if _ap:
+		if _t_morto == 0.0:
+			_oneshot = false
+			_anim = "Death"
+			_ap.speed_scale = 1.0
+			_ap.get_animation("Death").loop_mode = Animation.LOOP_NONE
+			_ap.play("Death", 0.1)
+		_t_morto += dt
+		var yy := mundo.altura(global_position.x, global_position.z)
+		global_position.y = lerpf(global_position.y, yy, minf(1.0, dt * 6.0))
+		if _t_morto > 1.2 and not _poca:
+			_poca = true
+			Sangue.poca(get_parent(), global_position, 0.8)
+		if _t_morto > 600.0:
+			queue_free()
+		return
 	_t_morto += dt
+	if _t_morto > 0.6 and not _poca:
+		_poca = true
+		Sangue.poca(get_parent(), global_position, 0.8)
 	rotation.z = lerpf(rotation.z, PI * 0.5, minf(1.0, dt * 6.0))
 	var y := mundo.altura(global_position.x, global_position.z) + 0.15
 	global_position.y = lerpf(global_position.y, y, minf(1.0, dt * 6.0))

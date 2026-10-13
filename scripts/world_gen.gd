@@ -991,16 +991,18 @@ func _animais(n: Node3D, z0: float, k: int, bio: String) -> void:
 	var chance := {"serra": 0.55, "rural": 0.4, "alagado": 0.6, "industrial": 0.08, "cidade": 0.03}.get(bio, 0.3) as float
 	if r.randf() > chance:
 		return
-	var tipos: Array = ["veado", "veado", "javali"]
+	var tipos: Array = ["veado", "veado", "javali", "lobo"]
 	if bio == "alagado":
 		tipos = ["capivara", "capivara", "veado"]
 	elif bio == "rural":
-		tipos = ["veado", "capivara", "javali", "veado"]
+		tipos = ["veado", "capivara", "javali", "veado", "lobo"]
 	var tipo: String = tipos[r.randi() % tipos.size()]
 	var zc := z0 + r.randf_range(8.0, TAM - 8.0)
 	var lado := 1.0 if r.randf() < 0.5 else -1.0
 	var c := ponto_estrada(zc, lado * r.randf_range(30.0, 140.0))
 	var n_grupo := r.randi_range(1, 4) if tipo != "javali" else r.randi_range(1, 3)
+	if tipo == "lobo":
+		n_grupo = r.randi_range(2, 4)
 	for i in n_grupo:
 		var p := c + Vector3(r.randf_range(-6, 6), 0, r.randf_range(-6, 6))
 		if perto_de_feature(p.x, p.z, 4.0):

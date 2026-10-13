@@ -2640,6 +2640,39 @@ func _capturar_modelos() -> void:
 		await _salvar("124_acoes_jogador")
 		for h in bonecos:
 			h.queue_free()
+	if etapa == "" or etapa == "4":
+		var pc := mundo.ponto_estrada(3300.0, -40.0)
+		mundo.atualizar(pc)
+		await get_tree().process_frame
+		pc.y = mundo.altura(pc.x, pc.z)
+		_limpar_zumbis_perto(pc, 60.0)
+		var bichos := [["veado", Vector3(-2, 0, 4), 0.4, "Eating"], ["veado", Vector3(1.5, 0, 6), -0.8, "Idle"], ["veado", Vector3(3.5, 0, 3), 2.2, "Walk"], ["lobo", Vector3(-4, 0, 11), 1.2, "Gallop"], ["lobo", Vector3(-1, 0, 12), 0.9, "Idle_2"]]
+		var r2 := RandomNumberGenerator.new()
+		r2.seed = 4
+		var lista: Array = []
+		for b in bichos:
+			var an := Animal.new()
+			an.tipo = b[0]
+			an.mundo = mundo
+			an.semente = r2.randi()
+			var pa: Vector3 = pc + b[1]
+			pa.y = mundo.altura(pa.x, pa.z)
+			an.position = pa
+			mundo.add_child(an)
+			an.rotation.y = b[2]
+			lista.append([an, b[3]])
+		await get_tree().process_frame
+		for e in lista:
+			e[0]._tocar(e[1])
+			e[0]._ap.seek(r2.randf(), true)
+			e[0]._ap.pause()
+		jogador.visible = false
+		var de4 := pc + Vector3(-6.0, 1.8, -5.0)
+		_abrir_vista(de4, pc + Vector3(0, 0, 7))
+		cam.fov = 55.0
+		cam.look_at_from_position(de4, pc + Vector3(0, 0.6, 6.0), Vector3.UP)
+		cam.current = true
+		await _salvar("122_animais_modelo")
 	get_tree().quit()
 
 func _capturar_r5() -> void:
