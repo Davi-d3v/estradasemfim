@@ -26,6 +26,18 @@ const MODULOS := {
 @export var condicao_carroceria := 0.65
 @export var cozinha_aberta := 1.0  # 0 fechada .. 1 aberta
 @export var despensa_aberta := true
+## Compartimentos externos que funcionam como inventário: id -> aberto?
+var compartimentos_abertos := {"despensa": false, "ferramentas": false, "bagageiro": false}
+
+## Compartimentos de carga do trailer: nome, o que guardam, capacidade por nível e onde ficam.
+const COMPARTIMENTOS := {
+	"despensa": {"nome": "Despensa externa", "slot": "lateral_direita", "cap": [6, 10, 16, 22],
+		"itens": ["comida", "agua", "carne_crua", "carne_assada", "remedio", "bandagem", "analgesico"]},
+	"ferramentas": {"nome": "Caixa de ferramentas", "slot": "", "cap": [12, 12, 12, 12],
+		"itens": ["pecas", "sucata", "chapa", "cordame", "pneu", "eixo", "galoes_diesel"]},
+	"bagageiro": {"nome": "Bagageiro lateral", "slot": "", "cap": [14, 14, 14, 14],
+		"itens": []},   # vazio = o que não cabe nos outros (armas, munição, couro, roupas...)
+}
 @export var luz_interna := true
 ## Câmera do jogador dentro do trailer: vidros ficam transparentes.
 var modo_interior := false
@@ -53,8 +65,39 @@ func funcional() -> bool:
 
 ## Espaço de carga extra na despensa externa.
 func capacidade_carga() -> int:
-	var d: Dictionary = config.get("lateral_direita", {})
-	return int(d.get("nivel", 0)) * 10
+	var t := 0
+	for id in COMPARTIMENTOS:
+		t += capacidade_compartimento(id)
+	return t
+
+func capacidade_compartimento(id: String) -> int:
+	var c: Dictionary = COMPARTIMENTOS[id]
+	var nivel := 1
+	if c.slot != "":
+		nivel = int(config.get(c.slot, {}).get("nivel", 0))
+	return int(c.cap[clampi(nivel, 0, 3)])
+
+## Em que compartimento um item fica guardado.
+static func compartimento_de(item: String) -> String:
+	for id in ["despensa", "ferramentas"]:
+		if item in COMPARTIMENTOS[id].itens:
+			return id
+	return "bagageiro"
+
+## Onde o jogador fica para abrir cada compartimento (espaço local do trailer).
+func ponto_compartimento(id: String) -> Vector3:
+	match id:
+		"despensa":
+			return Vector3(LARGURA * 0.5 + 0.7, 0, -1.05)
+		"ferramentas":
+			return Vector3(0.0, 0, COMPRIMENTO * 0.5 + 1.15)
+	return Vector3(-LARGURA * 0.5 - 0.7, 0, 1.1)
+
+func abrir_compartimento(id: String, aberto: bool) -> void:
+	if compartimentos_abertos.get(id, false) == aberto:
+		return
+	compartimentos_abertos[id] = aberto
+	reconstruir()
 
 func ponto_entrada() -> Vector3:
 	return Vector3(LARGURA * 0.5 + 0.7, 0, 0.35)
@@ -191,11 +234,25 @@ func _base() -> void:
 	B.sphere(r, 0.06, Vector3(0, 0.62, hz + 1.8), aco)
 	B.cyl(r, 0.04, 0.55, Vector3(0.2, 0.35, hz + 1.25), aco)  # macaco de apoio
 
-	# caixa de ferramentas frontal
-	B.box(r, Vector3(1.5, 0.62, 0.6), Vector3(0, BASE_Y + 0.31, hz + 0.32), preto)
-	B.box(r, Vector3(1.3, 0.02, 0.5), Vector3(0, BASE_Y + 0.63, hz + 0.32), aco)
+	# caixa de ferramentas frontal (compartimento: a frente desce como tampa de caçamba)
+	var aberta: bool = compartimentos_abertos.get("ferramentas", false)
+	B.box(r, Vector3(1.5, 0.58, 0.6), Vector3(0, BASE_Y + 0.29, hz + 0.32), preto)
 	for s in [-0.45, 0.45]:
-		B.box(r, Vector3(0.06, 0.03, 0.08), Vector3(s, BASE_Y + 0.4, hz + 0.63), aco)
+		B.box(r, Vector3(0.06, 0.03, 0.08), Vector3(s, BASE_Y + 0.44, hz + 0.63), aco)
+	if aberta:
+		B.box(r, Vector3(1.4, 0.48, 0.02), Vector3(0, BASE_Y + 0.3, hz + 0.625), B.mat(Color(0.03, 0.03, 0.03), 1.0))
+		var tampa := Node3D.new()
+		tampa.position = Vector3(0, BASE_Y + 0.04, hz + 0.63)
+		tampa.rotation.x = 1.45
+		r.add_child(tampa)
+		B.box(tampa, Vector3(1.46, 0.5, 0.03), Vector3(0, 0.25, 0), preto)
+		for s2 in [-0.6, 0.6]:
+			B.cyl(r, 0.006, 0.45, Vector3(s2, BASE_Y + 0.3, hz + 0.82), aco, Vector3(55, 0, 0), 4)
+		B.box(r, Vector3(0.4, 0.05, 0.06), Vector3(-0.35, BASE_Y + 0.12, hz + 0.45), B.mat(Color(0.75, 0.1, 0.06), 0.5), Vector3(0, 20, 0))
+		B.box(r, Vector3(0.22, 0.12, 0.18), Vector3(0.4, BASE_Y + 0.1, hz + 0.42), B.mat(Color(0.75, 0.6, 0.1), 0.6))
+		B.box(r, Vector3(0.3, 0.22, 0.3), Vector3(0.0, BASE_Y + 0.15, hz + 0.3), B.mat(Color(0.55, 0.12, 0.08), 0.5, 0.3))
+		B.cyl(r, 0.05, 0.1, Vector3(-0.1, BASE_Y + 0.33, hz + 0.45), B.mat(Color(0.1, 0.3, 0.6), 0.5), Vector3.ZERO, 10)
+	B.box(r, Vector3(1.52, 0.03, 0.62), Vector3(0, BASE_Y + 0.6, hz + 0.32), preto)
 
 	# porta lateral direita (+X)
 	var porta := B.mat(B.worn(Color(0.08, 0.08, 0.085), 0.8), 0.6, 0.1)
@@ -223,6 +280,7 @@ func _base() -> void:
 	B.box(r, Vector3(0.2, 0.06, 0.08), Vector3(0, 0.6, -hz - 0.52), aco)
 	B.sphere(r, 0.05, Vector3(0, 0.67, -hz - 0.55), B.mat(Color(0.6, 0.6, 0.6), 0.3, 0.9))
 
+	_bagageiro()
 	_interior()
 
 	if luz_interna:
@@ -385,25 +443,90 @@ func _mod_cozinha(nivel: int, cond: float) -> void:
 	for i in 4:
 		B.cyl(r, 0.03, 0.1, Vector3(-hw + 0.05, 1.0, z0 + 0.2 + i * 0.08), B.mat(Color.from_hsv(_rng.randf(), 0.6, 0.6)), Vector3.ZERO, 8)
 
+## Fileira de portinholas no flanco direito, atrás da porta (como nos trailers
+## off-road de referência). Abertas, mostram prateleiras com latas, garrafas e potes.
 func _mod_despensa(nivel: int, cond: float) -> void:
 	var r := _root
 	var hw := LARGURA * 0.5
-	var portas := 2 + nivel
-	var z := -1.05
-	var preto := B.mat(B.worn(Color(0.07, 0.07, 0.075), cond), 0.6, 0.2)
-	var branco := B.mat(Color(0.82, 0.82, 0.8), 0.5)
-	B.box(r, Vector3(0.03, portas * 0.24 + 0.06, 0.42), Vector3(hw + 0.012, 1.0 + portas * 0.12, z), preto)
-	for i in portas:
-		var y := 1.03 + i * 0.24
-		if despensa_aberta:
-			B.box(r, Vector3(0.02, 0.2, 0.34), Vector3(hw + 0.004, y + 0.1, z), branco)  # nicho interno
-			var porta := B.box(r, Vector3(0.3, 0.2, 0.02), Vector3(hw + 0.17, y + 0.1, z + 0.18), preto)
-			porta.rotation_degrees.y = -8
-			for k in 3:
-				var cor := Color.from_hsv(_rng.randf(), 0.7, 0.75)
-				B.cyl(r, 0.04, 0.11, Vector3(hw + 0.02, y + 0.06, z - 0.1 + k * 0.1), B.mat(cor, 0.5), Vector3.ZERO, 8)
+	var aberto: bool = compartimentos_abertos.get("despensa", false)
+	var n := 3 if nivel <= 1 else 4
+	var larg := 0.3
+	var z0 := -1.68
+	var y0 := 1.0
+	var alt := 0.48
+	var moldura := B.mat(B.worn(Color(0.08, 0.08, 0.085), cond), 0.55, 0.4)
+	var interno := B.mat(Color(0.75, 0.74, 0.7), 0.6)
+	var aco := B.mat(Color(0.55, 0.55, 0.56), 0.35, 0.85)
+	var comp := n * larg + 0.06
+	B.box(r, Vector3(0.025, alt + 0.06, comp), Vector3(hw + 0.006, y0 + alt * 0.5, z0 + comp * 0.5), moldura)
+	for i in n:
+		var zc := z0 + 0.03 + larg * (i + 0.5)
+		if aberto:
+			B.box(r, Vector3(0.02, alt - 0.04, larg - 0.04), Vector3(hw + 0.014, y0 + alt * 0.5, zc), interno)
+			B.box(r, Vector3(0.16, 0.015, larg - 0.04), Vector3(hw + 0.08, y0 + 0.24, zc), interno)
+			var porta := Node3D.new()
+			porta.position = Vector3(hw + 0.03, y0, zc)
+			porta.rotation.z = -1.35
+			r.add_child(porta)
+			B.box(porta, Vector3(0.02, alt - 0.03, larg - 0.04), Vector3(0, alt * 0.5, 0), preto_porta(cond))
+			for k in 2:
+				var dz := -0.06 + k * 0.12
+				match i % 4:
+					0:
+						B.cyl(r, 0.035, 0.1, Vector3(hw + 0.06, y0 + 0.07, zc + dz), B.mat(Color.from_hsv(0.05 + k * 0.15, 0.7, 0.7), 0.45, 0.3), Vector3.ZERO, 10)
+						B.cyl(r, 0.035, 0.1, Vector3(hw + 0.06, y0 + 0.31, zc + dz), B.mat(Color(0.85, 0.45, 0.12), 0.45, 0.3), Vector3.ZERO, 10)
+					1:
+						B.cyl(r, 0.03, 0.2, Vector3(hw + 0.06, y0 + 0.12, zc + dz), B.mat(Color(0.55, 0.75, 0.9, 1.0), 0.15), Vector3.ZERO, 8)
+						B.box(r, Vector3(0.1, 0.1, 0.08), Vector3(hw + 0.07, y0 + 0.32, zc + dz), B.mat(Color(0.7, 0.6, 0.4), 0.9))
+					2:
+						B.cyl(r, 0.04, 0.12, Vector3(hw + 0.06, y0 + 0.08, zc + dz), B.mat(Color(0.75, 0.25, 0.15), 0.3), Vector3.ZERO, 10)
+						B.box(r, Vector3(0.06, 0.09, 0.06), Vector3(hw + 0.06, y0 + 0.3, zc + dz), B.mat(Color(0.9, 0.9, 0.88), 0.5))
+					3:
+						B.box(r, Vector3(0.1, 0.08, 0.1), Vector3(hw + 0.07, y0 + 0.06, zc + dz), B.mat(Color(0.82, 0.1, 0.08), 0.5))
+						B.cyl(r, 0.035, 0.14, Vector3(hw + 0.06, y0 + 0.32, zc + dz), B.mat(Color(0.25, 0.45, 0.2), 0.4), Vector3.ZERO, 8)
 		else:
-			B.box(r, Vector3(0.03, 0.2, 0.34), Vector3(hw + 0.02, y + 0.1, z), preto)
+			B.box(r, Vector3(0.022, alt - 0.04, larg - 0.04), Vector3(hw + 0.02, y0 + alt * 0.5, zc), preto_porta(cond))
+			B.box(r, Vector3(0.03, 0.03, 0.08), Vector3(hw + 0.035, y0 + alt - 0.06, zc), aco)
+		B.box(r, Vector3(0.03, 0.02, larg - 0.1), Vector3(hw + 0.03, y0 + 0.01, zc), aco)
+	if nivel >= 3:
+		B.box(r, Vector3(0.03, 0.14, comp - 0.04), Vector3(hw + 0.02, y0 - 0.1, z0 + comp * 0.5), moldura)
+		B.box(r, Vector3(0.03, 0.03, 0.16), Vector3(hw + 0.04, y0 - 0.1, z0 + comp * 0.5), aco)
+
+## Portinholas pretas, como nas fotos de referência.
+func preto_porta(cond: float) -> Material:
+	return _pint(Color(0.07, 0.07, 0.075), cond + 0.2, 0.6, 0.2)
+
+## Bagageiro no flanco esquerdo, na frente da cozinha: portinhola grande com
+## mochilas, caixas de munição e ferramentas maiores.
+func _bagageiro() -> void:
+	var r := _root
+	var hw := LARGURA * 0.5
+	var aberto: bool = compartimentos_abertos.get("bagageiro", false)
+	var z0 := 0.55
+	var comp := 0.95
+	var y0 := 0.98
+	var alt := 0.52
+	var moldura := B.mat(Color(0.08, 0.08, 0.085), 0.55, 0.4)
+	var aco := B.mat(Color(0.55, 0.55, 0.56), 0.35, 0.85)
+	B.box(r, Vector3(0.025, alt + 0.06, comp + 0.06), Vector3(-hw - 0.006, y0 + alt * 0.5, z0 + comp * 0.5), moldura)
+	if aberto:
+		B.box(r, Vector3(0.02, alt - 0.03, comp - 0.03), Vector3(-hw - 0.012, y0 + alt * 0.5, z0 + comp * 0.5), B.mat(Color(0.03, 0.03, 0.03), 1.0))
+		var porta := Node3D.new()
+		porta.position = Vector3(-hw - 0.03, y0 + alt, z0 + comp * 0.5)
+		porta.rotation.z = -1.25
+		r.add_child(porta)
+		B.box(porta, Vector3(0.02, alt, comp - 0.03), Vector3(0, -alt * 0.5, 0), preto_porta(1.0))
+		B.cyl(r, 0.01, 0.4, Vector3(-hw - 0.18, y0 + alt + 0.08, z0 + 0.1), aco, Vector3(0, 0, 50), 6)
+		B.box(r, Vector3(0.22, 0.16, 0.3), Vector3(-hw + 0.02, y0 + 0.09, z0 + 0.22), B.mat(Color(0.25, 0.3, 0.2), 0.7, 0.3))
+		B.box(r, Vector3(0.05, 0.02, 0.1), Vector3(-hw - 0.08, y0 + 0.18, z0 + 0.22), B.mat(Color(0.8, 0.7, 0.2), 0.5))
+		B.box(r, Vector3(0.26, 0.34, 0.24), Vector3(-hw + 0.0, y0 + 0.19, z0 + 0.6), B.mat(Color(0.22, 0.25, 0.17), 0.95))
+		B.cyl(r, 0.06, 0.4, Vector3(-hw + 0.05, y0 + 0.4, z0 + 0.48), B.mat(Color(0.3, 0.28, 0.2), 0.95), Vector3(90, 0, 0), 10)
+		B.box(r, Vector3(0.05, 0.05, 0.6), Vector3(-hw - 0.05, y0 + 0.07, z0 + 0.5), B.mat(Color(0.38, 0.22, 0.11), 0.7))
+	else:
+		B.box(r, Vector3(0.022, alt - 0.03, comp - 0.03), Vector3(-hw - 0.02, y0 + alt * 0.5, z0 + comp * 0.5), preto_porta(1.0))
+		B.box(r, Vector3(0.03, 0.06, 0.14), Vector3(-hw - 0.035, y0 + alt * 0.5, z0 + comp - 0.12), aco)
+	for dz in [0.15, comp - 0.15]:
+		B.box(r, Vector3(0.03, 0.03, 0.08), Vector3(-hw - 0.03, y0 + alt - 0.01, z0 + dz), aco)
 
 func _mod_rack_teto(nivel: int, cond: float) -> void:
 	var r := _root
@@ -473,9 +596,16 @@ func _mod_grades(nivel: int, cond: float) -> void:
 	for k in range(-6, 7):
 		B.box(r, Vector3(0.012, 0.4, 0.015), Vector3(k * 0.075, 1.65, -COMPRIMENTO * 0.5 - 0.03), preto)
 	if nivel >= 2:
-		# chapas de blindagem nas laterais inferiores
+		# chapas de blindagem rebitadas na saia inferior (abaixo das portas e compartimentos)
+		var chapa := _pint(Color(0.3, 0.31, 0.3), cond * 0.7, 0.5, 0.7)
+		var rebite := B.mat(Color(0.5, 0.5, 0.5), 0.4, 0.9)
 		for s in [-1.0, 1.0]:
-			B.box(r, Vector3(0.02, 0.32, 1.2), Vector3(s * (hw + 0.02), 1.2, 1.05 if s > 0 else -0.25), _pint(Color(0.3, 0.31, 0.3), cond * 0.7, 0.5, 0.7))
+			for seg in [[-1.55, -0.65], [0.25, 1.35]]:
+				var zc: float = (seg[0] + seg[1]) * 0.5
+				var lz: float = seg[1] - seg[0]
+				B.box(r, Vector3(0.02, 0.2, lz), Vector3(s * (hw + 0.022), BASE_Y + 0.11, zc), chapa)
+				for k in 4:
+					B.sphere(r, 0.012, Vector3(s * (hw + 0.035), BASE_Y + 0.17, seg[0] + 0.08 + k * (lz - 0.16) / 3.0), rebite)
 
 func _mod_farois(nivel: int, cond: float) -> void:
 	var r := _root

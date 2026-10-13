@@ -87,6 +87,7 @@ var base: BaseRecrutas
 var fumacas: Node3D
 var cinzas: CPUParticles3D
 var equip: Equipamento
+var _compartimento_preso := false     # prints: deixa a porta aberta ao fechar o painel
 var criacao: Criacao
 var defesa: Defesa
 var recrutas_nos: Array:
@@ -181,7 +182,9 @@ func _ready() -> void:
 	if capturando:
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
-		if "--modelos" in OS.get_cmdline_user_args():
+		if "--trailer" in OS.get_cmdline_user_args():
+			_capturar_trailer()
+		elif "--modelos" in OS.get_cmdline_user_args():
 			_capturar_modelos()
 		elif "--rodada5" in OS.get_cmdline_user_args():
 			_capturar_r5()
@@ -1299,6 +1302,9 @@ func _janela_aberta() -> bool:
 	return oficina.visible or painel.visible or Engine.get_process_frames() - _frame_fechou < 2
 
 func _fechar_janela() -> void:
+	for id in trailer.compartimentos_abertos:
+		if trailer.compartimentos_abertos[id] and not _compartimento_preso:
+			trailer.abrir_compartimento(id, false)
 	oficina.visible = false
 	painel.visible = false
 	_frame_fechou = Engine.get_process_frames()
@@ -1335,6 +1341,8 @@ func _interacao_a_pe() -> void:
 			cands.append({"d": d, "tecla": tecla, "texto": texto, "f": f})
 	add.call(comboio.porta_motorista(), 1.8, "dirigir", "[F] Dirigir", _entrar_no_carro)
 	add.call(trailer.global_transform * trailer.ponto_entrada(), 1.4, "interact", "[E] Entrar no trailer", _entrar_em.bind(trailer))
+	for cid in Trailer.COMPARTIMENTOS:
+		add.call(trailer.global_transform * trailer.ponto_compartimento(cid), 1.1, "interact", "[E] Abrir: %s" % Trailer.COMPARTIMENTOS[cid].nome, _abrir_compartimento.bind(cid))
 	add.call(trailer.global_transform * Vector3(-1.4, 0, -0.6), 1.5, "interact",
 		"[E] " + ("Fechar cozinha" if trailer.cozinha_aberta > 0.5 else "Abrir cozinha"), _alternar_cozinha)
 	if estoque.galoes_diesel > 0 and comboio.diesel < comboio.tanque() - 1.0:
@@ -1627,6 +1635,83 @@ func _painel_estoque() -> Dictionary:
 		"botoes": [["Jogar fora 10 sucata", func():
 			estoque.sucata = maxi(0, estoque.sucata - 10)
 			return "Sucata descartada.", estoque.sucata > 0]]}
+
+# ------------------------------------------------------------ compartimentos do trailer
+func _abrir_compartimento(id: String) -> void:
+	trailer.abrir_compartimento(id, true)
+	_abrir_painel(_painel_compartimento.bind(id))
+
+func _volume_compartimento(id: String) -> float:
+	var v := 0.0
+	for k in ITENS:
+		if estoque.get(k, 0) > 0 and Trailer.compartimento_de(k) == id:
+			v += estoque[k] * ITENS[k].vol
+	return v
+
+func _painel_compartimento(id: String) -> Dictionary:
+	var c: Dictionary = Trailer.COMPARTIMENTOS[id]
+	var linhas: Array = []
+	var botoes: Array = []
+	var cap := trailer.capacidade_compartimento(id)
+	var usado := _volume_compartimento(id)
+	var lista: Array = []
+	for k in ITENS:
+		var q: int = estoque.get(k, 0)
+		if q > 0 and Trailer.compartimento_de(k) == id:
+			lista.append([k, q])
+	lista.sort_custom(func(a, b): return a[1] * ITENS[a[0]].vol > b[1] * ITENS[b[0]].vol)
+	var cor := Color(0.95, 0.45, 0.3) if usado > cap else Hud.DOURADO
+	linhas.append(["Ocupado: %.0f de %d (o que passar daqui vai para o resto do comboio).  Carga total: %.0f / %d" % [usado, cap, volume_usado(), capacidade_carga()], cor])
+	if lista.is_empty():
+		linhas.append(["Vazio.", Color(0.7, 0.7, 0.68)])
+	for par in lista:
+		var k: String = par[0]
+		var extra := ""
+		if Armas.LISTA.has(k) and Armas.LISTA[k].tipo == "fogo":
+			extra = "  (pente: %d)" % equip.pentes.get(k, 0)
+		elif equip.cond_armas.has(k):
+			extra = "  (%d%%)" % int(equip.cond_armas[k] * 100.0)
+		linhas.append("%d × %s%s" % [par[1], ITENS[k].get("um", ITENS[k].nome) if par[1] == 1 else ITENS[k].nome.to_lower(), extra])
+	match id:
+		"despensa":
+			linhas.append(["Fome: %d%%     Sede: %d%%     Vida: %d%%" % [int(jogador.fome * 100.0), int(jogador.sede * 100.0), int(jogador.vida * 100.0)], Color(0.75, 0.75, 0.72)])
+			botoes.append(["Comer uma lata", func():
+				estoque.comida -= 1
+				jogador.fome = minf(1.0, jogador.fome + 0.25)
+				return "Você comeu.", estoque.get("comida", 0) > 0 and jogador.fome < 0.99])
+			botoes.append(["Comer carne assada", func():
+				estoque.carne_assada -= 1
+				jogador.fome = minf(1.0, jogador.fome + 0.45)
+				return "Carne assada. Quentinha.", estoque.get("carne_assada", 0) > 0 and jogador.fome < 0.99])
+			botoes.append(["Beber água", func():
+				estoque.agua -= 1
+				jogador.sede = minf(1.0, jogador.sede + 0.3)
+				return "Você bebeu.", estoque.get("agua", 0) > 0 and jogador.sede < 0.99])
+			botoes.append(["Fazer curativo", func():
+				estoque.bandagem -= 1
+				jogador.vida = minf(1.0, jogador.vida + 0.22)
+				return "Curativo feito.", estoque.get("bandagem", 0) > 0 and jogador.vida < 0.99])
+			botoes.append(["Tomar remédio", func(): return _usar_remedio(), estoque.get("remedio", 0) > 0])
+		"ferramentas":
+			botoes.append(["Abastecer a picape com um galão (20 L)", func():
+				_abastecer_galao()
+				return "Tanque: %d L." % int(comboio.diesel), estoque.get("galoes_diesel", 0) > 0 and comboio.diesel < comboio.tanque() - 1.0])
+			botoes.append(["Abrir criação (oficina e metal)", func():
+				_fechar_janela()
+				criacao.aba = "metal"
+				_abrir_painel(criacao.painel)
+				return "", true])
+		"bagageiro":
+			for aid in Armas.ARMADURA:
+				if estoque.get(aid, 0) > 0:
+					botoes.append(["Vestir %s" % Armas.ARMADURA[aid].nome.to_lower(), equip.vestir.bind(aid), true])
+			for wid in Armas.ORDEM:
+				if wid != "facao" and estoque.get(wid, 0) > 0:
+					botoes.append(["Pegar na mão: %s" % Armas.LISTA[wid].nome.to_lower(), func():
+						equip.selecionar(wid)
+						return "%s na mão." % Armas.LISTA[wid].nome, equip.sel != wid])
+	var guarda := "comida, água e remédios" if id == "despensa" else ("peças, sucata, chapas, cordas, pneus, eixos e galões" if id == "ferramentas" else "armas, munição, couro, roupas e o resto")
+	return {"titulo": c.nome.to_upper(), "subtitulo": "Compartimento do trailer · guarda: %s" % guarda, "linhas": linhas, "botoes": botoes}
 
 func _painel_despensa() -> Dictionary:
 	return {"titulo": "DESPENSA", "subtitulo": "Comer e beber recupera a fome e a sede.",
@@ -2494,6 +2579,55 @@ func _etapa() -> String:
 		if a.begins_with("--etapa="):
 			return a.substr(8)
 	return ""
+
+## Trailer principal visto dos quatro lados, compartimentos fechados ou abertos (--depois).
+func _capturar_trailer() -> void:
+	comboio.set_physics_process(false)
+	var cam := Camera3D.new()
+	cam.far = 900.0
+	add_child(cam)
+	hud.visible = false
+	jogador.visible = false
+	hora = 15.0
+	_atualizar_ceu()
+	var pa0 := mundo.ponto_estrada(620.0, -11.0)
+	pa0.y = mundo.altura(pa0.x, pa0.z)
+	var dza := mundo.direcao(620.0)
+	comboio.posicionar_livre(pa0, atan2(dza.x, dza.z), 0.0)
+	mundo.atualizar(pa0)
+	await get_tree().process_frame
+	_limpar_zumbis_perto(pa0, 60.0)
+	var t: Node3D = trailer
+	var b := t.global_transform.basis
+	var c := t.global_position + Vector3(0, 1.2, 0)
+	var vistas := [["direita", b.x * 4.2 + b.z * 0.6 + Vector3(0, 0.6, 0)], ["esquerda", -b.x * 4.2 + b.z * 0.3 + Vector3(0, 0.6, 0)], ["frente", b.z * 4.6 + b.x * 1.6 + Vector3(0, 1.0, 0)], ["tras", -b.z * 4.4 - b.x * 1.4 + Vector3(0, 0.8, 0)]]
+	var depois := OS.get_cmdline_user_args().has("--depois")
+	if depois:
+		for id in trailer.compartimentos_abertos:
+			trailer.compartimentos_abertos[id] = true
+		trailer.reconstruir()
+		await get_tree().process_frame
+	for v in vistas:
+		var de: Vector3 = c + v[1]
+		_abrir_vista(de, c)
+		cam.fov = 50.0
+		cam.look_at_from_position(de, c, Vector3.UP)
+		cam.current = true
+		await _salvar("trailer_%s%s" % [v[0], "_aberto" if depois else ""])
+	if depois:
+		for k in ITENS:
+			estoque[k] = 0
+		estoque.merge({"comida": 6, "agua": 5, "carne_assada": 2, "remedio": 1, "bandagem": 3, "pecas": 7, "sucata": 18, "galoes_diesel": 2, "pistola": 1, "municao_pistola": 14, "espingarda": 1, "cartucho": 6}, true)
+		for id in ["despensa", "bagageiro"]:
+			var pj := t.global_transform * trailer.ponto_compartimento(id)
+			_posar_jogador(pj + (pj - t.global_position).normalized() * 0.8, t.global_transform * (trailer.ponto_compartimento(id) * Vector3(0.6, 1, 1)) + Vector3(0, 1.0, 0), -0.12, 0.35)
+			hud.visible = true
+			_atualizar_hud()
+			_compartimento_preso = true
+			_abrir_painel(_painel_compartimento.bind(id))
+			await _salvar("trailer_painel_%s" % id)
+			_fechar_janela()
+	get_tree().quit()
 
 ## Prints dos modelos novos (personagens com rosto, zumbis, armas, ações).
 func _capturar_modelos() -> void:

@@ -64,11 +64,12 @@ d366843ee7d9e9f37ec87a0e1c98c7f2e45573c08eeb80a51a6d9344e68cf288.png::Compressed
 df680cbc1967a61e85998bfafb8f7bc0a36dd604bb3266486c4b06b1a184bb45.png::CompressedTexture2D::2216579274078163606::1791932153::1791932178::1::::<><><>0<>0<>002a48c174b097bbb0204904f82aa427<>res://.godot/imported/df680cbc1967a61e85998bfafb8f7bc0a36dd604bb3266486c4b06b1a184bb45.png-c27fae1bddf7bbd5da0faaa68c6175de.ctex::
 e1932f5f91104afca89c501416a5fec09069b8552734237fc09045fabc4ca9b4.png::CompressedTexture2D::6918315603637602181::1791932157::1791932178::1::::<><><>0<>0<>fb1ced7c5bd584ecd5ab25d647f1028c<>res://.godot/imported/e1932f5f91104afca89c501416a5fec09069b8552734237fc09045fabc4ca9b4.png-57ad1c2992968953a1b8898a816dd874.ctex::
 f9f4f2fb3eeeefb0b6f0fdef38b0770fd6607640c1c680b8139dd76697e9f9b3.png::CompressedTexture2D::827138341010223222::1791932159::1791932178::1::::<><><>0<>0<>a9c46859ee7de59937cb12c6e428ae23<>res://.godot/imported/f9f4f2fb3eeeefb0b6f0fdef38b0770fd6607640c1c680b8139dd76697e9f9b3.png-04abf2affeb5b9789dedbd2487b4c75d.ctex::
-::res://prints/::1791933203
+::res://prints/::1791933360
 119_zumbis_modelo.png::CompressedTexture2D::3994063043350873346::1791932959::1791933203::1::::<><><>0<>0<>c90f20363dbe56b15646b6dc943020a2<>res://.godot/imported/119_zumbis_modelo.png-51a0f864e2cef78f8dc899c8ec972707.ctex::
 120_combate_de_perto.png::CompressedTexture2D::4486773025121629619::1791933137::1791933203::1::::<><><>0<>0<>97a643ed87ba4695f0d100161342f15b<>res://.godot/imported/120_combate_de_perto.png-9c432cbecf67667c60b8c14f83875c20.ctex::
 121b_vila_moradores.png::CompressedTexture2D::91921045007968033::1791932829::1791932910::1::::<><><>0<>0<>41cda9640106e400d15cacc17341f6c6<>res://.godot/imported/121b_vila_moradores.png-837f27ef42c94ea16ae9ddf30122c993.ctex::
 121_vila_moradores.png::CompressedTexture2D::3857523665202318852::1791932814::1791932911::1::::<><><>0<>0<>4286c50c3cdbd2956a20ea424339e674<>res://.godot/imported/121_vila_moradores.png-b6ab7db1e8789d0a0e699610d117d6c1.ctex::
+122_animais_modelo.png::CompressedTexture2D::6420334910940156938::1791933287::1791933360::1::::<><><>0<>0<>54cc1951b8fbeaa099e4f05c6df30fe1<>res://.godot/imported/122_animais_modelo.png-78ffeab47d367425dfed7e1d83b474d6.ctex::
 124_acoes_jogador.png::CompressedTexture2D::4100385300823623047::1791932880::1791932911::1::::<><><>0<>0<>d85ae062ef3ec95755a7e38bcc60f792<>res://.godot/imported/124_acoes_jogador.png-96e036fc6c383816edefcc52b1c509b6.ctex::
 teste_anims.png::CompressedTexture2D::9037805565762629205::1791929636::1791929862::1::::<><><>0<>0<>60b2809c724c182844d949d395698bef<>res://.godot/imported/teste_anims.png-896ff1909f3756d7825e8c8b80de9ed6.ctex::
 teste_brancas.png::CompressedTexture2D::9049541621316377681::1791931469::1791932182::1::::<><><>0<>0<>9c7a354ee99b0ee03815fec9a703da88<>res://.godot/imported/teste_brancas.png-b8fcaa0ff01eb05ca2ff6ff0e78142ea.ctex::
@@ -96,7 +97,7 @@ hud.gd::GDScript::1526720838971245082::1791855392::0::1::::Hud<>Control<><>0<>0<
 humanoid.gd::GDScript::4583134036289468853::1791932905::0::1::::Humanoid<>Node3D<><>0<>0<><>::
 jogo.gd::GDScript::2527065120667162082::1791836099::0::1::::Jogo<>RefCounted<><>0<>0<><>::
 lugares.gd::GDScript::4818060070082949917::1791930086::0::1::::Lugares<>RefCounted<><>0<>0<><>::
-main.gd::GDScript::772541204004651537::1791933232::0::1::::<>Node3D<><>0<>0<><>::
+main.gd::GDScript::772541204004651537::1791933393::0::1::::<>Node3D<><>0<>0<><>::
 menu.gd::GDScript::1089058145340150063::1791855835::0::1::::Menu<>Control<><>0<>0<><>::
 modelos.gd::GDScript::2530803293180947829::1791932905::0::1::::Modelos<>RefCounted<><>0<>0<><>::
 oficina.gd::GDScript::1616878582553503854::1791826886::0::1::::Oficina<>Control<><>0<>0<><>::
@@ -112,7 +113,7 @@ recrutas.gd::GDScript::5094294990664750468::1791846316::0::1::::Recrutas<>RefCou
 regioes.gd::GDScript::1624761318180983074::1791850833::0::1::::Regioes<>RefCounted<><>0<>0<><>::
 sangue.gd::GDScript::2587660058036447538::1791929896::0::1::::Sangue<>RefCounted<><>0<>0<><>::
 texturas.gd::GDScript::2192582983303732574::1791840044::0::1::::Texturas<>RefCounted<><>0<>0<><>::
-trailer.gd::GDScript::2751865612291631430::1791826648::0::1::::Trailer<>Node3D<><>0<>0<><>::
+trailer.gd::GDScript::2751865612291631430::1791933355::0::1::::Trailer<>Node3D<><>0<>0<><>::
 world_gen.gd::GDScript::6388570040669247267::1791933198::0::1::::WorldGen<>Node3D<><>0<>0<><>::
 zumbi.gd::GDScript::2609124479473413665::1791929912::0::1::::Zumbi<>Humanoid<><>0<>0<><>::
 ::res://shaders/::1791848631
