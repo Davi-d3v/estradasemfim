@@ -1,0 +1,3139 @@
+extends Node3D
+## Cena principal: mundo procedural, ciclo dia/noite, comboio, jogador, interiores e HUD.
+
+@export var hora := 18.78
+@export var velocidade_tempo := 1.0 / 60.0  # horas de jogo por segundo real
+@export var dia := 3
+
+## Volume que cada item ocupa na carga.
+const ITENS := {
+	"pecas": {"nome": "Peças", "vol": 1.0},
+	"sucata": {"nome": "Sucata", "vol": 0.5},
+	"comida": {"nome": "Comida", "vol": 1.0},
+	"agua": {"nome": "Água", "vol": 1.0},
+	"galoes_diesel": {"nome": "Galões de diesel (20 L)", "um": "galão de diesel (20 L)", "vol": 3.0},
+	"pneu": {"nome": "Pneus", "um": "pneu", "vol": 5.0},
+	"eixo": {"nome": "Eixos", "um": "eixo", "vol": 8.0},
+	"remedio": {"nome": "Remédios", "um": "remédio", "vol": 0.5},
+	# armas
+	"pe_de_cabra": {"nome": "Pés de cabra", "um": "pé de cabra", "vol": 2.0},
+	"taco": {"nome": "Tacos com pregos", "um": "taco com pregos", "vol": 2.0},
+	"machado": {"nome": "Machados", "um": "machado", "vol": 3.0},
+	"pistola": {"nome": "Pistolas", "um": "pistola", "vol": 1.5},
+	"espingarda": {"nome": "Espingardas", "um": "espingarda", "vol": 4.0},
+	"rifle": {"nome": "Rifles", "um": "rifle", "vol": 4.0},
+	"besta": {"nome": "Bestas", "um": "besta", "vol": 3.0},
+	# munição
+	"municao_pistola": {"nome": "Balas 9 mm", "um": "bala 9 mm", "vol": 0.05},
+	"cartucho": {"nome": "Cartuchos 12", "um": "cartucho 12", "vol": 0.1},
+	"municao_rifle": {"nome": "Balas de rifle", "um": "bala de rifle", "vol": 0.08},
+	"virote": {"nome": "Virotes", "um": "virote", "vol": 0.15},
+	# consumíveis
+	"bandagem": {"nome": "Bandagens", "um": "bandagem", "vol": 0.3},
+	"analgesico": {"nome": "Analgésicos", "um": "analgésico", "vol": 0.2},
+	"molotov": {"nome": "Coquetéis molotov", "um": "coquetel molotov", "vol": 1.0},
+	"sinalizador": {"nome": "Sinalizadores", "um": "sinalizador", "vol": 0.5},
+	"carne_crua": {"nome": "Carne crua", "um": "pedaço de carne crua", "vol": 1.0},
+	"carne_assada": {"nome": "Carne assada", "um": "pedaço de carne assada", "vol": 1.0},
+	# materiais
+	"tecido": {"nome": "Retalhos de tecido", "um": "retalho de tecido", "vol": 0.3},
+	"garrafa": {"nome": "Garrafas vazias", "um": "garrafa vazia", "vol": 0.5},
+	"pele": {"nome": "Peles cruas", "um": "pele crua", "vol": 2.0},
+	"couro": {"nome": "Couro curtido", "um": "couro curtido", "vol": 1.5},
+	"chapa": {"nome": "Chapas de metal", "um": "chapa de metal", "vol": 2.0},
+	"cordame": {"nome": "Cordas", "um": "corda", "vol": 0.5},
+	# armaduras
+	"capuz_couro": {"nome": "Capuzes de couro", "um": "capuz de couro", "vol": 1.5},
+	"colete_couro": {"nome": "Coletes de couro", "um": "colete de couro", "vol": 3.0},
+	"calca_couro": {"nome": "Calças de couro", "um": "calça de couro", "vol": 2.5},
+	"bracadeiras": {"nome": "Braçadeiras de couro", "um": "par de braçadeiras", "vol": 1.0},
+}
+## Custo para construir um reboque na oficina móvel (além do projeto).
+const CUSTO_CONSTRUCAO := {"pneu": 2, "eixo": 1, "sucata": 60, "pecas": 15}
+const NOMES_TIPO := {"armazem": "Armazém", "tanque": "Tanque de diesel", "oficina": "Oficina móvel", "estufa": "Estufa", "plataforma": "Plataforma de carga", "apartamentos": "Apartamentos"}
+
+var mundo: WorldGen
+var sol: DirectionalLight3D
+var ambiente: Environment
+var ceu: ShaderMaterial
+var jogador: Player
+var hud: Hud
+var trailer: Trailer
+var picape: Pickup
+var comboio: Comboio
+var oficina: Oficina
+var painel: Painel
+var fp: PrimeiraPessoa
+var dentro: Node3D = null          # veículo em que o jogador está (primeira pessoa)
+var estoque := {"pecas": 9, "sucata": 30, "galoes_diesel": 2, "comida": 5, "agua": 6, "pneu": 1, "eixo": 0, "remedio": 1, "pistola": 1, "municao_pistola": 14, "bandagem": 2, "sinalizador": 1, "tecido": 2, "garrafa": 1, "projetos": []}
+var _tempo := 0.0
+var capturando := false
+var _rng_radio := RandomNumberGenerator.new()
+var _rng_eventos := RandomNumberGenerator.new()
+var marcadores: Array[Vector3] = []
+var menu: Menu
+var jogando := false
+var _t_motor := 0.0
+var _t_horda_noturna := 0.0
+var _morto := false
+var abates := 0
+## Lugares descobertos: id -> {nome, tipo, pos, regiao}
+var conhecidos := {}
+var acampamento: Node3D = null
+var _regiao_atual := -1
+var _avisou_marco := {}
+var _t_mapa := 0.0
+var base: BaseRecrutas
+var fumacas: Node3D
+var cinzas: CPUParticles3D
+var equip: Equipamento
+var criacao: Criacao
+var defesa: Defesa
+var recrutas_nos: Array:
+	get:
+		if not base:
+			return []
+		if defesa and not defesa.nos.is_empty():
+			return base.nos + defesa.nos
+		return base.nos
+## O que se acha ao vasculhar cada tipo de lugar: item -> [mín, máx, chance]
+const TABELAS := {
+	"casa": {"comida": [1, 4, 0.9], "agua": [1, 3, 0.8], "pecas": [0, 2, 0.5], "galoes_diesel": [1, 1, 0.2], "municao_pistola": [3, 8, 0.15], "bandagem": [1, 2, 0.3], "tecido": [1, 3, 0.4], "garrafa": [1, 2, 0.3]},
+	"celeiro": {"comida": [3, 7, 1.0], "sucata": [2, 6, 0.7], "pecas": [0, 1, 0.3]},
+	"galpao": {"pecas": [2, 5, 1.0], "sucata": [6, 14, 1.0], "pneu": [1, 2, 0.4], "eixo": [1, 1, 0.3], "pe_de_cabra": [1, 1, 0.2], "machado": [1, 1, 0.1], "cordame": [1, 2, 0.4], "garrafa": [1, 3, 0.3]},
+	"container": {"sucata": [4, 10, 1.0], "pecas": [1, 3, 0.7], "galoes_diesel": [1, 2, 0.3], "chapa": [1, 2, 0.25], "cordame": [1, 2, 0.3]},
+	"poco": {"agua": [4, 8, 1.0]},
+	"loja": {"comida": [3, 8, 1.0], "agua": [2, 6, 0.9], "remedio": [0, 1, 0.2], "garrafa": [1, 3, 0.5], "bandagem": [0, 1, 0.2]},
+	"farmacia": {"remedio": [2, 5, 1.0], "comida": [0, 2, 0.4], "agua": [1, 2, 0.5], "bandagem": [2, 5, 1.0], "analgesico": [1, 3, 0.8]},
+	"estante": {"pecas": [0, 1, 0.3], "remedio": [0, 1, 0.15], "sucata": [0, 2, 0.4], "municao_pistola": [2, 6, 0.08], "sinalizador": [1, 1, 0.06]},
+	"armario": {"comida": [1, 4, 0.85], "agua": [0, 2, 0.5]},
+	"geladeira": {"comida": [0, 2, 0.4], "agua": [1, 3, 0.7]},
+	"gaveta": {"pecas": [0, 1, 0.35], "remedio": [0, 1, 0.25], "sucata": [1, 2, 0.4], "municao_pistola": [2, 6, 0.12], "pistola": [1, 1, 0.025], "analgesico": [1, 1, 0.15]},
+	"guarda_roupa": {"sucata": [1, 3, 0.5], "remedio": [0, 1, 0.12], "galoes_diesel": [1, 1, 0.05], "tecido": [1, 4, 0.6], "cartucho": [2, 4, 0.06], "espingarda": [1, 1, 0.02]},
+	"banheiro": {"remedio": [1, 2, 0.6], "agua": [0, 1, 0.3], "bandagem": [1, 2, 0.4], "analgesico": [1, 1, 0.3]},
+	"prateleira": {"comida": [1, 4, 0.8], "agua": [1, 3, 0.6], "remedio": [0, 1, 0.15]},
+	"caixa": {"comida": [1, 5, 0.6], "sucata": [2, 6, 0.7], "pecas": [0, 2, 0.4], "pneu": [1, 1, 0.12], "sinalizador": [1, 1, 0.1], "garrafa": [1, 2, 0.3], "taco": [1, 1, 0.06]},
+	"cacador": {"comida": [2, 5, 0.9], "remedio": [0, 1, 0.3], "galoes_diesel": [1, 1, 0.25], "pecas": [0, 2, 0.4], "espingarda": [1, 1, 0.3], "cartucho": [3, 8, 0.8], "besta": [1, 1, 0.12], "virote": [3, 6, 0.4], "pele": [1, 2, 0.4]},
+	"acampamento": {"comida": [1, 3, 0.8], "agua": [1, 3, 0.8], "remedio": [0, 1, 0.3], "sucata": [1, 3, 0.5], "molotov": [1, 2, 0.3], "municao_pistola": [2, 6, 0.3], "bandagem": [1, 2, 0.4]},
+	"torre": {"comida": [1, 2, 0.6], "agua": [1, 2, 0.6], "remedio": [1, 2, 0.4], "pecas": [0, 1, 0.3], "rifle": [1, 1, 0.15], "municao_rifle": [2, 6, 0.5], "sinalizador": [1, 2, 0.5]},
+	"carro_mata": {"sucata": [3, 8, 1.0], "pecas": [1, 2, 0.6], "galoes_diesel": [1, 1, 0.3], "remedio": [0, 1, 0.2], "sinalizador": [1, 1, 0.3], "pistola": [1, 1, 0.06], "municao_pistola": [3, 9, 0.35]},
+	"serraria": {"sucata": [5, 12, 1.0], "pecas": [1, 4, 0.8], "eixo": [1, 1, 0.15], "galoes_diesel": [1, 2, 0.35], "machado": [1, 1, 0.35], "cordame": [1, 3, 0.5]},
+}
+var _frame_fechou := -10
+
+func _ready() -> void:
+	capturando = "--capturar" in OS.get_cmdline_user_args()
+	_rng_eventos.seed = 12345
+	_ambiente()
+	mundo = WorldGen.new()
+	if not capturando:
+		mundo.definir_semente(Jogo.semente)
+	mundo.pois_fixos = {0: "posto", 1: "placa"}
+	add_child(mundo)
+	_rig()
+	base = BaseRecrutas.new()
+	base.main = self
+	add_child(base)
+	defesa = Defesa.new()
+	defesa.main = self
+	add_child(defesa)
+	jogador = Player.new()
+	jogador.mundo = mundo
+	add_child(jogador)
+	jogador.position = mundo.ponto_estrada(-4.0, -0.6)
+	_acoes_extras()
+	equip = Equipamento.new()
+	equip.main = self
+	add_child(equip)
+	criacao = Criacao.new()
+	criacao.main = self
+	mundo.atualizar(jogador.position)
+	_horda()
+	fp = PrimeiraPessoa.new()
+	add_child(fp)
+	fp.interagiu.connect(_acao_interior)
+	var cl := CanvasLayer.new()
+	add_child(cl)
+	hud = Hud.new()
+	hud.jogador = jogador
+	hud.dia = dia
+	hud.estoque = estoque
+	cl.add_child(hud)
+	oficina = Oficina.new()
+	oficina.trailer = trailer
+	oficina.picape = picape
+	oficina.comboio = comboio
+	oficina.estoque = estoque
+	oficina.desengatar.connect(_desengatar)
+	oficina.visible = false
+	oficina.fechado.connect(_fechar_janela)
+	cl.add_child(oficina)
+	painel = Painel.new()
+	painel.fechado.connect(_fechar_janela)
+	cl.add_child(painel)
+	menu = Menu.new()
+	menu.escolheu.connect(_comecar)
+	menu.continuar.connect(_acordar_apos_queda)
+	menu.recomecar.connect(_novo_jogo)
+	cl.add_child(menu)
+	menu.visible = false
+	_atualizar_ceu()
+	if capturando:
+		Jogo.modo = Jogo.MODO_INFINITO
+		jogando = true
+		if "--rodada5" in OS.get_cmdline_user_args():
+			_capturar_r5()
+		elif "--rodada4" in OS.get_cmdline_user_args():
+			_capturar_defesa()
+		elif "--rodada3" in OS.get_cmdline_user_args():
+			_capturar_recrutas()
+		else:
+			_capturar()
+	elif "--teste-defesa" in OS.get_cmdline_user_args():
+		Jogo.modo = Jogo.MODO_INFINITO
+		jogando = true
+		_teste_defesa()
+	elif "--teste-armas" in OS.get_cmdline_user_args():
+		Jogo.modo = Jogo.MODO_INFINITO
+		jogando = true
+		_teste_armas()
+	elif "--teste-recrutas" in OS.get_cmdline_user_args():
+		Jogo.modo = Jogo.MODO_INFINITO
+		jogando = true
+		_teste_recrutas()
+	elif "--teste" in OS.get_cmdline_user_args():
+		Jogo.modo = Jogo.MODO_INFINITO
+		jogando = true
+		_teste()
+	elif Jogo.modo == "":
+		hud.visible = false
+		jogador.set_process(false)
+		menu.mostrar_inicio()
+	else:
+		jogando = true
+
+## Teste automático: zumbis cercando o jogador, golpes, atropelamento e morte.
+func _teste() -> void:
+	await get_tree().process_frame
+	var p := jogador.global_position
+	for i in 6:
+		var a := TAU * i / 6.0
+		var q := p + Vector3(cos(a), 0, sin(a)) * 6.0
+		q.y = mundo.altura(q.x, q.z)
+		mundo.criar_zumbi(mundo, q, 0.0, i, ["comum", "corredor", "brutamonte", "gritador", "rastejante", "comum"][i])
+	for f in 600:
+		await get_tree().process_frame
+		if f % 20 == 0:
+			var perto: Node3D = null
+			for z in mundo.zumbis_vivos:
+				if is_instance_valid(z) and z.vivo() and (perto == null or z.global_position.distance_to(jogador.global_position) < perto.global_position.distance_to(jogador.global_position)):
+					perto = z
+			if perto:
+				var v := perto.global_position - jogador.global_position
+				jogador.yaw = atan2(v.x, v.z)
+			equip._cd = 0.0
+			equip.golpear()
+	print("TESTE vida=%.2f infeccao=%.2f abates=%d vivos=%d morto=%s" % [jogador.vida, jogador.infeccao, abates, mundo.zumbis_vivos.size(), _morto])
+	jogador.vida = 0.0
+	for f in 5:
+		await get_tree().process_frame
+	print("TESTE apos morte: morto=%s menu=%s reboques=%d" % [_morto, menu.visible, comboio.cadeia.size()])
+	_acordar_apos_queda()
+	print("TESTE acordou: dentro=%s vida=%.2f hora=%.1f" % [dentro != null, jogador.vida, hora])
+	get_tree().quit()
+
+## Teste: armas de fogo, molotov, armadura, caça, criação.
+func _teste_armas() -> void:
+	await get_tree().process_frame
+	var p := jogador.global_position
+	estoque.pistola = 1
+	estoque.municao_pistola = 30
+	estoque.espingarda = 1
+	estoque.cartucho = 6
+	estoque.molotov = 2
+	estoque.sucata = 0
+	estoque.comida = 2
+	estoque.agua = 2
+	equip.selecionar("pistola")
+	equip.recarregar()
+	await get_tree().create_timer(1.8).timeout
+	print("TA pente=%d reserva=%d slots=%s" % [equip.pentes.get("pistola", 0), estoque.municao_pistola, str(equip.slots())])
+	var zs: Array = []
+	for i in 4:
+		var q := p + jogador.global_transform.basis.z * 0.0 + Vector3(sin(jogador.yaw), 0, cos(jogador.yaw)) * (8.0 + i * 4.0) + Vector3(randf_range(-0.3, 0.3), 0, 0)
+		q.y = mundo.altura(q.x, q.z)
+		var z := mundo.criar_zumbi(mundo, q, 0.0, 50 + i, "comum")
+		zs.append(z)
+	jogador.pitch = -0.05
+	jogador.camera.position = Vector3(0, 0, 0)
+	jogador._process(0.0)
+	var mortos := 0
+	for tiro in 12:
+		var alvo: Zumbi = null
+		for z in zs:
+			if is_instance_valid(z) and z.vivo():
+				alvo = z
+				break
+		if alvo == null:
+			break
+		var cam := jogador.camera
+		cam.look_at(alvo.global_position + Vector3(0, 1.2, 0), Vector3.UP)
+		equip._cd = 0.0
+		equip.atirar()
+		await get_tree().process_frame
+	for z in zs:
+		if not is_instance_valid(z) or not z.vivo():
+			mortos += 1
+	print("TA tiros: mortos=%d/4 pente=%d" % [mortos, equip.pentes.get("pistola", 0)])
+	# molotov
+	var zf := mundo.criar_zumbi(mundo, p + Vector3(4, 0, 4), 0.0, 77, "comum")
+	var mv := Arremesso.new()
+	mv.main = self
+	mv.tipo = "molotov"
+	add_child(mv)
+	mv.global_position = zf.global_position + Vector3(0, 2.0, 0)
+	for f in 300:
+		await get_tree().process_frame
+	print("TA molotov: zumbi vivo=%s vida=%.0f" % [zf.vivo(), zf.vida])
+	# caça e criação
+	var an := Animal.new()
+	an.tipo = "veado"
+	an.mundo = mundo
+	an.semente = 5
+	add_child(an)
+	an.global_position = p + Vector3(6, 0, 0)
+	an.ferir(500.0)
+	_esfolar(an)
+	print("TA caça: carne=%d pele=%d" % [estoque.get("carne_crua", 0), estoque.get("pele", 0)])
+	for k in ITENS:
+		estoque[k] = 0
+	print("TA carga cap=%d" % capacidade_carga())
+	estoque.pele = 8
+	estoque.cordame = 3
+	estoque.sucata = 30
+	estoque.galoes_diesel = 0
+	estoque.pneu = 0
+	estoque.carne_crua = 1
+	estoque.pecas = 10
+	_alternar_acampamento()
+	print("TA ", criacao.fazer("curtir", 6))
+	print("TA ", criacao.fazer("colete_couro"))
+	print("TA ", criacao.fazer("assar", 1))
+	print("TA ", equip.vestir("colete_couro"))
+	var antes := equip.defesa()
+	var of := _novo_reboque("oficina", 2, 0.9)
+	of.global_position = comboio.engate_livre() - trailer.global_transform.basis.z * of.engate_frente_z()
+	of.global_rotation.y = trailer.global_rotation.y
+	comboio.engatar(of, true)
+	jogador.global_position = of.global_position + Vector3(2, 0, 0)
+	print("TA ", criacao.fazer("chapa", 2))
+	print("TA ", criacao.reforcar("torso"))
+	print("TA defesa %.2f -> %.2f, mordida %.2f, dano 0.2 vira %.3f" % [antes, equip.defesa(), equip.protecao_mordida(), equip.absorver(0.2)])
+	_abrir_painel(criacao.painel)
+	await get_tree().process_frame
+	print("TA painel ok")
+	get_tree().quit()
+
+## Teste: apartamentos, recrutar, automação, combate dos recrutas e morte.
+func _teste_recrutas() -> void:
+	await get_tree().process_frame
+	var ap := _novo_reboque("apartamentos", 2, 0.9)
+	ap.global_position = comboio.engate_livre() - trailer.global_transform.basis.z * ap.engate_frente_z()
+	ap.global_rotation.y = trailer.global_rotation.y
+	comboio.engatar(ap, true)
+	var es := _novo_reboque("estufa", 2, 0.9)
+	es.global_position = comboio.engate_livre() - ap.global_transform.basis.z * es.engate_frente_z()
+	es.global_rotation.y = trailer.global_rotation.y
+	comboio.engatar(es, true)
+	print("TR camas=%d" % base.camas())
+	estoque.comida = 20
+	estoque.agua = 20
+	for fn in ["vigia", "mecanico", "agricultor", "batedor"]:
+		base.lista.append(Recrutas.novo("T-" + fn, fn, hash(fn)))
+	base.distribuir_camas()
+	print("TR recrutas=%d texto=%s" % [base.lista.size(), base.texto_hud()])
+	_entrar_em(trailer)
+	for f in 3:
+		await get_tree().process_frame
+	base.atualizar_cena(1.0)
+	print("TR nos=%d" % base.nos.size())
+	var p := trailer.global_position
+	for i in 6:
+		var a := TAU * i / 6.0
+		var q := p + Vector3(cos(a), 0, sin(a)) * 14.0
+		q.y = mundo.altura(q.x, q.z)
+		var z := mundo.criar_zumbi(mundo, q, 0.0, 100 + i, "comum")
+		z.estado = Zumbi.Estado.PERSEGUINDO
+	var antes := abates
+	for f in 900:
+		await get_tree().process_frame
+	var vivos := 0
+	for z in mundo.zumbis_vivos:
+		if is_instance_valid(z) and z.global_position.distance_to(p) < 30.0:
+			vivos += 1
+	print("TR abates_recrutas=%d zumbis_perto=%d recrutas=%d" % [abates - antes, vivos, base.lista.size()])
+	for rc in base.lista:
+		print("TR   %s vida=%.2f abates=%d" % [rc.nome, rc.vida, rc.abates])
+	# automação: um dia inteiro
+	var c0: int = estoque.comida
+	_passar_tempo(24.0)
+	print("TR depois de 24h: comida %d -> %d, estufa=%.1f relatorio=%s" % [c0, estoque.comida, es.comida, str(base.relatorio())])
+	var bat: Dictionary = base.presentes("batedor")[0] if not base.presentes("batedor").is_empty() else {}
+	if not bat.is_empty():
+		print("TR expedicao: ", base.enviar_expedicao(bat, 12.0))
+		_passar_tempo(13.0)
+		print("TR volta: ", str(base.relatorio()))
+	var r := RandomNumberGenerator.new()
+	r.seed = 3
+	print("TR penalidade: ", base.penalidade(r))
+	get_tree().quit()
+
+## Teste automático da defesa: fica no primeiro assentamento, constrói e aguenta uma onda.
+func _teste_defesa() -> void:
+	await get_tree().process_frame
+	var l := {}
+	for ll in mundo.lugares_da_regiao(0):
+		if ll.tipo == "assentamento":
+			l = ll
+	print("TD lugar=%s pos=%s" % [l.nome, l.pos])
+	jogador.position = l.pos + Vector3(0, 0, 3)
+	mundo.atualizar(l.pos)
+	for f in 3:
+		await get_tree().process_frame
+	var a := defesa.no_de(l.id)
+	print("TD no=%s muros=%d" % [a != null, mundo.muros.size()])
+	var g := a.global_de(Assentamento.ponto(0, Assentamento.R + 9.0))
+	comboio.posicionar_livre(g, a.global_rotation.y + PI * 0.5, 0.0)
+	var ap := _novo_reboque("apartamentos", 2, 0.9)
+	ap.global_position = comboio.engate_livre() - trailer.global_transform.basis.z * ap.engate_frente_z()
+	ap.global_rotation.y = trailer.global_rotation.y
+	comboio.engatar(ap, true)
+	for fn in ["vigia", "mecanico", "medico", "batedor"]:
+		base.lista.append(Recrutas.novo("T-" + fn, fn, hash(fn)))
+	base.distribuir_camas()
+	estoque.sucata = 200
+	estoque.pecas = 60
+	estoque.galoes_diesel = 3
+	print("TD ", defesa.ficar(l.id))
+	print("TD ", defesa.construir(l.id, "torre", 1))
+	print("TD ", defesa.construir(l.id, "holofote", 0))
+	print("TD ", defesa.construir(l.id, "armadilha", 2))
+	print("TD nivel=%d muro=%.2f" % [defesa.nivel(defesa.obter(l.id)), a.muro_medio()])
+	# colisão: zumbi não atravessa o muro, jogador passa pelo portão
+	var fora := a.global_de(Assentamento.ponto(5, Assentamento.R + 0.6))
+	var dentro_p := a.global_de(Assentamento.ponto(5, Assentamento.R - 0.6))
+	var portao_f := a.global_de(Assentamento.ponto(0, Assentamento.R + 0.5))
+	var portao_d := a.global_de(Assentamento.ponto(0, Assentamento.R - 0.5))
+	print("TD colide muro=%s portao_jogador=%s" % [mundo.colide(fora, dentro_p, 0.25), mundo.colide(portao_f, portao_d, 0.28, true)])
+	defesa.z_horda = float(l.pos.z) - 262.0
+	jogador.visible = false
+	_passar_tempo(0.2)
+	print("TD onda=%s total=%d defensores=%d" % [defesa.em_combate(), defesa.onda.get("total", 0), defesa.nos.size()])
+	Engine.time_scale = 3.0
+	for w in 3:
+		if w > 0:
+			defesa.esperar(l.id)
+			print("TD esperou: onda=%s n=%d total=%d" % [defesa.em_combate(), defesa.onda.get("n", 0), defesa.onda.get("total", 0)])
+		for f in 12000:
+			await get_tree().process_frame
+			if f % 900 == 0 and defesa.em_combate():
+				var o: Dictionary = defesa.onda
+				print("TD t=%d fila=%d vivos=%d dentro=%d muro=%.2f resist=%.2f" % [f, o.fila, o.vivos.size(), o.get("dentro", 0), a.muro_medio(), o.resistencia])
+			if not defesa.em_combate():
+				break
+		print("TD apos onda %d: fase=%s relatorio=%s" % [w + 1, defesa.obter(l.id).fase, hud.relatorio.replace("\n", " | ")])
+		if defesa.obter(l.id).fase == "caido" or _morto:
+			break
+	Engine.time_scale = 1.0
+	var e: Dictionary = defesa.obter(l.id)
+	print("TD fim fase=%s ondas=%d defendidos=%d ameaca=%.0f morto=%s" % [e.fase, e.ondas, defesa.defendidos, mundo.nivel_ameaca, _morto])
+	print("TD relatorio=", hud.relatorio.replace("\n", " | "))
+	print("TD recrutas=%d" % base.lista.size())
+	get_tree().quit()
+
+## Teclas novas (armas e barra rápida), criadas por código para não depender do project.godot.
+func _acoes_extras() -> void:
+	var teclas := {"recarregar": KEY_R, "criar": KEY_B, "slot_1": KEY_1, "slot_2": KEY_2, "slot_3": KEY_3, "slot_4": KEY_4,
+		"slot_5": KEY_5, "slot_6": KEY_6, "slot_7": KEY_7, "slot_8": KEY_8, "slot_9": KEY_9}
+	for a in teclas:
+		if not InputMap.has_action(a):
+			InputMap.add_action(a)
+			var ev := InputEventKey.new()
+			ev.physical_keycode = teclas[a]
+			InputMap.action_add_event(a, ev)
+	var botoes := {"mirar": MOUSE_BUTTON_RIGHT, "slot_prox": MOUSE_BUTTON_WHEEL_DOWN, "slot_ant": MOUSE_BUTTON_WHEEL_UP}
+	for a in botoes:
+		if not InputMap.has_action(a):
+			InputMap.add_action(a)
+			var eb := InputEventMouseButton.new()
+			eb.button_index = botoes[a]
+			InputMap.action_add_event(a, eb)
+
+func _comecar(m: String) -> void:
+	Jogo.modo = m
+	jogando = true
+	hud.visible = true
+	jogador.set_process(true)
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	hud.banner("Modo: " + ("Sobrevivência total" if m == Jogo.MODO_TOTAL else "Estrada sem fim"), "Boa sorte na estrada.")
+
+func _novo_jogo() -> void:
+	Jogo.semente = randi()
+	Jogo.modo = ""
+	get_tree().reload_current_scene()
+
+# ------------------------------------------------------------ ambiente
+func _ambiente() -> void:
+	ceu = ShaderMaterial.new()
+	ceu.shader = load("res://shaders/sky.gdshader")
+	var sky := Sky.new()
+	sky.sky_material = ceu
+	ambiente = Environment.new()
+	ambiente.background_mode = Environment.BG_SKY
+	ambiente.sky = sky
+	ambiente.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+	ambiente.ambient_light_sky_contribution = 0.85
+	ambiente.ambient_light_energy = 1.0
+	ambiente.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	ambiente.tonemap_exposure = 1.05
+	ambiente.tonemap_white = 6.0
+	ambiente.glow_enabled = true
+	ambiente.glow_intensity = 0.6
+	ambiente.glow_bloom = 0.08
+	ambiente.glow_hdr_threshold = 0.9
+	ambiente.fog_enabled = true
+	ambiente.fog_density = 0.0028
+	ambiente.fog_sky_affect = 0.25
+	ambiente.fog_aerial_perspective = 0.4
+	ambiente.adjustment_enabled = true
+	ambiente.adjustment_contrast = 1.12
+	ambiente.adjustment_saturation = 0.86
+	ambiente.ssao_enabled = true
+	var we := WorldEnvironment.new()
+	we.environment = ambiente
+	add_child(we)
+	# fim do mundo ao longe: colunas de fumaça de cidades queimando e cinza no ar
+	fumacas = Node3D.new()
+	add_child(fumacas)
+	var rr := RandomNumberGenerator.new()
+	rr.seed = 666
+	for i in 4:
+		var f := Apocalipse.fumaca(14.0, 160.0)
+		f.amount = 30
+		var a := rr.randf_range(0.0, TAU)
+		f.position = Vector3(cos(a) * rr.randf_range(320.0, 450.0), -10.0, sin(a) * rr.randf_range(320.0, 450.0) + 150.0)
+		fumacas.add_child(f)
+	cinzas = CPUParticles3D.new()
+	cinzas.amount = 140
+	cinzas.lifetime = 7.0
+	cinzas.preprocess = 7.0
+	cinzas.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	cinzas.emission_box_extents = Vector3(18, 6, 18)
+	cinzas.gravity = Vector3(0.25, -0.35, 0.1)
+	cinzas.initial_velocity_min = 0.0
+	cinzas.initial_velocity_max = 0.2
+	var qm := QuadMesh.new()
+	qm.size = Vector2(0.035, 0.035)
+	cinzas.mesh = qm
+	var cm := StandardMaterial3D.new()
+	cm.albedo_color = Color(0.75, 0.73, 0.7, 0.75)
+	cm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	cm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	cm.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	cinzas.material_override = cm
+	cinzas.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(cinzas)
+	sol = DirectionalLight3D.new()
+	sol.shadow_enabled = true
+	sol.directional_shadow_max_distance = 70.0
+	sol.shadow_blur = 1.5
+	sol.light_angular_distance = 1.0
+	add_child(sol)
+
+func _atualizar_ceu() -> void:
+	if fumacas and mundo and jogador:
+		var fc := _foco()
+		fumacas.position = Vector3(fc.x, mundo.elevacao(fc.z), fc.z)
+		var cam0 := get_viewport().get_camera_3d()
+		mundo.ajustar_origem(cam0.global_position if cam0 else fc)
+		var cam := get_viewport().get_camera_3d()
+		cinzas.global_position = (cam.global_position if cam else fc) + Vector3(0, 2.0, 0)
+	var t := (hora - 6.5) / 12.75
+	var alt := sin(t * PI)
+	var az := (1.0 - t) * PI - 0.3
+	var dir_sol := Vector3(sin(az) * cos(asin(clampf(alt, -1, 1))), alt, cos(az) * cos(asin(clampf(alt, -1, 1)))).normalized()
+	var luz_dir := dir_sol
+	var dia_f := smoothstep(0.0, 0.35, alt)        # 0 entardecer .. 1 dia pleno
+	var noite_f := 1.0 - smoothstep(-0.12, 0.02, alt)
+	if alt < -0.02:
+		# lua do lado oposto
+		luz_dir = Vector3(-dir_sol.x, 0.55, -dir_sol.z).normalized()
+	sol.look_at_from_position(Vector3.ZERO, -luz_dir, Vector3.UP if absf(luz_dir.y) < 0.99 else Vector3.RIGHT)
+	var cor_tarde := Color(1.0, 0.55, 0.28)
+	var cor_dia := Color(1.0, 0.95, 0.88)
+	var cor_lua := Color(0.45, 0.55, 0.85)
+	var cor_luz := cor_tarde.lerp(cor_dia, dia_f).lerp(cor_lua, noite_f)
+	sol.light_color = cor_luz
+	sol.light_energy = lerpf(lerpf(1.5, 1.25, dia_f), 0.12, noite_f)
+	# céu
+	var topo := Color(0.17, 0.12, 0.3).lerp(Color(0.22, 0.42, 0.75), dia_f).lerp(Color(0.02, 0.025, 0.05), noite_f)
+	var meio := Color(0.52, 0.26, 0.4).lerp(Color(0.45, 0.62, 0.85), dia_f).lerp(Color(0.04, 0.05, 0.09), noite_f)
+	var horiz := Color(1.0, 0.42, 0.15).lerp(Color(0.75, 0.82, 0.88), dia_f).lerp(Color(0.07, 0.07, 0.11), noite_f)
+	ceu.set_shader_parameter("cor_topo", topo)
+	ceu.set_shader_parameter("cor_meio", meio)
+	ceu.set_shader_parameter("cor_horizonte", horiz)
+	ceu.set_shader_parameter("cor_sol", Color(1.0, 0.7, 0.35).lerp(Color(1, 0.97, 0.9), dia_f) * (1.0 - noite_f))
+	ceu.set_shader_parameter("cor_nuvem_sombra", Color(0.24, 0.14, 0.27).lerp(Color(0.62, 0.66, 0.72), dia_f).lerp(Color(0.03, 0.03, 0.05), noite_f))
+	ceu.set_shader_parameter("cor_nuvem_luz", Color(1.0, 0.48, 0.22).lerp(Color(0.98, 0.98, 0.97), dia_f).lerp(Color(0.12, 0.13, 0.18), noite_f))
+	ceu.set_shader_parameter("estrelas", noite_f)
+	ceu.set_shader_parameter("tempo_nuvem", _tempo)
+	var zf := _foco().z if mundo else 0.0
+	var cor_bioma := mundo.reg.cor(zf, "nevoa_cor") if mundo else Color(0.55, 0.33, 0.35)
+	ambiente.fog_light_color = Color(0.55, 0.33, 0.35).lerp(cor_bioma, 0.6).lerp(Color(0.7, 0.75, 0.82), dia_f * 0.8).lerp(Color(0.03, 0.035, 0.06), noite_f)
+	if mundo:
+		ambiente.fog_density = mundo.reg.param(zf, "nevoa")
+	ambiente.ambient_light_energy = lerpf(1.1, 0.9, dia_f) * lerpf(1.0, 0.35, noite_f)
+	if trailer:
+		trailer.luz_interna = alt < 0.2
+
+
+# ------------------------------------------------------------ ciclo principal
+func _process(dt: float) -> void:
+	if capturando:
+		return
+	if not jogando or _morto:
+		return
+	_tempo += dt
+	_passar_tempo(dt * velocidade_tempo)
+	_combate(dt)
+	equip.atualizar(dt, jogador.visible and not comboio.dirigindo and dentro == null and not _janela_aberta() and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED)
+	defesa.processar(dt)
+	base.atualizar_cena(dt)
+	_atualizar_ceu()
+	var foco := comboio.pos if (comboio.dirigindo or dentro != null) else jogador.position
+	if comboio.dirigindo:
+		jogador.position = comboio.porta_motorista()
+	mundo.atualizar(foco)
+	mundo.mat_capim.set_shader_parameter("tempo", _tempo)
+	mundo.ajustar_origem(foco)
+	mundo.mat_agua.set_shader_parameter("tempo", _tempo)
+	for mf in Floresta.mat_folhas.values():
+		mf.set_shader_parameter("tempo", _tempo)
+	_t_mapa -= dt
+	if _t_mapa <= 0.0:
+		_t_mapa = 0.4
+		_verificar_mapa(foco)
+	_atualizar_hud()
+	_interacao()
+
+## Avança o relógio e tudo que depende dele (produção, fome, sede).
+func _passar_tempo(h: float) -> void:
+	hora += h
+	while hora >= 24.0:
+		hora -= 24.0
+		dia += 1
+	_produzir(h)
+	base.passar(h)
+	if defesa:
+		defesa.passar(h)
+	jogador.fome = maxf(0.0, jogador.fome - 0.02 * h)
+	jogador.sede = maxf(0.0, jogador.sede - 0.035 * h)
+	if jogador.fome <= 0.0 or jogador.sede <= 0.0:
+		jogador.vida = maxf(0.05, jogador.vida - 0.02 * h)
+
+func eh_noite() -> bool:
+	return hora >= 19.3 or hora < 5.5
+
+## Tarefas que levam horas (consertar, desmontar). Trabalhar no escuro é perigoso.
+func trabalhar(horas: float) -> String:
+	var noite_antes := eh_noite()
+	_passar_tempo(horas)
+	_atualizar_ceu()
+	var protegido: bool = seguranca_local()[0] <= -1.0 and jogador.position.distance_to(trailer.global_position) < 90.0
+	if (noite_antes or eh_noite()) and dentro == null and not protegido and _rng_eventos.randf() < 0.18 * horas:
+		var dano := _rng_eventos.randf_range(0.08, 0.2)
+		jogador.vida = maxf(0.05, jogador.vida - dano)
+		return "Enquanto trabalhava no escuro, um zumbi te atacou (−%d%% de vida)." % int(dano * 100.0)
+	return ""
+
+func _produzir(h: float) -> void:
+	for el in comboio.cadeia:
+		if not (el is Reboque) or not el.funcional():
+			continue
+		var r: Reboque = el
+		match r.tipo:
+			"estufa":
+				var bonus := base.bonus_estufa()
+				r.comida = minf(r.comida + r.capacidade() * bonus * h / 24.0, r.capacidade() * 2.0)
+				r.agua = minf(r.agua + [0, 3, 5, 8][r.nivel] * h / 24.0, 20.0)
+				base.colher_estufa(r)
+			"oficina":
+				if not r.trabalho.is_empty():
+					r.trabalho.restante -= h
+					if r.trabalho.restante <= 0.0:
+						_concluir_trabalho(r)
+
+# ------------------------------------------------------------ carga
+func capacidade_carga() -> int:
+	var cap: int = [0, 45, 65, 95][picape.nivel("cacamba")] + trailer.capacidade_carga()
+	for el in comboio.cadeia:
+		if el is Reboque:
+			cap += el.capacidade_carga()
+	return cap
+
+func volume_usado() -> float:
+	var v := 0.0
+	for k in ITENS:
+		v += estoque.get(k, 0) * ITENS[k].vol
+	return v
+
+## Adiciona até onde couber. Devolve quantos entraram.
+func adicionar(item: String, qtd: int) -> int:
+	var livre := capacidade_carga() - volume_usado()
+	var cabem := int(floor(livre / ITENS[item].vol + 0.0001))
+	var n := clampi(qtd, 0, maxi(cabem, 0))
+	estoque[item] = estoque.get(item, 0) + n
+	return n
+
+func tem_itens(itens: Dictionary) -> bool:
+	for k in itens:
+		if estoque.get(k, 0) < itens[k]:
+			return false
+	return true
+
+func gastar(itens: Dictionary) -> void:
+	for k in itens:
+		estoque[k] -= itens[k]
+
+func _txt_itens(itens: Dictionary) -> String:
+	var p: Array[String] = []
+	for k in itens:
+		var tem: int = estoque.get(k, 0)
+		var nm: String = ITENS[k].get("um", ITENS[k].nome.to_lower()) if itens[k] == 1 else ITENS[k].nome.to_lower()
+		p.append("%d %s (tem %d)" % [itens[k], nm, tem])
+	return ", ".join(p)
+
+# ------------------------------------------------------------ combate
+func ruido(pos: Vector3, raio: float, _tipo := "") -> void:
+	mundo.ruidos.append({"pos": pos, "raio": raio, "t": 2.5})
+
+func _golpe(origem: Vector3, frente: Vector3) -> void:
+	ruido(origem, 10.0)
+	var acertou := false
+	for z in mundo.zumbis_vivos.duplicate():
+		if not is_instance_valid(z) or not z.vivo():
+			continue
+		var v: Vector3 = z.global_position - origem
+		v.y = 0.0
+		var d := v.length()
+		if d < 2.1 and (d < 0.6 or v.normalized().dot(frente) > 0.45):
+			var dano := randf_range(26.0, 38.0)
+			if jogador.agachado and z.estado == Zumbi.Estado.VAGANDO:
+				dano *= 3.0   # golpe furtivo
+			z.ferir(dano, frente * 6.0, origem)
+			acertou = true
+			if not z.vivo():
+				abates += 1
+	if acertou:
+		hud.acerto()
+
+func zumbi_atacou(z: Zumbi, alvo: Dictionary) -> void:
+	if _morto:
+		return
+	var info: Dictionary = z.info()
+	if alvo.tipo == "jogador":
+		jogador.levar_dano(equip.absorver(info.dano / 100.0))
+		hud.dano()
+		var chance := (0.1 if z.tipo != "rastejante" else 0.25) * (1.0 - equip.protecao_mordida())
+		if randf() < chance:
+			jogador.infeccao = maxf(jogador.infeccao, 0.05)
+			hud.aviso("Você foi mordido! Tome um remédio [H] antes que a infecção avance.")
+		return
+	if alvo.tipo == "recruta":
+		var rc: Recruta = alvo.no
+		if is_instance_valid(rc) and rc.vivo():
+			rc.ferir(info.dano / 100.0 * 0.8)
+			if not rc.vivo():
+				if defesa.nos.has(rc):
+					defesa.morreu(rc)
+				else:
+					base.morreu(rc)
+		return
+	if alvo.tipo == "muro":
+		var a: Assentamento = alvo.no
+		if is_instance_valid(a):
+			a.danificar(alvo.idx, info.dano * (1.0 if z.tipo != "brutamonte" else 2.5))
+		return
+	if alvo.tipo == "povo":
+		defesa.atacar_povo(0.004 + info.dano * 0.0004)
+		return
+	var v: Node3D = alvo.no
+	var dano: float = info.dano_veic
+	if v == trailer:
+		var protege: float = 1.0 - trailer.config.janelas.nivel * 0.2 * trailer.config.janelas.condicao
+		var slots := trailer.config.keys()
+		trailer.config[slots[randi() % slots.size()]].condicao = maxf(0.0, trailer.config[slots[randi() % slots.size()]].condicao - dano * protege)
+		trailer.condicao_carroceria = maxf(0.05, trailer.condicao_carroceria - dano * 0.5 * protege)
+	elif v == picape:
+		var prot: float = 1.0 - picape.nivel("protecao") * 0.25
+		var slot: String = ["parachoque", "protecao", "santo_antonio", "pneus", "motor"][randi() % 5]
+		picape.config[slot].condicao = maxf(0.0, picape.config[slot].condicao - dano * prot)
+	elif v is Reboque:
+		v.condicao = maxf(0.0, v.condicao - dano)
+	if Engine.get_process_frames() % 2 == 0:
+		hud.aviso("Zumbis atacando o %s!" % v.nome_exibicao().to_lower())
+
+func _combate(dt: float) -> void:
+	mundo.atualizar_ruidos(dt)
+	# barulho do motor e da corrida
+	_t_motor -= dt
+	if _t_motor <= 0.0:
+		_t_motor = 0.5
+		if comboio.dirigindo:
+			ruido(comboio.pos, 22.0 + absf(comboio.velocidade) * 1.6 + (12.0 if comboio.superaquecido else 0.0))
+		elif jogador.visible and Input.is_action_pressed("sprint") and not jogador.agachado:
+			ruido(jogador.global_position, 11.0)
+	# atropelar
+	if comboio.dirigindo and absf(comboio.velocidade) > 2.5:
+		var fr := picape.global_transform.basis.z
+		for z in mundo.zumbis_vivos.duplicate():
+			if not is_instance_valid(z) or not z.vivo():
+				continue
+			var local: Vector3 = picape.global_transform.affine_inverse() * z.global_position
+			if absf(local.x) < 1.25 and local.z > -2.9 and local.z < 3.3:
+				var vel := absf(comboio.velocidade)
+				var forte := vel > 7.0 or picape.nivel("parachoque") >= 3
+				z.ferir(400.0 if forte else 35.0, fr * vel * 0.8)
+				if not z.vivo():
+					abates += 1
+				var desgaste := 0.04 * (vel / 15.0) / maxf(1.0, picape.nivel("parachoque"))
+				if z.tipo == "brutamonte":
+					desgaste *= 4.0
+					comboio.velocidade *= 0.55
+				picape.config.parachoque.condicao = maxf(0.0, picape.config.parachoque.condicao - desgaste)
+				comboio.velocidade *= 0.93
+	# grupos que chegam à noite atraídos pelo comboio parado
+	if eh_noite() and not comboio.dirigindo and not defesa.em_combate():
+		_t_horda_noturna -= dt * velocidade_tempo
+		if _t_horda_noturna <= 0.0:
+			_t_horda_noturna = randf_range(0.6, 1.2)   # horas de jogo
+			var seg := seguranca_local()
+			var chance = 0.45 + seg[0]
+			if seg[0] > -1.0 and randf() < chance and _foco().distance_to(trailer.global_position) < 60.0:
+				_grupo_noturno(randi_range(2, 4 + int(mundo.nivel_ameaca)) + base.n("vigia"))
+	# morte
+	if jogador.vida <= 0.0:
+		_morrer("Os zumbis te pegaram.")
+	elif jogador.infeccao >= 1.0:
+		_morrer("A infecção tomou conta do seu corpo.")
+
+func _grupo_noturno(n: int) -> void:
+	var a := randf() * TAU
+	var centro := trailer.global_position + Vector3(cos(a), 0, sin(a)) * 38.0
+	for i in n:
+		var p := centro + Vector3(randf_range(-5, 5), 0, randf_range(-5, 5))
+		p.y = mundo.altura(p.x, p.z)
+		var z := mundo.criar_zumbi(mundo, p, a + PI, randi())
+		z.estado = Zumbi.Estado.INVESTIGANDO
+		z.alvo_pos = trailer.global_position
+	var vig := base.presentes("vigia")
+	if not vig.is_empty():
+		var dirs := ["norte", "noroeste", "oeste", "sudoeste", "sul", "sudeste", "leste", "nordeste"]
+		var ang := fposmod(atan2(-(centro.x - trailer.global_position.x), centro.z - trailer.global_position.z), TAU)
+		hud.aviso("%s: \"Zumbis vindo do %s! %d deles!\"" % [vig[0].nome, dirs[int(round(ang / (TAU / 8.0))) % 8], n])
+	else:
+		hud.aviso("Algo se move no escuro...")
+
+func abate_recruta(r: Recruta) -> void:
+	base.abate(r)
+
+## Anota algo para o relatório da manhã.
+func registrar(t: String) -> void:
+	base.registro.append(t)
+
+func _usar_remedio() -> String:
+	if estoque.get("remedio", 0) <= 0:
+		return "Sem remédios."
+	estoque.remedio -= 1
+	var tinha := jogador.infeccao > 0.0
+	jogador.infeccao = maxf(0.0, jogador.infeccao - 0.6)
+	jogador.vida = minf(1.0, jogador.vida + 0.15)
+	return "Remédio tomado." + (" A infecção recuou." if tinha else "")
+
+# ------------------------------------------------------------ morte e modos
+func _morrer(causa: String) -> void:
+	if _morto:
+		return
+	_morto = true
+	Jogo.mortes += 1
+	defesa.abortar()
+	if dentro != null:
+		_sair_de_dentro()
+	if comboio.dirigindo:
+		_sair_do_carro()
+	jogador.set_process(false)
+	var km := comboio.odometro / 1000.0
+	if Jogo.modo == Jogo.MODO_TOTAL:
+		menu.mostrar_morte(causa, ["Você sobreviveu %d dias e rodou %.1f km." % [dia, km],
+			"Zumbis abatidos: %d   ·   Lugares descobertos: %d" % [abates, conhecidos.size()],
+			"No modo Sobrevivência total, tudo recomeça do zero."], true)
+	else:
+		menu.mostrar_morte(causa, _penalidades(), false)
+
+## Modo infinito: perdas pesadas, mas o jogo continua.
+func _penalidades() -> Array:
+	var linhas: Array = []
+	var r := RandomNumberGenerator.new()
+	r.randomize()
+	var perdidos: Array[String] = []
+	var quebrados: Array[String] = []
+	for i in range(comboio.cadeia.size() - 1, 0, -1):
+		var reb: Reboque = comboio.cadeia[i]
+		if r.randf() < 0.35:
+			perdidos.append(reb.nome_exibicao())
+			comboio.desengatar(i)
+			reb.queue_free()
+		else:
+			reb.condicao *= 0.3
+			quebrados.append(reb.nome_exibicao())
+			reb.reconstruir()
+	if not perdidos.is_empty():
+		linhas.append("Reboques perdidos: " + ", ".join(perdidos))
+	if not quebrados.is_empty():
+		linhas.append("Reboques muito danificados: " + ", ".join(quebrados))
+	for slot in trailer.config:
+		trailer.config[slot].condicao *= 0.5
+	trailer.condicao_carroceria = maxf(0.1, trailer.condicao_carroceria * 0.6)
+	trailer.reconstruir()
+	for slot in picape.config:
+		picape.config[slot].condicao *= 0.6
+	picape.reconstruir()
+	linhas.append("O trailer e a picape foram depredados (−50% / −40% de condição).")
+	var perdeu: Array[String] = []
+	for k in ITENS:
+		var antes: int = estoque.get(k, 0)
+		if antes > 0:
+			estoque[k] = int(antes * 0.5)
+			if antes - estoque[k] > 0:
+				perdeu.append("%d %s" % [antes - estoque[k], ITENS[k].nome.to_lower()])
+	if not perdeu.is_empty():
+		linhas.append("Carga saqueada: " + ", ".join(perdeu))
+	comboio.diesel *= 0.5
+	linhas.append(base.penalidade(r))
+	return linhas
+
+func _acordar_apos_queda() -> void:
+	_morto = false
+	if acampamento:
+		_alternar_acampamento()
+	for z in mundo.zumbis_vivos.duplicate():
+		if is_instance_valid(z) and z.global_position.distance_to(trailer.global_position) < 50.0:
+			z.queue_free()
+	var horas := (24.0 - hora + 7.0) if hora >= 7.0 else (7.0 - hora)
+	_passar_tempo(horas)
+	_atualizar_ceu()
+	jogador.vida = 0.45
+	jogador.infeccao = 0.0
+	jogador.estamina = 0.6
+	jogador.set_process(true)
+	_entrar_em(trailer)
+	hud.relatorio = "Você acordou no trailer, ferido. O comboio pagou o preço."
+	hud.relatorio_titulo = ""
+	hud.relatorio_t = 6.0
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+# ------------------------------------------------------------ mapa: regiões, descobertas, acampamento
+func _foco() -> Vector3:
+	if comboio and (comboio.dirigindo or dentro != null):
+		return comboio.pos
+	return jogador.position if jogador else Vector3.ZERO
+
+func _verificar_mapa(p: Vector3) -> void:
+	var ri := mundo.regiao_em(p.z)
+	if ri != _regiao_atual:
+		_regiao_atual = ri
+		var b: Dictionary = mundo.reg.info_bioma(ri)
+		hud.banner(mundo.reg.nome(ri), "%s · região %d" % [b.nome, ri + 1])
+	var m := mundo.reg.marco(ri)
+	if not _avisou_marco.has(ri) and m.z - p.z < 1500.0 and m.z > p.z:
+		_avisou_marco[ri] = true
+		hud.aviso(("Adiante: ponte caída. Procure o vau." if m.tipo == "ponte" else "Adiante: bloqueio militar. Procure o desvio."))
+	for l in mundo.lugares_da_regiao(ri):
+		if conhecidos.has(l.id):
+			continue
+		var placa := mundo.ponto_estrada(l.juncao_z, 0.0)
+		if p.distance_to(placa) < 70.0 or Vector2(p.x - l.pos.x, p.z - l.pos.z).length() < 130.0:
+			conhecidos[l.id] = {"nome": l.nome, "tipo": l.tipo, "pos": l.pos, "regiao": ri}
+			hud.aviso("Descoberto: %s" % l.nome)
+
+func _vasculhar(v: Node3D) -> void:
+	var chave: String = v.get_meta("chave")
+	var tab_nome: String = v.get_meta("tabela")
+	var pai := v.get_parent()
+	while pai and not (pai is Predio):
+		pai = pai.get_parent()
+	if pai and pai.has_meta("tabela_loja") and tab_nome == "prateleira":
+		tab_nome = pai.get_meta("tabela_loja")
+	var tabela: Dictionary = TABELAS[tab_nome]
+	var r := RandomNumberGenerator.new()
+	r.seed = hash(chave)
+	var ev := trabalhar(v.get_meta("horas"))
+	var ganhos: Array[String] = []
+	for item in tabela:
+		var t: Array = tabela[item]
+		if r.randf() > t[2]:
+			continue
+		var n := adicionar(item, r.randi_range(t[0], t[1]))
+		if n > 0:
+			ganhos.append("%d %s" % [n, ITENS[item].nome.to_lower()])
+	mundo.vasculhados[chave] = true
+	hud.aviso("%s: %s" % [v.get_meta("nome"), ", ".join(ganhos) if not ganhos.is_empty() else "nada que coubesse na carga"])
+	if ev != "":
+		hud.relatorio = ev
+		hud.relatorio_titulo = ""
+		hud.relatorio_t = 5.0
+
+func _painel_npc(h: Node3D) -> Dictionary:
+	var funcao: String = h.get_meta("funcao")
+	if funcao == "lider":
+		return _painel_lider(h.get_meta("assent"), h.get_meta("nome"))
+	var titulos := {"vendedor": "Vendedor", "vigia": "Vigia", "mecanico": "Mecânico", "agricultor": "Agricultor", "medico": "Médico", "morador": "Morador", "batedor": "Batedor"}
+	var linhas: Array = ["\"%s\"" % h.get_meta("fala")]
+	var botoes: Array = []
+	if funcao == "vendedor":
+		linhas.append(["O comércio por troca chega na etapa 5 do roteiro.", Color(0.7, 0.7, 0.68)])
+	if Recrutas.pode_recrutar(h):
+		var fr: String = Recrutas.funcao_de_npc(funcao)
+		var info: Dictionary = Recrutas.FUNCOES[fr]
+		var ped := Recrutas.pedido_de(h)
+		linhas.append(["Pode entrar para o comboio como %s." % (info.fem if h.get_meta("nome") in Recrutas.FEMININOS else info.nome).to_lower(), Hud.DOURADO])
+		linhas.append("Na base: %s." % info.auto)
+		linhas.append("Na defesa: %s." % info.defesa.to_lower())
+		linhas.append("Pede para vir: %s." % _txt_itens(ped))
+		var c := base.camas()
+		linhas.append(["Camas no comboio: %d ocupadas de %d." % [base.lista.size(), c], Color(0.75, 0.75, 0.72) if base.camas_livres() > 0 else Color(0.95, 0.45, 0.3)])
+		var motivo := base.pode_recrutar(h)
+		if motivo != "":
+			linhas.append([motivo, Color(0.95, 0.45, 0.3)])
+		botoes.append(["Convidar para o comboio", base.recrutar.bind(h), motivo == ""])
+	return {"titulo": "%s — %s" % [h.get_meta("nome"), titulos.get(funcao, "Morador")], "linhas": linhas, "botoes": botoes}
+
+# ------------------------------------------------------------ assentamento: conversa com o líder
+func _painel_lider(id: String, nome_lider: String) -> Dictionary:
+	var e: Dictionary = defesa.obter(id)
+	var a: Assentamento = defesa.no_de(id)
+	var linhas: Array = []
+	var botoes: Array = []
+	var cinza := Color(0.7, 0.7, 0.68)
+	var vermelho := Color(0.95, 0.45, 0.3)
+	var fases := {"livre": "esperando a horda", "preparando": "se preparando com você", "onda": "sob ataque",
+		"entre_ondas": "entre uma onda e outra", "aliado": "aliado", "caido": "caído"}
+	linhas.append(["Nível %d · %s · %d moradores (%d vigias, %d armados)%s" % [defesa.nivel(e), fases.get(e.fase, e.fase), e.moradores, e.vigias, e.armados,
+		(" · defendido %d onda%s" % [e.ondas, "s" if e.ondas > 1 else ""]) if e.ondas > 0 else ""], Hud.DOURADO])
+	if a:
+		var torres := 0
+		var holo := 0
+		for k in 4:
+			torres += 1 if e.torres[k] else 0
+			holo += 1 if e.holofotes[k] else 0
+		var est_arm := 0
+		for k in 4:
+			est_arm += e.armadilhas[k]
+		linhas.append("Muro de %s: %d%%  ·  Portão %s  ·  Torres: %d (holofotes: %d)  ·  Estacas: %d cargas" % [
+			"chapas" if e.chapas else "paliçada", int(a.muro_medio() * 100.0), "reforçado" if e.portao else "de madeira", torres, holo, est_arm])
+	linhas.append("Depósito do assentamento: %d sucata, %d peças (usado antes do seu estoque)." % [e.estoque.sucata, e.estoque.pecas])
+	var h: float = defesa.horas_ate(e.pos.z)
+	match e.fase:
+		"livre":
+			linhas.append("\"A horda vem pela estrada, %.1f km para trás. Chega aqui em umas %d horas. Se você ficar, a gente aguenta.\"" % [defesa.km_horda(e.pos.z), int(h)])
+			linhas.append(["Ficando, as ondas não param: vencida uma, vem outra maior. Dá para partir entre elas.", cinza])
+			botoes.append(["Ficar e defender", func(): return defesa.ficar(id), true])
+			botoes.append(["Seguir viagem", func(): return defesa.partir(id), true])
+		"preparando", "entre_ondas":
+			if e.fase == "preparando":
+				linhas.append(["A horda chega em ~%d h. Use o tempo para preparar o muro." % int(ceil(h)), vermelho])
+			else:
+				linhas.append(["Próxima onda: %d zumbis em ~%d h." % [defesa.tamanho_onda(e.ondas + 1), int(ceil(e.prox_onda_h))], vermelho])
+			# melhorias
+			var opcoes: Array = []
+			var cc := defesa.custo_conserto(id)
+			if not cc.is_empty():
+				opcoes.append(["Consertar o muro (%s)" % _txt_custo(cc), func(): return defesa.consertar(id), defesa.pode_pagar(e, cc)])
+			if not e.chapas:
+				opcoes.append(_opcao_obra(id, e, "chapas"))
+			if not e.portao:
+				opcoes.append(_opcao_obra(id, e, "portao"))
+			for k in 4:
+				if not e.torres[k]:
+					opcoes.append(_opcao_obra(id, e, "torre", k))
+					break
+			for k in 4:
+				if e.torres[k] and not e.holofotes[k]:
+					opcoes.append(_opcao_obra(id, e, "holofote", k))
+					break
+			var pior := 0
+			for k in 4:
+				if e.armadilhas[k] < e.armadilhas[pior]:
+					pior = k
+			if e.armadilhas[pior] < 24:
+				opcoes.append(_opcao_obra(id, e, "armadilha", pior))
+			botoes.append_array(opcoes)
+			# postos dos recrutas
+			for rc in base.presentes():
+				botoes.append(["%s: %s" % [rc.nome, Defesa.NOMES_POSTO[defesa.posto_de(e, rc)]], func(): defesa.trocar_posto(id, rc.nome); return "", true])
+			botoes.append(["Esperar a %s" % ("horda" if e.fase == "preparando" else "próxima onda"), func(): return defesa.esperar(id), true])
+			botoes.append(["Partir agora", func(): return defesa.partir(id), true])
+			if base.lista.is_empty():
+				linhas.append(["Sem recrutas, só os moradores e você vão estar no muro.", cinza])
+			else:
+				linhas.append(["Seus recrutas vão para os postos marcados nos botões (clique para trocar).", cinza])
+			if _comboio_no_portao(a):
+				linhas.append(["O comboio está estacionado no portão: vira parte da muralha (portão mais forte).", Color(0.55, 0.85, 0.5)])
+			else:
+				linhas.append(["Estacione o comboio colado no portão para reforçar a entrada com os reboques.", cinza])
+		"aliado":
+			linhas.append("\"Você salvou a gente. Aqui sempre vai ter um prato e um lugar no muro para você.\"")
+		"onda":
+			linhas.append(["Estão no muro! Vai!", vermelho])
+	return {"titulo": "%s — %s" % [e.nome, nome_lider], "subtitulo": "Líder do assentamento", "linhas": linhas, "botoes": botoes}
+
+func _opcao_obra(id: String, e: Dictionary, chave: String, alvo := -1) -> Array:
+	var c: Dictionary = Defesa.CUSTOS[chave]
+	var nome: String = c.nome
+	if chave == "armadilha":
+		nome = "Estacas no setor %s" % Defesa.NOMES_SETOR[alvo]
+	return ["%s (%s, %s)" % [nome, _txt_custo(c.itens), _txt_horas(c.horas)], func(): return defesa.construir(id, chave, alvo), defesa.pode_pagar(e, c.itens)]
+
+func _txt_custo(itens: Dictionary) -> String:
+	var p: Array[String] = []
+	var curtos := {"sucata": "sucata", "pecas": "peças", "galoes_diesel": "galão", "comida": "comida", "agua": "água", "cordame": "corda", "tecido": "tecido", "couro": "couro", "pele": "pele", "chapa": "chapa"}
+	for k in itens:
+		var nm: String = curtos.get(k, "")
+		if nm == "":
+			nm = ITENS[k].get("um", ITENS[k].nome.to_lower()) if itens[k] == 1 else ITENS[k].nome.to_lower()
+		p.append("%d %s" % [itens[k], nm])
+	return ", ".join(p)
+
+func _comboio_no_portao(a: Assentamento) -> bool:
+	if a == null:
+		return false
+	var portao_g := a.global_de(Assentamento.ponto(0, Assentamento.R))
+	for el in comboio.cadeia:
+		if el.global_position.distance_to(portao_g) < 18.0:
+			return true
+	return false
+
+## Segurança do lugar onde o comboio está parado: [modificador de risco, descrição].
+func seguranca_local() -> Array:
+	var tp := trailer.global_position
+	var l := mundo.lugar_em(tp)
+	if not l.is_empty() and l.tipo == "vila":
+		return [-1.0, "dentro dos muros da %s" % l.nome]
+	if not l.is_empty() and l.tipo == "assentamento" and defesa.obter(l.id).fase != "caido":
+		return [-1.0, "dentro do %s" % l.nome]
+	var mod := 0.0
+	var partes: Array[String] = []
+	if acampamento:
+		mod -= 0.25
+		partes.append("acampamento montado")
+	if base.n("vigia") > 0:
+		mod += base.bonus_seguranca()
+		partes.append("%d vigia%s de guarda" % [base.n("vigia"), "s" if base.n("vigia") > 1 else ""])
+	if not l.is_empty() and l.tipo == "fazenda":
+		mod -= 0.15
+		partes.append("cerca da fazenda")
+	var lat := absf(tp.x - mundo.centro_x(tp.z))
+	if lat < 12.0:
+		mod += 0.1
+		partes.append("à beira da estrada")
+	elif tp.y - mundo.elevacao(tp.z) > 4.0:
+		mod -= 0.08
+		partes.append("no alto do morro")
+	return [mod, ", ".join(partes) if not partes.is_empty() else "no meio do mato"]
+
+func _alternar_acampamento() -> void:
+	if acampamento:
+		acampamento.queue_free()
+		acampamento = null
+		hud.aviso("Acampamento desmontado.")
+		return
+	acampamento = Node3D.new()
+	add_child(acampamento)
+	var madeira := B.mat(Color(0.35, 0.26, 0.17), 0.95, 0.0, "estaca_camp")
+	var arame := B.mat(Color(0.4, 0.4, 0.4), 0.4, 0.8, "arame")
+	# estacas e arame em volta de todo o comboio
+	var lados := [[], []]
+	var veic: Array[Node3D] = [picape]
+	veic.append_array(comboio.cadeia)
+	for v in veic:
+		var meia = 3.0 if v == picape else (v.comprimento() * 0.5 + 0.5)
+		for zz in [meia, 0.0, -meia]:
+			for k in 2:
+				var sx := 1.0 if k == 0 else -1.0
+				lados[k].append(v.global_transform * Vector3(sx * 3.6, 0, zz))
+	var frente := picape.global_transform * Vector3(0, 0, 5.0)
+	var ult := comboio.cadeia[comboio.cadeia.size() - 1]
+	var tras := ult.global_transform * Vector3(0, 0, -ult.comprimento() * 0.5 - 2.5)
+	var anel: Array = [frente]
+	anel.append_array(lados[0])
+	anel.append(tras)
+	var dir: Array = lados[1].duplicate()
+	dir.reverse()
+	anel.append_array(dir)
+	anel.append(frente)
+	for i in anel.size():
+		var a: Vector3 = anel[i]
+		a.y = jogador.chao(a)
+		B.box(acampamento, Vector3(0.1, 1.2, 0.1), a + Vector3(0, 0.6, 0), madeira, Vector3(0, 0, 4.0 * ((i % 3) - 1)))
+		if i > 0:
+			var b: Vector3 = anel[i - 1]
+			b.y = jogador.chao(b)
+			for h in [0.45, 0.95]:
+				var mid := (a + b) * 0.5 + Vector3(0, h, 0)
+				var seg := B.box(acampamento, Vector3(0.015, 0.015, a.distance_to(b)), mid, arame)
+				seg.look_at(b + Vector3(0, h, 0), Vector3.UP)
+	# fogueira e cadeiras do lado da cozinha
+	var f := trailer.global_transform * Vector3(-3.6, 0, 0.6)
+	f.y = jogador.chao(f)
+	for k in 9:
+		var a := TAU * k / 9.0
+		B.sphere(acampamento, 0.16, f + Vector3(cos(a) * 0.55, 0.08, sin(a) * 0.55), B.mat(Color(0.4, 0.38, 0.36), 0.9, 0.0, "pedra"), Vector3(1, 0.7, 1), 6)
+	for k in 3:
+		B.cyl(acampamento, 0.06, 0.8, f + Vector3(0, 0.12, 0), madeira, Vector3(80, k * 60.0, 0), 6)
+	B.sphere(acampamento, 0.25, f + Vector3(0, 0.3, 0), B.emissive(Color(1.0, 0.45, 0.1), 4.0), Vector3(1, 1.6, 1), 8)
+	var luz := OmniLight3D.new()
+	luz.light_color = Color(1.0, 0.55, 0.22)
+	luz.light_energy = 2.2
+	luz.omni_range = 9.0
+	luz.shadow_enabled = true
+	luz.position = f + Vector3(0, 0.9, 0)
+	acampamento.add_child(luz)
+	for k in 2:
+		var cp := f + trailer.global_transform.basis * Vector3(-1.4 + k * 2.8, 0, -1.2 + k * 0.3)
+		var cad := Node3D.new()
+		cad.position = cp
+		cad.rotation.y = trailer.global_rotation.y + PI * (0.15 + k * 0.7)
+		acampamento.add_child(cad)
+		B.box(cad, Vector3(0.5, 0.04, 0.45), Vector3(0, 0.42, 0), B.mat(Color(0.15, 0.3, 0.2), 0.9, 0.0, "lona_cad"))
+		B.box(cad, Vector3(0.5, 0.5, 0.04), Vector3(0, 0.68, -0.22), B.mat(Color(0.15, 0.3, 0.2), 0.9, 0.0, "lona_cad"), Vector3(-12, 0, 0))
+		for sx in [-0.22, 0.22]:
+			B.cyl(cad, 0.015, 0.6, Vector3(sx, 0.25, 0), arame, Vector3(25, 0, 0), 4)
+	trailer.cozinha_aberta = 1.0
+	trailer.reconstruir()
+	var seg := seguranca_local()
+	hud.aviso("Acampamento montado (%s)." % seg[1])
+
+# ------------------------------------------------------------ HUD
+func _atualizar_hud() -> void:
+	hud.hora = hora
+	hud.dia = dia
+	hud.recrutas_txt = base.texto_hud()
+	hud.aliados = base.posicoes()
+	hud.trailer_pos = trailer.global_position
+	hud.dirigindo = comboio.dirigindo
+	hud.km_h = comboio.km_h()
+	hud.re = comboio.velocidade < -0.3
+	hud.diesel = comboio.diesel
+	hud.tanque = comboio.tanque()
+	hud.fora_estrada = comboio.fora_da_estrada
+	hud.marcadores = marcadores
+	hud.interior = dentro != null
+	hud.mira = dentro != null
+	hud.carga_usada = volume_usado()
+	hud.carga_max = capacidade_carga()
+	hud.temperatura = comboio.temperatura
+	hud.superaquecido = comboio.superaquecido
+	hud.peso_rebocado = comboio.peso_rebocado()
+	hud.capacidade_reboque = picape.capacidade_reboque()
+	hud.projetos = estoque.projetos.size()
+	hud.lugares = conhecidos.values()
+	var zp: Array[Vector3] = []
+	var f := _foco()
+	for z in mundo.zumbis_vivos:
+		if is_instance_valid(z) and z.vivo() and z.global_position.distance_to(f) < 60.0:
+			zp.append(z.global_position)
+	hud.zumbis = zp
+	hud.infeccao = jogador.infeccao
+	hud.itens = equip.itens_hud()
+	hud.slot_ativo = maxi(0, equip.slots().find(equip.sel))
+	hud.arma_txt = equip.texto_arma() if jogador.visible and not comboio.dirigindo and dentro == null else ""
+	hud.recarga = equip.progresso_recarga()
+	hud.mirando = jogador.mirando
+	hud.defesa_armadura = equip.defesa()
+	hud.defesa = defesa.info_hud()
+	hud.horda_txt = defesa.texto_horda()
+	hud.mira = dentro != null or (jogador.visible and not comboio.dirigindo)
+	if comboio.dirigindo:
+		hud.objetivo = "Siga pela estrada"
+		hud.subobjetivo = "Odômetro: %.1f km" % (comboio.odometro / 1000.0)
+	else:
+		var la := mundo.lugar_em(jogador.position)
+		if not la.is_empty() and la.tipo == "assentamento":
+			var ea: Dictionary = defesa.obter(la.id)
+			hud.objetivo = ea.nome
+			match ea.fase:
+				"livre":
+					hud.subobjetivo = "Fale com o líder: ficar ou seguir?"
+				"preparando":
+					hud.subobjetivo = "Prepare o muro (horda em ~%d h)" % int(ceil(defesa.horas_ate(ea.pos.z)))
+				"onda":
+					hud.subobjetivo = "Segure o muro!"
+				"entre_ondas":
+					hud.subobjetivo = "Conserte o muro ou parta (~%d h)" % int(ceil(ea.prox_onda_h))
+				"aliado":
+					hud.subobjetivo = "Assentamento aliado"
+				"caido":
+					hud.subobjetivo = "Caiu para a horda. Cuidado."
+
+# ------------------------------------------------------------ interações
+func _janela_aberta() -> bool:
+	return oficina.visible or painel.visible or Engine.get_process_frames() - _frame_fechou < 2
+
+func _fechar_janela() -> void:
+	oficina.visible = false
+	painel.visible = false
+	_frame_fechou = Engine.get_process_frames()
+	if dentro == null and not comboio.dirigindo:
+		jogador.set_process(true)
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+func _abrir_painel(gerador: Callable) -> void:
+	jogador.set_process(false)
+	painel.mostrar(gerador)
+
+func _interacao() -> void:
+	hud.dica = ""
+	if _janela_aberta():
+		return
+	if not comboio.dirigindo and Input.is_action_just_pressed("criar"):
+		_abrir_painel(criacao.painel)
+		return
+	if dentro != null:
+		_interacao_interior()
+	elif comboio.dirigindo:
+		_interacao_dirigindo()
+	else:
+		_interacao_a_pe()
+
+func _interacao_a_pe() -> void:
+	if Input.is_action_just_pressed("curar"):
+		hud.aviso(_usar_remedio())
+	var p := jogador.position
+	var cands: Array = []
+	var add := func(alvo: Vector3, raio: float, tecla: String, texto: String, f: Callable):
+		var d := Vector2(p.x - alvo.x, p.z - alvo.z).length()
+		if d < raio:
+			cands.append({"d": d, "tecla": tecla, "texto": texto, "f": f})
+	add.call(comboio.porta_motorista(), 1.8, "dirigir", "[F] Dirigir", _entrar_no_carro)
+	add.call(trailer.global_transform * trailer.ponto_entrada(), 1.4, "interact", "[E] Entrar no trailer", _entrar_em.bind(trailer))
+	add.call(trailer.global_transform * Vector3(-1.4, 0, -0.6), 1.5, "interact",
+		"[E] " + ("Fechar cozinha" if trailer.cozinha_aberta > 0.5 else "Abrir cozinha"), _alternar_cozinha)
+	if estoque.galoes_diesel > 0 and comboio.diesel < comboio.tanque() - 1.0:
+		add.call(picape.global_transform * Vector3(1.2, 0, -1.9), 1.6, "abastecer", "[R] Abastecer com galão (20 L)", _abastecer_galao)
+	for i in range(1, comboio.cadeia.size()):
+		var r: Reboque = comboio.cadeia[i]
+		var txt := ("[E] Entrar: " if r.tem_interior() else "[E] Painel: ") + r.nome_exibicao()
+		add.call(r.global_transform * r.ponto_entrada(), 1.5, "interact", txt, _entrar_em.bind(r))
+	for r in mundo.reboques_soltos:
+		if is_instance_valid(r):
+			add.call(r.global_position, 4.2, "interact", "[E] Examinar %s %s" % [r.nome_exibicao().to_lower(), r.abandonado_txt()], _abrir_painel.bind(_painel_resgate.bind(r)))
+	for c in mundo.carros_soltos:
+		if is_instance_valid(c):
+			add.call(c.global_position, 3.0, "interact", "[E] Desmontar carro (2 h)", _desmontar.bind(c))
+	for v in mundo.vasculhaveis:
+		if is_instance_valid(v) and not mundo.vasculhados.has(v.get_meta("chave")) and absf(v.global_position.y - p.y - 1.0) < 1.6:
+			add.call(v.global_position, 3.5, "interact", "[E] Vasculhar: %s (%s)" % [v.get_meta("nome"), _txt_horas(v.get_meta("horas"))], _vasculhar.bind(v))
+	for an in mundo.animais:
+		if is_instance_valid(an) and not an.vivo() and not an.esfolado:
+			add.call(an.global_position, 2.2, "interact", "[E] Esfolar %s (30 min)" % an.info().nome, _esfolar.bind(an))
+	for h in mundo.npcs:
+		if is_instance_valid(h):
+			add.call(h.global_position, 2.2, "interact", "[E] Falar com %s" % h.get_meta("nome"), _abrir_painel.bind(_painel_npc.bind(h)))
+	for rn in base.nos:
+		if is_instance_valid(rn) and rn.vivo():
+			add.call(rn.global_position, 2.0, "interact", "[E] Falar com %s (%s)" % [rn.dados.nome, Recrutas.titulo(rn.dados).to_lower()], _abrir_painel.bind(_painel_recruta.bind(rn.dados)))
+	var perto_comboio := p.distance_to(picape.global_position) < 6.0
+	for el in comboio.cadeia:
+		if p.distance_to(el.global_position) < 5.0:
+			perto_comboio = true
+	if cands.is_empty():
+		if perto_comboio:
+			hud.dica = "[Tab] Oficina"
+	else:
+		cands.sort_custom(func(a, b): return a.d < b.d)
+		var c: Dictionary = cands[0]
+		hud.dica = c.texto + ("   [Tab] Oficina" if perto_comboio else "")
+		if Input.is_action_just_pressed(c.tecla):
+			c.f.call()
+			return
+	if perto_comboio and Input.is_action_just_pressed("oficina"):
+		_abrir_oficina()
+	if perto_comboio and absf(comboio.velocidade) < 0.5:
+		if cands.is_empty():
+			hud.dica = "[Tab] Oficina   [C] " + ("Desmontar acampamento" if acampamento else "Montar acampamento")
+		if Input.is_action_just_pressed("acampar"):
+			_alternar_acampamento()
+
+func _esfolar(an: Animal) -> void:
+	an.esfolado = true
+	var ev := trabalhar(0.5)
+	var i: Dictionary = an.info()
+	var faca := 1 if equip.sel in ["facao", "machado"] else 0
+	var c := adicionar("carne_crua", i.carne + faca)
+	var p := adicionar("pele", i.pele)
+	hud.aviso("Esfolou o %s: %d carne crua, %d pele%s." % [i.nome, c, p, "" if c + p > 0 else " (sem espaço na carga)"])
+	main_som_sangue(an)
+	if ev != "":
+		hud.relatorio = ev
+		hud.relatorio_titulo = ""
+		hud.relatorio_t = 5.0
+
+func main_som_sangue(an: Node3D) -> void:
+	var mk := B.box(an.get_parent(), Vector3(1.4, 0.01, 1.2), an.position + Vector3(0, 0.03, 0), B.mat(Color(0.3, 0.05, 0.04), 0.6, 0.0, "sangue_chao"))
+	an.queue_free()
+
+func _txt_horas(h: float) -> String:
+	return "%d min" % int(h * 60.0) if h < 1.0 else ("%.1f h" % h).replace(".0", "")
+
+func _alternar_cozinha() -> void:
+	trailer.cozinha_aberta = 0.0 if trailer.cozinha_aberta > 0.5 else 1.0
+	trailer.reconstruir()
+
+func _abastecer_galao() -> void:
+	comboio.abastecer(20.0)
+	estoque.galoes_diesel -= 1
+
+func _interacao_dirigindo() -> void:
+	if Input.is_action_just_pressed("camera"):
+		comboio.alternar_camera()
+	if Input.is_action_just_pressed("dirigir"):
+		if absf(comboio.velocidade) < 2.5:
+			_sair_do_carro()
+			return
+		hud.aviso("Pare o carro para sair")
+	if comboio.superaquecido:
+		hud.dica = "MOTOR SUPERAQUECIDO — alivie o peso ou pare para esfriar"
+	elif comboio.agua_no_motor:
+		hud.dica = "ÁGUA NO MOTOR — sem snorkel o motor se desgasta"
+	elif comboio.bloqueado:
+		hud.dica = "Caminho bloqueado — procure o desvio"
+	var livre := comboio.engate_livre()
+	var r := _reboque_proximo(livre, 3.2, true)
+	if r and absf(comboio.velocidade) < 1.0:
+		if not r.pode_engatar():
+			hud.dica = "%s com defeito: desça e conserte antes de engatar" % r.nome_exibicao()
+		elif not comboio.pode_engatar(r):
+			hud.dica = "O chassi não aguenta: %.1f t de %.1f t" % [(comboio.peso_rebocado() + r.peso_total()) / 1000.0, picape.limite_engate() / 1000.0]
+		else:
+			hud.dica = "[G] Engatar %s" % r.nome_exibicao()
+			if Input.is_action_just_pressed("engatar"):
+				_engatar(r)
+
+## Reboque solto mais perto de um ponto (pela lança, se pela_lanca).
+func _reboque_proximo(p: Vector3, raio: float, pela_lanca := false) -> Reboque:
+	var melhor: Reboque = null
+	var md := raio
+	for r in mundo.reboques_soltos:
+		if not is_instance_valid(r):
+			continue
+		var alvo := r.global_transform * Vector3(0, 0.6, r.engate_frente_z()) if pela_lanca else r.global_position
+		var d := Vector2(p.x - alvo.x, p.z - alvo.z).length()
+		if d < md:
+			md = d
+			melhor = r
+	return melhor
+
+func _engatar(r: Reboque) -> void:
+	var gt := r.global_transform
+	if r.get_parent():
+		r.get_parent().remove_child(r)
+	add_child(r)
+	r.global_transform = gt
+	mundo.reboques_soltos.erase(r)
+	if r.has_meta("chunk"):
+		mundo.reboques_levados[r.get_meta("chunk")] = true
+		mundo.estado_reboques.erase(r.get_meta("chunk"))
+	r.abandonado = false
+	r.reconstruir()
+	comboio.engatar(r, true)
+	base.distribuir_camas()
+	marcadores = marcadores.filter(func(m): return m.distance_to(r.global_position) > 60.0)
+	hud.aviso("%s engatado!%s" % [r.nome_exibicao(), "" if r.funcional() else " Repare na oficina para usar."])
+
+func _desengatar(indice: int) -> void:
+	var r: Reboque = comboio.desengatar(indice)
+	if r:
+		r.remove_meta("chunk") if r.has_meta("chunk") else null
+		mundo.reboques_soltos.append(r)
+		hud.aviso("%s desengatado." % r.nome_exibicao())
+		base.distribuir_camas()
+	oficina.atualizar()
+
+# ------------------------------------------------------------ primeira pessoa (trailer e reboques)
+func _entrar_em(v: Node3D) -> void:
+	if v is Reboque and not v.tem_interior():
+		_abrir_painel(_painel_tanque.bind(v))
+		return
+	if v is Reboque and v.tipo == "armazem" and not v.aberto:
+		v.aberto = true
+		v.reconstruir()
+	if v == trailer:
+		trailer.modo_interior = true
+		trailer.reconstruir()
+	dentro = v
+	fp.entrar(v, v.interior())
+	hud.objetivo = "Dentro: " + v.nome_exibicao()
+	hud.subobjetivo = "Mire um objeto e aperte [E]   ·   [F] Sair"
+	jogador.visible = false
+	jogador.set_process(false)
+	jogador.set_process_unhandled_input(false)
+
+func _sair_de_dentro() -> void:
+	var v := dentro
+	dentro = null
+	fp.sair()
+	if v == trailer:
+		trailer.modo_interior = false
+		trailer.reconstruir()
+	jogador.position = v.global_transform * v.ponto_entrada()
+	jogador.position.y = jogador.chao(jogador.position)
+	jogador.yaw = v.global_rotation.y + PI * 0.5
+	jogador.visible = true
+	jogador.set_process(true)
+	jogador.set_process_unhandled_input(true)
+	jogador.camera.current = true
+	hud.objetivo = "Explore os arredores"
+	hud.subobjetivo = "Desmonte carros, procure reboques"
+
+func _interacao_interior() -> void:
+	if not fp.foco.is_empty():
+		hud.dica = "[E] " + fp.foco.nome
+	if Input.is_action_just_pressed("dirigir"):
+		_sair_de_dentro()
+
+func _acao_interior(id: String) -> void:
+	if _janela_aberta():
+		return
+	match id:
+		"dormir":
+			dormir()
+		"radio":
+			hud.mensagem_radio = ouvir_radio()
+		"luz":
+			trailer.luz_vermelha = not trailer.luz_vermelha
+			trailer.reconstruir()
+		"despensa":
+			_abrir_painel(_painel_despensa)
+		"mapa":
+			_abrir_painel(_painel_mapa)
+		"sair":
+			_sair_de_dentro()
+		"estoque":
+			_abrir_painel(_painel_estoque)
+		"colher":
+			_colher(dentro)
+		"agua":
+			_coletar_agua(dentro)
+		"bancada":
+			_abrir_painel(_painel_bancada.bind(dentro))
+		"gerador":
+			hud.aviso("Gerador ligado: alimenta a bancada e a luz da oficina.")
+		"moto":
+			hud.aviso("A moto ainda não funciona. Em breve: explorar longe do comboio.")
+		"recrutas":
+			_abrir_painel(_painel_recrutas)
+		"cama":
+			_abrir_painel(_painel_recrutas)
+
+# ------------------------------------------------------------ painéis
+func _painel_recrutas() -> Dictionary:
+	var linhas: Array = []
+	var botoes: Array = []
+	var c := base.camas()
+	linhas.append(["Camas: %d ocupadas de %d   ·   Comida %d   ·   Água %d" % [base.lista.size(), c, estoque.get("comida", 0), estoque.get("agua", 0)], Hud.DOURADO])
+	if base.lista.is_empty():
+		linhas.append(["Ninguém ainda. Converse com os moradores das vilas: alguns aceitam vir em troca de algo, se houver cama.", Color(0.75, 0.75, 0.72)])
+	for rc in base.lista:
+		var st := "em expedição (volta em %.0f h)" % rc.expedicao.restante if not rc.expedicao.is_empty() else "%s, %s" % [Recrutas.txt_vida(rc.vida), Recrutas.txt_moral(rc.moral)]
+		var cor := Color(0.9, 0.88, 0.82)
+		if rc.vida < 0.4 or rc.moral < 0.3:
+			cor = Color(0.95, 0.45, 0.3)
+		linhas.append(["%s — %s · %s · %d abate%s" % [rc.nome, Recrutas.titulo(rc), st, rc.abates, "" if rc.abates == 1 else "s"], cor])
+		linhas.append(["      " + Recrutas.FUNCOES[rc.funcao].auto, Color(0.62, 0.62, 0.6)])
+		botoes.append(["%s: conversar" % rc.nome, func(): _abrir_painel(_painel_recruta.bind(rc)); return "", true])
+	if base.lista.size() > c:
+		linhas.append(["Tem gente dormindo no chão: falta cama (a moral cai).", Color(0.95, 0.45, 0.3)])
+	linhas.append(["Cada recruta come 1 comida e bebe 1 água por dia. Sem isso, a moral despenca e eles vão embora.", Color(0.62, 0.62, 0.6)])
+	return {"titulo": "QUADRO DOS RECRUTAS", "subtitulo": "Quem mora no comboio, o que cada um faz e como está.", "linhas": linhas, "botoes": botoes}
+
+func _painel_recruta(rc: Dictionary) -> Dictionary:
+	var info: Dictionary = Recrutas.FUNCOES[rc.funcao]
+	var linhas: Array = []
+	var botoes: Array = []
+	if not base.lista.has(rc):
+		return {"titulo": rc.nome, "linhas": ["Não faz mais parte do comboio."], "botoes": []}
+	linhas.append(["%s · %s · moral: %s" % [Recrutas.titulo(rc), Recrutas.txt_vida(rc.vida), Recrutas.txt_moral(rc.moral)], Hud.DOURADO])
+	linhas.append("Na base: %s." % info.auto)
+	linhas.append("Na defesa: %s." % info.defesa.to_lower())
+	linhas.append("Zumbis abatidos: %d" % rc.abates)
+	var falas := {
+		"mecanico": "\"Me deixa sucata que eu transformo em peça. E não maltrata esse motor.\"",
+		"agricultor": "\"A estufa tá dando. Se tiver semente, rende mais.\"",
+		"vigia": "\"Durmo de dia. De noite, ninguém chega perto sem eu ver.\"",
+		"medico": "\"Mordida? Me mostra agora. Não espera piorar.\"",
+		"batedor": "\"Me dá umas horas e eu volto com alguma coisa. Quase sempre.\"",
+	}
+	if rc.fome > 0.0:
+		linhas.append(["\"A gente tá passando fome aqui...\"", Color(0.95, 0.45, 0.3)])
+	elif rc.moral < 0.3:
+		linhas.append(["\"Não sei quanto tempo mais eu aguento isso.\"", Color(0.95, 0.45, 0.3)])
+	else:
+		linhas.append([falas[rc.funcao], Color(0.8, 0.8, 0.76)])
+	if rc.funcao == "batedor":
+		if rc.expedicao.is_empty():
+			linhas.append(["Expedições: quanto mais longa, mais saque e mais risco (ferimento ou morte).", Color(0.7, 0.7, 0.68)])
+			for hh in [6.0, 12.0, 24.0]:
+				botoes.append(["Expedição de %d h" % int(hh), base.enviar_expedicao.bind(rc, hh), rc.vida >= 0.5])
+		else:
+			linhas.append(["Em expedição: volta em %.0f h." % rc.expedicao.restante, Hud.DOURADO])
+	if rc.expedicao.is_empty():
+		botoes.append(["Dispensar do comboio", base.dispensar.bind(rc), true])
+	return {"titulo": rc.nome.to_upper(), "subtitulo": "Recruta do comboio", "linhas": linhas, "botoes": botoes}
+
+func _painel_estoque() -> Dictionary:
+	var linhas: Array = []
+	linhas.append(["Carga: %d / %d" % [int(volume_usado()), capacidade_carga()], Hud.DOURADO])
+	for k in ITENS:
+		linhas.append("%s: %d" % [ITENS[k].nome, estoque.get(k, 0)])
+	if not estoque.projetos.is_empty():
+		var nomes: Array[String] = []
+		for t in estoque.projetos:
+			nomes.append(NOMES_TIPO[t])
+		linhas.append(["Projetos: " + ", ".join(nomes), Color(0.6, 0.85, 1.0)])
+	var origem: Array[String] = ["caçamba %d" % [0, 30, 50, 80][picape.nivel("cacamba")], "despensa do trailer %d" % trailer.capacidade_carga()]
+	for el in comboio.cadeia:
+		if el is Reboque and el.capacidade_carga() > 0:
+			origem.append("%s %d" % [el.nome_exibicao().to_lower(), el.capacidade_carga()])
+	return {"titulo": "ESTOQUE DO COMBOIO", "subtitulo": "Espaço: " + ", ".join(origem), "linhas": linhas,
+		"botoes": [["Jogar fora 10 sucata", func():
+			estoque.sucata = maxi(0, estoque.sucata - 10)
+			return "Sucata descartada.", estoque.sucata > 0]]}
+
+func _painel_despensa() -> Dictionary:
+	return {"titulo": "DESPENSA", "subtitulo": "Comer e beber recupera a fome e a sede.",
+		"linhas": ["Comida: %d     Água: %d     Remédios: %d" % [estoque.comida, estoque.agua, estoque.get("remedio", 0)],
+			"Fome: %d%%     Sede: %d%%" % [int(jogador.fome * 100.0), int(jogador.sede * 100.0)]],
+		"botoes": [
+			["Comer (1 comida)", func():
+				estoque.comida -= 1
+				jogador.fome = minf(1.0, jogador.fome + 0.25)
+				return "Você comeu.", estoque.comida > 0 and jogador.fome < 0.99],
+			["Beber (1 água)", func():
+				estoque.agua -= 1
+				jogador.sede = minf(1.0, jogador.sede + 0.3)
+				return "Você bebeu.", estoque.agua > 0 and jogador.sede < 0.99],
+			["Tomar remédio (%d)" % estoque.get("remedio", 0), func():
+				return _usar_remedio(), estoque.get("remedio", 0) > 0]]}
+
+func _painel_mapa() -> Dictionary:
+	var linhas: Array = []
+	var p := _foco()
+	var ri := mundo.regiao_em(p.z)
+	var b: Dictionary = mundo.reg.info_bioma(ri)
+	var m := mundo.reg.marco(ri)
+	linhas.append(["%s — %s (região %d)" % [mundo.reg.nome(ri), b.nome, ri + 1], Hud.DOURADO])
+	linhas.append("Fim da região em %.1f km: %s." % [maxf(0.0, (m.z - p.z) / 1000.0), "ponte caída (vau ao lado)" if m.tipo == "ponte" else "bloqueio militar (desvio de terra)"])
+	var lista := conhecidos.values()
+	lista.sort_custom(func(a, c): return a.pos.z < c.pos.z)
+	if lista.is_empty():
+		linhas.append(["Nenhum lugar descoberto ainda. Fique de olho nas placas da estrada.", Color(0.7, 0.7, 0.68)])
+	var tipos := {"vila": "Vila", "fazenda": "Fazenda", "ferro_velho": "Ferro-velho", "assentamento": "Assentamento"}
+	var kmh := defesa.km_horda(p.z)
+	linhas.append(["☠ A horda: %.1f km atrás, andando %.1f km por dia." % [kmh, defesa.velocidade_horda() * 24.0 / 1000.0], Color(0.95, 0.45, 0.3)])
+	linhas.append("Assentamentos defendidos: %d   ·   Nível de ameaça: %d" % [defesa.defendidos, int(mundo.nivel_ameaca)])
+	for l in lista:
+		var dist: float = (l.pos.z - p.z) / 1000.0
+		var extra := ""
+		if l.tipo == "assentamento":
+			var fa: String = defesa.obter(l.id).fase if l.has("id") else ""
+			extra = {"livre": " · assentamento", "preparando": " · você vai defender", "entre_ondas": " · defendendo", "onda": " · sob ataque", "aliado": " · aliado ✔", "caido": " · caído ✖"}.get(fa, " · assentamento")
+		linhas.append("⌂ %s — %.1f km %s%s" % [l.nome, absf(dist), "à frente" if dist > 0.05 else ("para trás" if dist < -0.05 else "aqui"), extra])
+	for mk in marcadores:
+		var dist2 := (mk.z - p.z) / 1000.0
+		linhas.append("◆ Reboque abandonado (pista do rádio) — %.1f km %s" % [absf(dist2), "à frente" if dist2 > 0 else "para trás"])
+	return {"titulo": "MAPA E ANOTAÇÕES", "linhas": linhas, "botoes": []}
+
+func _painel_tanque(r: Reboque) -> Dictionary:
+	var cap := float(r.capacidade())
+	var linhas: Array = ["Diesel no tanque: %d / %d L" % [int(r.litros), int(cap)],
+		"Picape: %d / %d L     Galões no estoque: %d" % [int(comboio.diesel), int(comboio.tanque()), estoque.galoes_diesel]]
+	if not r.funcional():
+		linhas.append(["O tanque está danificado e vazando. Repare na oficina.", Color(0.95, 0.4, 0.3)])
+	var ok := r.funcional()
+	return {"titulo": "TANQUE DE DIESEL", "subtitulo": "Reserva de combustível do comboio.", "linhas": linhas,
+		"botoes": [
+			["Abastecer a picape", func():
+				var n := comboio.abastecer(r.litros)
+				r.litros -= n
+				return "Picape abastecida com %d L." % int(n), ok and r.litros > 1.0 and comboio.diesel < comboio.tanque() - 1.0],
+			["Despejar 1 galão no tanque (+20 L)", func():
+				estoque.galoes_diesel -= 1
+				r.litros = minf(cap, r.litros + 20.0)
+				return "", ok and estoque.galoes_diesel > 0 and r.litros < cap - 20.0],
+			["Encher 1 galão (−20 L)", func():
+				if adicionar("galoes_diesel", 1) == 0:
+					return "Sem espaço na carga."
+				r.litros -= 20.0
+				return "", r.litros >= 20.0]]}
+
+func _painel_bancada(r: Reboque) -> Dictionary:
+	var linhas: Array = []
+	var livre := r.trabalho.is_empty()
+	if not r.funcional():
+		linhas.append(["A oficina está danificada. Repare-a na aba Engates da oficina.", Color(0.95, 0.4, 0.3)])
+	if not livre:
+		var nome: String = "%d peças" % r.trabalho.qtd if r.trabalho.tipo == "pecas" else NOMES_TIPO[r.trabalho.reboque]
+		linhas.append(["Em andamento: %s — faltam %.1f h" % [nome, maxf(0.0, r.trabalho.restante)], Hud.DOURADO])
+	var hora_peca := 1.0 / r.nivel
+	linhas.append("Fabricar peças: 4 sucata cada, %.1f h por peça (nível %d)." % [hora_peca, r.nivel])
+	var ok := r.funcional() and livre
+	var botoes: Array = [
+		["Fabricar 1 peça", _iniciar_pecas.bind(r, 1), ok and estoque.sucata >= 4],
+		["Fabricar 5 peças", _iniciar_pecas.bind(r, 5), ok and estoque.sucata >= 20]]
+	if estoque.projetos.is_empty():
+		linhas.append(["Nenhum projeto de reboque. Projetos são achados dentro de reboques abandonados.", Color(0.7, 0.7, 0.68)])
+	else:
+		var horas := 14.0 - r.nivel * 3.0
+		linhas.append("Construir reboque (%d h): %s" % [int(horas), _txt_itens(CUSTO_CONSTRUCAO)])
+		for t in estoque.projetos:
+			botoes.append(["Construir %s" % NOMES_TIPO[t], _iniciar_construcao.bind(r, t, horas), ok and tem_itens(CUSTO_CONSTRUCAO)])
+	return {"titulo": "BANCADA DA OFICINA", "subtitulo": "Os trabalhos continuam enquanto o tempo passa (dirigindo ou dormindo).",
+		"linhas": linhas, "botoes": botoes}
+
+func _iniciar_pecas(r: Reboque, n: int) -> String:
+	estoque.sucata -= n * 4
+	r.trabalho = {"tipo": "pecas", "qtd": n, "restante": n / float(r.nivel)}
+	return "Fabricando %d peças." % n
+
+func _iniciar_construcao(r: Reboque, tipo: String, horas: float) -> String:
+	gastar(CUSTO_CONSTRUCAO)
+	r.trabalho = {"tipo": "reboque", "reboque": tipo, "restante": horas}
+	return "Construção iniciada: %s (%d h)." % [NOMES_TIPO[tipo], int(horas)]
+
+func _concluir_trabalho(r: Reboque) -> void:
+	var t := r.trabalho
+	r.trabalho = {}
+	if t.tipo == "pecas":
+		estoque.pecas += t.qtd
+		if t.get("auto", false):
+			base.pecas_feitas(t.qtd)
+		else:
+			hud.aviso("Oficina: %d peças prontas." % t.qtd)
+		return
+	var novo := Reboque.new()
+	novo.tipo = t.reboque
+	novo.nivel = 1
+	novo.condicao = 1.0
+	var ult := comboio.cadeia[comboio.cadeia.size() - 1]
+	var tras := -ult.global_transform.basis.z
+	add_child(novo)
+	novo.global_position = comboio.engate_livre() + tras * novo.engate_frente_z()
+	novo.global_rotation.y = ult.global_rotation.y
+	if comboio.pode_engatar(novo):
+		comboio.engatar(novo, true)
+		base.distribuir_camas()
+		hud.aviso("%s construído e engatado!" % novo.nome_exibicao())
+	else:
+		novo.global_position += ult.global_transform.basis.x * 4.0
+		mundo.reboques_soltos.append(novo)
+		hud.aviso("%s construído! O chassi não aguenta mais peso: ficou estacionado." % novo.nome_exibicao())
+
+func _colher(r: Reboque) -> void:
+	if not r.funcional():
+		hud.aviso("A estufa está danificada. Repare-a na oficina.")
+		return
+	var n := int(r.comida)
+	if n <= 0:
+		hud.aviso("Nada para colher ainda. Volte amanhã.")
+		return
+	var ent := adicionar("comida", n)
+	r.comida -= ent
+	hud.aviso("Você colheu %d comida." % ent if ent > 0 else "Sem espaço na carga.")
+
+func _coletar_agua(r: Reboque) -> void:
+	var n := int(r.agua)
+	if n <= 0 or not r.funcional():
+		hud.aviso("A cisterna está vazia.")
+		return
+	var ent := adicionar("agua", n)
+	r.agua -= ent
+	hud.aviso("Você coletou %d água." % ent if ent > 0 else "Sem espaço na carga.")
+
+## Reboque abandonado: defeitos para consertar e saque.
+func _painel_resgate(r: Reboque) -> Dictionary:
+	var linhas: Array = []
+	var botoes: Array = []
+	if r.defeitos.is_empty():
+		linhas.append(["Pronto para engatar! Encoste a traseira do comboio na lança e aperte [G].", Color(0.5, 0.9, 0.5)])
+	else:
+		linhas.append(["Defeitos — só dá para engatar depois de consertar tudo:", Hud.DOURADO])
+	for d in r.defeitos:
+		var info: Dictionary = Reboque.DEFEITOS[d]
+		linhas.append("• %s — %s, %.1f h" % [info.nome, _txt_itens(info.itens), info.horas])
+		botoes.append(["Consertar: %s" % info.nome.to_lower(), _consertar_defeito.bind(r, d), tem_itens(info.itens)])
+	linhas.append("Estado da carroceria: %d%%" % int(r.condicao * 100.0))
+	if not r.saque.is_empty():
+		var partes: Array[String] = []
+		for k in r.saque:
+			if k == "projeto":
+				partes.append("um papel dobrado...")
+			else:
+				partes.append("%d %s" % [r.saque[k], ITENS[k].nome.to_lower()])
+		linhas.append(["Dentro: " + ", ".join(partes), Color(0.75, 0.75, 0.72)])
+		botoes.append(["Saquear", _saquear.bind(r), true])
+	if eh_noite():
+		linhas.append(["É noite: trabalhar no escuro atrai zumbis.", Color(0.95, 0.45, 0.3)])
+	return {"titulo": "%s %s" % [r.nome_exibicao().to_upper(), r.abandonado_txt().to_upper()],
+		"subtitulo": "%s · nível %d · %d kg" % [r.info().desc, r.nivel, int(r.peso_total())], "linhas": linhas, "botoes": botoes}
+
+func _consertar_defeito(r: Reboque, d: String) -> String:
+	var info: Dictionary = Reboque.DEFEITOS[d]
+	gastar(info.itens)
+	r.defeitos.erase(d)
+	r.reconstruir()
+	var msg := "%s consertado (%.1f h)." % [info.nome, info.horas]
+	var ev := trabalhar(info.horas)
+	if r.defeitos.is_empty():
+		msg += " Pronto para engatar!"
+	return msg + (" " + ev if ev != "" else "")
+
+func _saquear(r: Reboque) -> String:
+	var pegou: Array[String] = []
+	for k in r.saque.keys():
+		if k == "projeto":
+			var t: String = r.saque[k]
+			if not estoque.projetos.has(t):
+				estoque.projetos.append(t)
+				pegou.append("PROJETO: %s!" % NOMES_TIPO[t])
+			else:
+				pegou.append("um projeto repetido (%s)" % NOMES_TIPO[t])
+			r.saque.erase(k)
+			continue
+		var n := adicionar(k, r.saque[k])
+		if n > 0:
+			pegou.append("%d %s" % [n, ITENS[k].nome.to_lower()])
+		r.saque[k] -= n
+		if r.saque[k] <= 0:
+			r.saque.erase(k)
+	if pegou.is_empty():
+		return "Sem espaço na carga."
+	return "Você pegou: " + ", ".join(pegou) + ("" if r.saque.is_empty() else " (não coube tudo)")
+
+func _desmontar(c: Node3D) -> void:
+	var r := RandomNumberGenerator.new()
+	r.seed = hash(c.get_meta("chave", ""))
+	var ganhos: Array[String] = []
+	var tabela := {"sucata": r.randi_range(6, 14), "pecas": r.randi_range(0, 2)}
+	if r.randf() < 0.55:
+		tabela["pneu"] = r.randi_range(1, 2)
+	if r.randf() < 0.18:
+		tabela["eixo"] = 1
+	if r.randf() < 0.25:
+		tabela["galoes_diesel"] = 1
+	var ev := trabalhar(2.0)
+	for k in tabela:
+		var n := adicionar(k, tabela[k])
+		if n > 0:
+			ganhos.append("%d %s" % [n, ITENS[k].nome.to_lower()])
+	mundo.marcar_desmontado(c)
+	hud.aviso("Carro desmontado: " + (", ".join(ganhos) if not ganhos.is_empty() else "sem espaço na carga"))
+	if ev != "":
+		hud.relatorio = ev
+		hud.relatorio_titulo = ""
+		hud.relatorio_t = 5.0
+
+# ------------------------------------------------------------ dormir e rádio
+## Dorme até de manhã (ou um cochilo de 3h de dia). Retorna o relatório da noite.
+func dormir() -> String:
+	var noite := hora >= 18.0 or hora < 6.0
+	var horas := 3.0
+	if noite:
+		horas = (24.0 - hora + 6.5) if hora >= 18.0 else (6.5 - hora)
+	var risco := 0.0
+	if noite:
+		var grades: Dictionary = trailer.config.janelas
+		risco = 0.75 - grades.nivel * 0.2 - grades.condicao * 0.2
+		if trailer.luz_interna and not trailer.luz_vermelha:
+			risco += 0.2
+		risco = clampf(risco, 0.05, 0.95)
+	var seg := seguranca_local()
+	if noite:
+		risco = 0.0 if seg[0] <= -1.0 else clampf(risco + seg[0], 0.03, 0.95)
+	var linhas: Array[String] = []
+	linhas.append("Você dormiu %d horas (%s)." % [int(round(horas)), seg[1]])
+	var r := RandomNumberGenerator.new()
+	r.seed = dia * 31 + int(hora)
+	var vig := base.presentes("vigia")
+	if r.randf() < risco and not vig.is_empty() and r.randf() < 0.55:
+		var v: Dictionary = vig[r.randi() % vig.size()]
+		var mortos := r.randi_range(1, 3)
+		v.abates += mortos
+		abates += mortos
+		linhas.append("Zumbis rondaram o acampamento, mas %s deu conta (%d abatido%s)." % [v.nome, mortos, "s" if mortos > 1 else ""])
+	elif r.randf() < risco:
+		var alvos := ["janelas", "traseira", "lateral_esquerda", "frente"]
+		var alvo: String = alvos[r.randi() % alvos.size()]
+		var dano := r.randf_range(0.12, 0.3)
+		trailer.danificar(alvo, dano)
+		trailer.condicao_carroceria = maxf(0.1, trailer.condicao_carroceria - dano * 0.3)
+		linhas.append("Durante a noite zumbis cercaram o trailer.")
+		linhas.append("%s: -%d%%" % [Trailer.MODULOS[trailer.config[alvo].id].nome, int(dano * 100.0)])
+	else:
+		linhas.append("Nenhum zumbi chegou ao trailer.")
+	var tinha_trabalho := false
+	for el in comboio.cadeia:
+		if el is Reboque and not el.trabalho.is_empty():
+			tinha_trabalho = true
+	_passar_tempo(horas)
+	if tinha_trabalho:
+		linhas.append("A oficina trabalhou durante a noite.")
+	linhas.append_array(base.relatorio())
+	jogador.estamina = 1.0
+	jogador.vida = minf(1.0, jogador.vida + 0.1 * horas / 8.0)
+	trailer.reconstruir()
+	_atualizar_ceu()
+	var txt := "\n".join(linhas)
+	hud.relatorio = txt
+	hud.relatorio_titulo = ""
+	hud.relatorio_t = 6.0
+	return txt
+
+const RUMORES := {
+	"armazem": "...tem um baú de carga largado no acostamento, km %d. Parecia inteiro...",
+	"tanque": "...vimos um reboque-tanque tombado perto do km %d. Ainda cheira a diesel...",
+	"oficina": "...uma oficina sobre rodas abandonada no km %d. Ferramenta pra todo lado...",
+	"estufa": "...alguém montou uma estufa num reboque. Ficou pra trás no km %d...",
+	"plataforma": "...uma carreta plataforma com uma moto em cima, km %d. Ninguém por perto...",
+	"apartamentos": "...um reboque-dormitório de uma turma de obra largado no km %d. Camas pra meia dúzia...",
+}
+
+## Sintoniza o rádio: às vezes dá a localização de um reboque abandonado à frente (é raro).
+func ouvir_radio() -> String:
+	var k := int(floor(comboio.pos.z / WorldGen.TAM)) + WorldGen.FRENTE + 3 + _rng_radio.randi_range(0, 10)
+	if mundo.pois_fixos.has(k) or _rng_radio.randf() < 0.65:
+		var gerais := [
+			"...aqui é a Zona Segura. Repito: sigam a estrada principal. Não parem à noite...",
+			"...a horda está descendo pela serra. Quem estiver na estrada, mantenha distância...",
+			"...se alguém ouvir isso, precisamos de remédios. Câmbio...",
+			"...(chiado)...",
+			"...os carros parados na rodovia ainda têm pneu bom. Levem macaco...",
+		]
+		return gerais[_rng_radio.randi() % gerais.size()]
+	var tipos := WorldGen.TIPOS_REBOQUE
+	var tipo: String = tipos[_rng_radio.randi() % tipos.size()]
+	mundo.pois_fixos[k] = "reboque:" + tipo
+	var alvo := mundo.posicao_poi_reboque(k)
+	marcadores.append(alvo)
+	var km := int((alvo.z) / 1000.0) + 1
+	return RUMORES[tipo] % km
+
+# ------------------------------------------------------------ picape
+func _entrar_no_carro() -> void:
+	if acampamento:
+		_alternar_acampamento()
+	comboio.dirigindo = true
+	comboio.cam_yaw = 0.0
+	picape.modo_cabine = comboio.primeira_pessoa
+	picape.reconstruir()
+	comboio.camera_ativa().current = true
+	jogador.visible = false
+	jogador.set_process(false)
+	jogador.set_process_unhandled_input(false)
+	if trailer.cozinha_aberta > 0.0:
+		trailer.cozinha_aberta = 0.0
+		trailer.reconstruir()
+
+func _sair_do_carro() -> void:
+	comboio.dirigindo = false
+	comboio.velocidade = 0.0
+	picape.modo_cabine = false
+	picape.reconstruir()
+	jogador.position = comboio.porta_motorista()
+	jogador.yaw = comboio.yaw
+	jogador.visible = true
+	jogador.set_process(true)
+	jogador.set_process_unhandled_input(true)
+	jogador.camera.current = true
+	hud.objetivo = "Explore os arredores"
+	hud.subobjetivo = "Desmonte carros, procure reboques"
+
+func _abrir_oficina() -> void:
+	oficina.visible = true
+	oficina.atualizar()
+	jogador.set_process(false)
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+# ------------------------------------------------------------ picape + trailer
+func _rig() -> void:
+	var z_picape := 15.5
+	var lat := -5.4
+	picape = Pickup.new()
+	var p := mundo.ponto_estrada(z_picape, lat)
+	p.y = mundo.elevacao(z_picape) - 0.02
+	picape.position = p
+	var d := mundo.direcao(z_picape)
+	picape.rotation.y = atan2(d.x, d.z)
+	add_child(picape)
+	trailer = Trailer.new()
+	var engate := picape.global_transform * picape.engate()
+	var dir := -picape.global_transform.basis.z
+	var engate_trailer := Trailer.COMPRIMENTO * 0.5 + 1.8
+	trailer.position = engate + dir * engate_trailer
+	trailer.position.y = p.y
+	trailer.rotation.y = picape.rotation.y + 0.06
+	add_child(trailer)
+	comboio = Comboio.new()
+	add_child(comboio)
+	comboio.iniciar(mundo, picape, trailer)
+	comboio.posicionar(z_picape, lat, 0.06)
+	# carros abandonados posicionados à mão na cena inicial
+	var r := RandomNumberGenerator.new()
+	r.seed = 4
+	for c in [[30.0, 3.8, 0.4], [-20.0, -6.5, 2.6], [52.0, -1.0, -0.9]]:
+		var cp := mundo.ponto_estrada(c[0], c[1])
+		cp.y = mundo.elevacao(c[0]) + 0.02
+		var rc := RandomNumberGenerator.new()
+		rc.seed = r.randi()
+		mundo.carro_abandonado(mundo, cp, c[2], rc, "fixo:%d" % int(c[0]))
+
+func _horda() -> void:
+	var r := RandomNumberGenerator.new()
+	r.seed = 77
+	# alguns zumbis próximos na estrada, à frente
+	for i in 6:
+		var z := 30.0 + r.randf() * 28.0
+		var p := mundo.ponto_estrada(z, r.randf_range(-3.5, 3.5))
+		var zz := mundo.criar_zumbi(mundo, p, PI + r.randf_range(-0.5, 0.5), r.randi())
+		hud_zumbi(zz.position)
+	# horda ao longe
+	for i in 90:
+		var z := 85.0 + r.randf() * 120.0
+		var p := mundo.ponto_estrada(z, r.randf_range(-4.0, 4.0))
+		mundo.silhueta(mundo, p, r)
+
+var _zumbis_pos: Array[Vector3] = []
+func hud_zumbi(p: Vector3) -> void:
+	_zumbis_pos.append(p)
+	if hud:
+		hud.zumbis = _zumbis_pos
+
+# ------------------------------------------------------------ prints
+func _salvar(nome: String) -> void:
+	for i in 5:
+		await RenderingServer.frame_post_draw
+	var pasta := ProjectSettings.globalize_path("res://prints")
+	DirAccess.make_dir_recursive_absolute(pasta)
+	get_viewport().get_texture().get_image().save_png(pasta + "/" + nome + ".png")
+	print("salvo ", nome)
+
+func _novo_reboque(tipo: String, nivel: int, cond: float) -> Reboque:
+	var r := Reboque.new()
+	r.tipo = tipo
+	r.nivel = nivel
+	r.condicao = cond
+	add_child(r)
+	return r
+
+## Procura um lugar de um tipo nas primeiras regiões.
+func _achar_lugar(tipo: String) -> Dictionary:
+	for ri in 12:
+		for l in mundo.lugares_da_regiao(ri):
+			if l.tipo == tipo:
+				return l
+	return {}
+
+func _achar_regiao(bioma: String) -> int:
+	for ri in range(1, 40):
+		if mundo.reg.bioma(ri) == bioma:
+			return ri
+	return 0
+
+func _caminho_do_lugar(l: Dictionary) -> PackedVector3Array:
+	for f in mundo._features(mundo.regiao_em(l.pos.z)):
+		if f.tipo == "estrada" and f.id == l.id:
+			return f.pts
+	return PackedVector3Array()
+
+func _dirigir_em(z: float, lateral: float, cam_yaw: float, cam_pitch: float, dist := 11.0) -> void:
+	comboio.posicionar(z, lateral, 0.02)
+	mundo.atualizar(comboio.pos)
+	comboio.dirigindo = true
+	comboio.primeira_pessoa = false
+	comboio.velocidade = 14.0
+	comboio.cam_yaw = cam_yaw
+	comboio.cam_pitch = cam_pitch
+	comboio.cam_dist = dist
+	comboio._aplicar(0.0)
+	comboio.camera.current = true
+	jogador.visible = false
+
+func _procurar_vasculhavel(prefixo: String, z_ini: float, z_max: float) -> Node3D:
+	var z := z_ini
+	while z < z_max:
+		mundo.atualizar(mundo.ponto_estrada(z, 0.0))
+		for v in mundo.vasculhaveis:
+			if is_instance_valid(v) and not mundo._na_fila(v) and String(v.get_meta("chave")).begins_with(prefixo) and v.global_position.z > z - 100.0:
+				return v
+		z += 192.0
+	return null
+
+func _posar_jogador(pos: Vector3, olhar: Vector3, pitch := -0.1, desvio := 0.0) -> void:
+	jogador.visible = true
+	jogador.position = pos
+	jogador.position.y = jogador.chao(pos)
+	jogador.yaw = atan2(olhar.x - pos.x, olhar.z - pos.z) + desvio
+	jogador.pitch = pitch
+	jogador.pivo.rotation = Vector3(pitch, jogador.yaw, 0)
+	jogador.corpo.rotation.y = atan2(olhar.x - pos.x, olhar.z - pos.z)
+	jogador.corpo.pose_caminhada(0.0, 0.0)
+	jogador.camera.current = true
+	mundo.atualizar(jogador.position)
+
+func _limpar_zumbis_perto(p: Vector3, raio: float) -> void:
+	for z in mundo.zumbis_vivos.duplicate():
+		if is_instance_valid(z) and z.global_position.distance_to(p) < raio:
+			mundo.zumbis_vivos.erase(z)
+			z.queue_free()
+	for c in mundo.get_children():
+		if not (c is Zumbi) and not c.name.begins_with("Chunk") and c is Node3D and c.get_child_count() > 0 and c.get_class() == "Node3D" and c.global_position.distance_to(p) < raio:
+			c.visible = false
+
+func _zumbi_posado(p: Vector3, olhar: Vector3, tipo: String, sem: int, fase: float, correndo := false, atacando := 0.0) -> Zumbi:
+	p.y = jogador.chao(p)
+	var z := mundo.criar_zumbi(mundo, p, atan2(olhar.x - p.x, olhar.z - p.z), sem, tipo)
+	z._fase = fase
+	z._anim_ataque = atacando
+	z._animar(3.0 if correndo else 0.5)
+	return z
+
+## Só para os prints: some com as árvores que ficam entre a câmera e o alvo.
+func _abrir_vista(de: Vector3, para: Vector3) -> void:
+	var pilha: Array = [mundo]
+	while not pilha.is_empty():
+		var nd: Node = pilha.pop_back()
+		pilha.append_array(nd.get_children())
+		if nd is MultiMeshInstance3D:
+			var mm: MultiMesh = nd.multimesh
+			for i in mm.instance_count:
+				var t: Transform3D = (nd as Node3D).global_transform * mm.get_instance_transform(i)
+				var p := Vector2(t.origin.x, t.origin.z)
+				var a := Vector2(de.x, de.z)
+				var b := Vector2(para.x, para.z)
+				var ab := b - a
+				var k := clampf((p - a).dot(ab) / maxf(ab.length_squared(), 0.001), 0.0, 1.0)
+				if k < 0.85 and p.distance_to(a + ab * k) < 7.0:
+					mm.set_instance_transform(i, Transform3D(Basis().scaled(Vector3.ONE * 0.0001), mm.get_instance_transform(i).origin))
+
+## Vista de "casa de bonecas": andares de cima e telhado escondidos, câmera alta.
+func _corte_aereo(cam: Camera3D, pr: Predio, andar: int, nome: String) -> void:
+	pr.corte(andar)
+	var b := pr.global_transform.basis
+	var c := pr.global_position + Vector3(0, andar * Predio.H, 0)
+	var tam := maxf(pr.largura, pr.profundidade)
+	# câmera do lado da estrada (atrás costuma haver outros prédios colados)
+	var pz := pr.global_position.z
+	var para_estrada := Vector3(mundo.centro_x(pz) - pr.global_position.x, 0, 0).normalized()
+	if para_estrada == Vector3.ZERO:
+		para_estrada = b.z
+	var de := c + para_estrada * tam * 0.8 + Vector3(0, 0, tam * 0.35) + Vector3(0, tam * 1.15 + 4.0, 0)
+	_abrir_vista(de, c)
+	var escondidos: Array = []
+	for e in mundo.estruturas:
+		if is_instance_valid(e) and e != pr and e.visible and e.global_position.distance_to(pr.global_position) < 30.0:
+			e.visible = false
+			escondidos.append(e)
+	jogador.visible = false
+	var hud_antes := hud.visible
+	hud.visible = false
+	cam.fov = 50.0
+	cam.look_at_from_position(de, c + Vector3(0, 0.5, 0), Vector3.UP)
+	cam.current = true
+	await _salvar(nome)
+	pr.corte(-1)
+	hud.visible = hud_antes
+	for e in escondidos:
+		e.visible = true
+
+func _achar_predio(tipo: String, z_ini: float, z_max: float, min_andares := 1) -> Predio:
+	var z := z_ini
+	while z < z_max:
+		mundo.atualizar(mundo.ponto_estrada(z, 0.0))
+		for e in mundo.estruturas:
+			if is_instance_valid(e) and not mundo._na_fila(e) and e.tipo == tipo and e.andares >= min_andares and e.global_position.z > z - 150.0:
+				return e
+		z += 192.0
+	return null
+
+## Põe o jogador dentro de uma construção, num andar, olhando para um ponto local.
+## Escolhe o cômodo do andar com mais móveis vasculháveis e põe o jogador no canto
+## oposto, olhando para eles.
+func _dentro_predio(pr: Predio, andar: int, preferir := "") -> void:
+	var conts: Array = []
+	var pilha: Array = [pr.andar_nos[andar]]
+	while not pilha.is_empty():
+		var nd: Node = pilha.pop_back()
+		pilha.append_array(nd.get_children())
+		if nd.has_meta("tabela"):
+			conts.append(pr.local((nd as Node3D).global_position))
+	var melhor: Rect2 = Rect2(-pr.largura * 0.4, -pr.profundidade * 0.4, pr.largura * 0.8, pr.profundidade * 0.8)
+	var mais := -1
+	for cm in pr.comodos[andar]:
+		var r: Rect2 = cm.rect
+		if r.size.x < 2.4 or r.size.y < 2.4:
+			continue
+		var q := 0
+		for c in conts:
+			if r.grow(0.3).has_point(Vector2(c.x, c.z)):
+				q += 1
+		if cm.uso == preferir:
+			q += 100
+		if q > mais:
+			mais = q
+			melhor = r
+	var centro := Vector2.ZERO
+	var nq := 0
+	for c in conts:
+		if melhor.grow(0.3).has_point(Vector2(c.x, c.z)):
+			centro += Vector2(c.x, c.z)
+			nq += 1
+	centro = centro / nq if nq > 0 else melhor.get_center()
+	# fica do lado oposto do cômodo, a uns 2,5 m dos móveis
+	var meio := melhor.get_center()
+	var dirv := (meio - centro)
+	if dirv.length() < 0.3:
+		dirv = Vector2(0, 1)
+	var rr := melhor.grow(-0.5)
+	var canto := centro + dirv.normalized() * 3.0
+	canto = Vector2(clampf(canto.x, rr.position.x, rr.end.x), clampf(canto.y, rr.position.y, rr.end.y))
+	var local_pos := Vector3(canto.x, 0, canto.y)
+	var local_olhar := Vector3(centro.x, 0, centro.y)
+	if preferir == "porta":
+		local_pos = Vector3(pr.largura * 0.18, 0, pr.profundidade * 0.5 - 0.8)
+		local_olhar = Vector3(-pr.largura * 0.1, 0, -pr.profundidade * 0.5)
+	var g := pr.global_transform * (local_pos + Vector3(0, andar * Predio.H, 0))
+	var alvo := pr.global_transform * (local_olhar + Vector3(0, andar * Predio.H + 0.6, 0))
+	jogador.visible = true
+	jogador.position = g
+	jogador.position.y = jogador.chao(g)
+	jogador.yaw = atan2(alvo.x - g.x, alvo.z - g.z)
+	jogador.pitch = 0.2
+	jogador.pivo.rotation = Vector3(jogador.pitch, jogador.yaw, 0)
+	jogador.corpo.rotation.y = jogador.yaw
+	jogador.corpo.pose_caminhada(0.0, 0.0)
+	jogador.camera.current = true
+	jogador._atualizar_predio(0.0)
+
+## Prints da etapa 3: recrutas, apartamentos e automação.
+func _capturar_recrutas() -> void:
+	comboio.set_physics_process(false)
+	mundo.mat_capim.set_shader_parameter("tempo", 1.3)
+	var cam := Camera3D.new()
+	cam.far = 2500.0
+	cam.near = 0.05
+	add_child(cam)
+	hud.visible = false
+	# comboio: picape, trailer, apartamentos, oficina, estufa
+	var tipos := [["apartamentos", 3, 0.85], ["oficina", 2, 0.8], ["estufa", 2, 0.85]]
+	for t in tipos:
+		var r := _novo_reboque(t[0], t[1], t[2])
+		comboio.engatar(r, true)
+	estoque.comida = 9
+	estoque.agua = 7
+	estoque.sucata = 22
+	estoque.galoes_diesel = 1
+	var nomes := [["Tião", "vigia"], ["Marta", "medico"], ["Pedrão", "mecanico"], ["Neide", "agricultor"], ["Dinho", "batedor"]]
+	for i in nomes.size():
+		var rc := Recrutas.novo(nomes[i][0], nomes[i][1], 7000 + i * 13)
+		rc.abates = [7, 1, 3, 2, 9][i]
+		rc.moral = [0.8, 0.7, 0.62, 0.78, 0.55][i]
+		rc.vida = [1.0, 1.0, 0.85, 1.0, 0.7][i]
+		base.lista.append(rc)
+	base.distribuir_camas()
+	var zc := 620.0
+	var lat := -11.0
+	var dz := mundo.direcao(zc)
+	var pc := mundo.ponto_estrada(zc, lat)
+	pc.y = mundo.altura(pc.x, pc.z)
+	comboio.posicionar_livre(pc, atan2(dz.x, dz.z), 0.03)
+	mundo.atualizar(pc)
+	_limpar_zumbis_perto(pc, 60.0)
+	var apto := base.reboque("apartamentos")
+
+	# 78 — vila: convidando um morador
+	var vila := _achar_lugar("vila")
+	if not vila.is_empty():
+		hora = 15.8
+		_atualizar_ceu()
+		mundo.atualizar(vila.pos)
+		await get_tree().process_frame
+		var npc: Node3D = null
+		for h in mundo.npcs:
+			if is_instance_valid(h) and Recrutas.pode_recrutar(h) and h.get_meta("funcao") == "mecanico":
+				npc = h
+		if npc == null:
+			for h in mundo.npcs:
+				if is_instance_valid(h) and Recrutas.pode_recrutar(h):
+					npc = h
+		if npc:
+			var fr := npc.global_transform.basis.z
+			_limpar_zumbis_perto(npc.global_position, 20.0)
+			_posar_jogador(npc.global_position + fr * 2.4 + npc.global_transform.basis.x * 0.6, npc.global_position + Vector3(0, 1.2, 0), -0.08, 0.25)
+			# deixa uma cama livre para o convite
+			var guarda: Dictionary = base.lista.pop_back()
+			base.distribuir_camas()
+			estoque.remedio = 2
+			estoque.pecas = 9
+			hud.visible = true
+			_atualizar_hud()
+			_abrir_painel(_painel_npc.bind(npc))
+			await _salvar("78_vila_convite")
+			_fechar_janela()
+			base.lista.append(guarda)
+			base.distribuir_camas()
+			hud.visible = false
+
+	# 79 — o comboio com o reboque de apartamentos, fim de tarde
+	hora = 17.3
+	_atualizar_ceu()
+	mundo.atualizar(pc)
+	jogador.visible = false
+	var b := apto.global_transform.basis
+	var de := apto.global_position - b.x * 9.0 - b.z * 4.5 + Vector3(0, 2.6, 0)
+	_abrir_vista(de, apto.global_position)
+	cam.fov = 52.0
+	cam.look_at_from_position(de, apto.global_position + b.z * 1.5 + Vector3(0, 1.3, 0), Vector3.UP)
+	cam.current = true
+	await _salvar("79_comboio_apartamentos")
+
+	# 80 — acampamento com os recrutas trabalhando (anoitecendo)
+	hora = 18.4
+	_atualizar_ceu()
+	jogador.position = trailer.global_position + trailer.global_transform.basis.x * 6.0
+	_alternar_acampamento()
+	base._t_cena = 0.0
+	base.atualizar_cena(1.0)
+	for r in base.nos:
+		r.set_meta("animar_captura", true)
+	for f in 40:
+		await get_tree().process_frame
+	for r in base.nos:
+		r.set_meta("animar_captura", false)
+	var ct := trailer.global_position
+	var bt := trailer.global_transform.basis
+	var de2 := ct - bt.x * 17.0 + bt.z * 3.0 + Vector3(0, 11.0, 0)
+	_abrir_vista(de2, ct)
+	cam.fov = 58.0
+	cam.current = true
+	cam.look_at_from_position(de2, ct - bt.z * 1.5 + Vector3(0, 0.5, 0), Vector3.UP)
+	await _salvar("80_acampamento_recrutas")
+
+	# 81 — de perto: o mecânico na oficina e a médica na fogueira, em 3ª pessoa
+	var mec: Recruta = null
+	var med: Recruta = null
+	for r in base.nos:
+		if r.dados.funcao == "mecanico":
+			mec = r
+		if r.dados.funcao == "medico":
+			med = r
+	if med:
+		hud.visible = true
+		var fora := -trailer.global_transform.basis.x
+		var pj := med.global_position + fora * 1.9 + trailer.global_transform.basis.z * 0.6
+		_posar_jogador(pj, med.global_position + Vector3(0, 1.0, 0), -0.12, 0.3)
+		med.rotation.y = atan2(pj.x - med.global_position.x, pj.z - med.global_position.z)
+		med.pose_caminhada(0.0, 0.0)
+		jogador.camera.position = Vector3(-0.85, 0.25, -3.3)
+		_atualizar_hud()
+		hud.limpar_aviso()
+		hud.dica = "[E] Falar com Marta (médica)"
+		await _salvar("81_falando_com_recruta")
+		_abrir_painel(_painel_recruta.bind(med.dados))
+		await _salvar("82_painel_recruta")
+		_fechar_janela()
+		hud.visible = false
+		jogador.visible = false
+
+	# 83 — ataque noturno: recrutas acordam e defendem o comboio
+	hora = 20.1
+	_atualizar_ceu()
+	jogador.visible = false
+	var zs: Array = []
+	var tipos_z := ["comum", "corredor", "comum", "brutamonte", "comum", "comum", "rastejante", "comum"]
+	for i in 8:
+		var q: Vector3 = ct + bt.x * (6.5 + (i % 3) * 3.2) + bt.z * (-7.0 + i * 2.0)
+		zs.append(_zumbi_posado(q, ct + bt.z * (-7.0 + i * 2.0), tipos_z[i], 400 + i, i * 0.9, i % 2 == 0, 0.6 if i % 3 == 0 else 0.0))
+	base._acordados_t = 0.0
+	base._t_cena = 0.0
+	base.atualizar_cena(1.0)
+	var usados: Array = []
+	for r in base.nos:
+		var alvo: Zumbi = null
+		var md := 1e9
+		for z in zs:
+			var d: float = r.global_position.distance_to(z.global_position)
+			if d < md and not usados.has(z):
+				md = d
+				alvo = z
+		if alvo == null:
+			continue
+		r.pose_caminhada(0.0, 0.0)
+		if r.dados.funcao == "vigia":
+			r.global_position = jogador.global_position.lerp(ct + bt.x * 3.0 + bt.z * 1.0, 1.0)
+			r.global_position.y = jogador.chao(r.global_position)
+			var dv: Vector3 = alvo.global_position - r.global_position
+			r.rotation.y = atan2(dv.x, dv.z)
+			r.pose_mirar(1.0)
+			r._flash.visible = true
+		elif r.dados.funcao in ["batedor", "agricultor", "mecanico"]:
+			usados.append(alvo)
+			var dirz: Vector3 = alvo.global_position - ct
+			dirz.y = 0.0
+			r.global_position = alvo.global_position - dirz.normalized() * 1.25
+			r.global_position.y = jogador.chao(r.global_position)
+			var dv2: Vector3 = alvo.global_position - r.global_position
+			r.rotation.y = atan2(dv2.x, dv2.z)
+			alvo.rotation.y = atan2(-dv2.x, -dv2.z)
+			alvo._anim_ataque = 0.7
+			alvo._animar(0.5)
+			r.pose_caminhada(1.2, 0.8)
+			r.ombro_d.rotation.x = -2.5
+			r.ombro_d.rotation.z = 0.55
+			r.tronco.rotation.y = 0.4
+		elif r.dados.funcao == "medico":
+			r.global_position = ct + bt.x * 2.0 - bt.z * 2.5
+			r.global_position.y = jogador.chao(r.global_position)
+			r.rotation.y = trailer.global_rotation.y + PI * 0.5
+	# holofote no teto do trailer (vigia acendeu)
+	var holo := SpotLight3D.new()
+	add_child(holo)
+	holo.light_color = Color(1.0, 0.92, 0.8)
+	holo.light_energy = 6.0
+	holo.spot_range = 30.0
+	holo.spot_angle = 30.0
+	holo.shadow_enabled = true
+	holo.global_position = ct + Vector3(0, 3.2, 0) + bt.x * 0.8
+	holo.look_at(ct + bt.x * 10.0 + Vector3(0, 0.5, 0), Vector3.UP)
+	hud.dica = ""
+	cam.current = true
+	cam.fov = 55.0
+	var de3 := ct + bt.x * 15.0 - bt.z * 6.0 + Vector3(0, 6.0, 0)
+	_abrir_vista(de3, ct + bt.x * 6.0)
+	cam.look_at_from_position(de3, ct + bt.x * 4.0 + Vector3(0, 0.2, 0), Vector3.UP)
+	hud.visible = true
+	_atualizar_hud()
+	hud.aviso("Tião: \"Zumbis vindo do leste! 8 deles!\"")
+	await _salvar("83_ataque_noturno")
+	hud.visible = false
+	for z in zs:
+		mundo.zumbis_vivos.erase(z)
+		z.queue_free()
+	holo.queue_free()
+	base.limpar_cena()
+
+	# 84 / 85 — dentro dos apartamentos: recrutas dormindo e o quadro
+	hora = 2.5
+	_atualizar_ceu()
+	apto.dormindo = true
+	apto.reconstruir()
+	hud.limpar_aviso()
+	_entrar_em(apto)
+	fp.pos_local = Vector3(0, fp.piso, -apto.comprimento() * 0.5 + 0.7)
+	fp.yaw = 0.0
+	fp.pitch = -0.18
+	fp._atualizar_camera()
+	hud.visible = true
+	_atualizar_hud()
+	hud.dica = "[E] Cama de Neide"
+	await _salvar("84_apartamentos_noite")
+	hud.dica = ""
+	_abrir_painel(_painel_recrutas)
+	await _salvar("85_quadro_recrutas")
+	_fechar_janela()
+	_sair_de_dentro()
+	apto.dormindo = false
+	apto.reconstruir()
+
+	# 86 — de manhã: o relatório do que os recrutas fizeram
+	base._abates_noite = {"Tião": 3, "Dinho": 1}
+	base._colhido = 4
+	base._pecas_feitas = 2
+	base.registro.append("Dinho voltou da expedição com 7 sucata, 2 comida, 1 remédio.")
+	base.registro.append("A médica conteve a sua infecção.")
+	hora = 21.0
+	_entrar_em(trailer)
+	dormir()
+	_atualizar_ceu()
+	hud.limpar_aviso()
+	hud.dica = ""
+	_atualizar_hud()
+	await _salvar("86_relatorio_manha")
+	get_tree().quit()
+
+## Prints da rodada 5: casas da vila, mata nos assentamentos, apocalipse, caça, armas, criação.
+func _capturar_r5() -> void:
+	comboio.set_physics_process(false)
+	mundo.mat_capim.set_shader_parameter("tempo", 1.3)
+	var cam := Camera3D.new()
+	cam.far = 2500.0
+	cam.near = 0.05
+	add_child(cam)
+	hud.visible = false
+	jogador.visible = false
+	# 98 / 99 — vila
+	var vila := _achar_lugar("vila")
+	if not vila.is_empty():
+		hora = 16.2
+		_atualizar_ceu()
+		mundo.atualizar(vila.pos)
+		await get_tree().process_frame
+		var raiz: Node3D = mundo.lugares_ativos.get(vila.id)
+		var de := raiz.global_transform * Vector3(-26.0, 18.0, 30.0)
+		_abrir_vista(de, raiz.global_position)
+		cam.fov = 55.0
+		cam.look_at_from_position(de, raiz.global_transform * Vector3(0, 1.0, 8.0), Vector3.UP)
+		cam.current = true
+		await _salvar("98_vila_do_alto")
+		var de2 := raiz.global_transform * Vector3(3.0, 1.7, 30.0)
+		_abrir_vista(de2, raiz.global_transform * Vector3(-8.0, 1.5, 22.0))
+		cam.fov = 60.0
+		cam.look_at_from_position(de2, raiz.global_transform * Vector3(-9.0, 2.0, 22.0), Vector3.UP)
+		await _salvar("99_casa_da_vila")
+	# 100 — assentamento cercado de mata
+	var l := {}
+	for ll in mundo.lugares_da_regiao(0):
+		if ll.tipo == "assentamento":
+			l = ll
+	if not l.is_empty():
+		hora = 15.5
+		_atualizar_ceu()
+		mundo.atualizar(l.pos)
+		await get_tree().process_frame
+		var a := defesa.no_de(l.id)
+		var de3 := a.global_de(Vector3(40.0, 55.0, 75.0))
+		cam.fov = 55.0
+		cam.look_at_from_position(de3, a.global_de(Vector3(0, 0, -6.0)), Vector3.UP)
+		await _salvar("100_assentamento_na_mata")
+	# 101 — estrada do fim do mundo (barricada de quarentena, sacos, carro queimado, mensagem)
+	var zb := 3400.0
+	hora = 17.3
+	_atualizar_ceu()
+	mundo.atualizar(mundo.ponto_estrada(zb, 0))
+	await get_tree().process_frame
+	var n0: Node3D = mundo.get_node("Chunk_%d" % int(floor(zb / WorldGen.TAM)))
+	var r := RandomNumberGenerator.new()
+	r.seed = 9
+	Apocalipse._barricada_quarentena(n0, mundo, zb, r)
+	var pa := Apocalipse._pt(mundo, zb - 14.0, 0.5)
+	Apocalipse._sacos_corpos(n0, pa[0], pa[1], r)
+	var pb := Apocalipse._pt(mundo, zb - 24.0, 7.0)
+	Apocalipse._carro_queimado(n0, pb[0], pb[1] + 0.5, r)
+	var pm := Apocalipse._pt(mundo, zb - 32.0, -0.5)
+	Apocalipse._mensagem_asfalto(n0, pm[0], pm[1], "NÃO PARE", r)
+	var pv := Apocalipse._pt(mundo, zb - 20.0, -6.5)
+	Apocalipse._veiculo_oficial(n0, pv[0], pv[1] + 0.2, r)
+	for i in 3:
+		var pz := mundo.ponto_estrada(zb - 10.0 - i * 6.0, r.randf_range(-3, 3))
+		_zumbi_posado(pz, pz + Vector3(0, 0, -5), "comum", 300 + i, r.randf() * 5.0)
+	var de4 := mundo.ponto_estrada(zb - 44.0, -1.0) + Vector3(0, 4.5, 0)
+	cam.fov = 58.0
+	cam.look_at_from_position(de4, mundo.ponto_estrada(zb - 8.0, 0.0) + Vector3(0, 0.5, 0), Vector3.UP)
+	await _salvar("101_estrada_do_apocalipse")
+	# 102 — caça na mata da serra: mirando o rifle num veado
+	var ri := _achar_regiao("serra")
+	var zs := mundo.reg.inicio(ri) + 2600.0
+	var pf := Vector3.ZERO
+	for t in 60:
+		var q := mundo.ponto_estrada(zs + t * 40.0, -60.0)
+		if mundo.floresta(q.x, q.z) > 0.6 and mundo.agua_em(q.x, q.z) < mundo.altura(q.x, q.z):
+			pf = q
+			zs = zs + t * 40.0
+			break
+	hora = 15.6
+	_atualizar_ceu()
+	mundo.atualizar(pf)
+	await get_tree().process_frame
+	_limpar_zumbis_perto(pf, 40.0)
+	estoque.rifle = 1
+	estoque.municao_rifle = 9
+	equip.pentes["rifle"] = 5
+	jogador.corpo.arma = "rifle"
+	jogador.corpo.construir()
+	equip.sel = "rifle"
+	var dirv := Vector3(1, 0, 0.3).normalized()
+	var alvo_v := pf + dirv * 9.0
+	_abrir_vista(pf, alvo_v)
+	_abrir_vista(pf + Vector3(0, 0, 0.1), alvo_v + Vector3(4, 0, 2))
+	var vv: Array = []
+	for i in 3:
+		var an := Animal.new()
+		an.tipo = "veado"
+		an.mundo = mundo
+		an.semente = 40 + i
+		add_child(an)
+		var qa := alvo_v + Vector3(i * 2.5, 0, i * 1.8 - 1.5)
+		qa.y = mundo.altura(qa.x, qa.z)
+		an.global_position = qa
+		an.rotation.y = 2.4 + i * 0.4
+		an._animar(0.0, 0.5)
+		vv.append(an)
+	_posar_jogador(pf, alvo_v + Vector3(0, 0.9, 0), -0.04, 0.0)
+	jogador.mirando = true
+	jogador.zoom = 26.0
+	jogador.agachado = true
+	jogador._process(0.016)
+	jogador.camera.fov = 30.0
+	jogador.camera.position = Vector3(-0.6, 0.12, -1.7)
+	hud.visible = true
+	_atualizar_hud()
+	hud.dica = ""
+	await _salvar("102_cacando_veado")
+	# 103 — javali atacando
+	var jv := Animal.new()
+	jv.tipo = "javali"
+	jv.mundo = mundo
+	jv.semente = 9
+	add_child(jv)
+	var qj := pf + Vector3(-3.5, 0, 2.0)
+	qj.y = mundo.altura(qj.x, qj.z)
+	jv.global_position = qj
+	jv.rotation.y = atan2(pf.x - qj.x, pf.z - qj.z)
+	jv.estado = Animal.Estado.ATACANDO
+	jv._animar(5.0, 0.3)
+	jogador.mirando = false
+	jogador.agachado = false
+	equip.selecionar("espingarda")
+	estoque.espingarda = 1
+	equip.selecionar("espingarda")
+	jogador.corpo.arma = "espingarda"
+	jogador.corpo.construir()
+	equip.pentes["espingarda"] = 2
+	estoque.cartucho = 6
+	_posar_jogador(pf, qj + Vector3(0, 0.5, 0), -0.15, 0.35)
+	jogador.camera.fov = 55.0
+	jogador.camera.position = Vector3(-0.85, 0.25, -3.3)
+	jogador.mirando = true
+	jogador.zoom = 44.0
+	jogador._process(0.016)
+	_atualizar_hud()
+	hud.aviso("O javali te acertou com as presas!")
+	await _salvar("103_javali")
+	# 104 — caça abatida: esfolar
+	jv.ferir(999.0)
+	jv.rotation.z = PI * 0.5
+	jv.global_position.y = mundo.altura(qj.x, qj.z) + 0.15
+	jogador.mirando = false
+	jogador._process(0.016)
+	hud.limpar_aviso()
+	_posar_jogador(qj + Vector3(1.6, 0, -1.4), qj, -0.35, 0.3)
+	_atualizar_hud()
+	hud.dica = "[E] Esfolar javali (30 min)"
+	await _salvar("104_esfolar")
+	hud.dica = ""
+	# 105 — acampamento: criação de armadura
+	var zc := 640.0
+	var pc := mundo.ponto_estrada(zc, -11.0)
+	pc.y = mundo.altura(pc.x, pc.z)
+	var dz := mundo.direcao(zc)
+	var of := _novo_reboque("oficina", 2, 0.85)
+	comboio.engatar(of, true)
+	comboio.posicionar_livre(pc, atan2(dz.x, dz.z), 0.03)
+	hora = 18.2
+	_atualizar_ceu()
+	mundo.atualizar(pc)
+	_limpar_zumbis_perto(pc, 60.0)
+	jogador.position = trailer.global_position - trailer.global_transform.basis.x * 3.0
+	_alternar_acampamento()
+	estoque.pele = 3
+	estoque.couro = 5
+	estoque.cordame = 2
+	estoque.chapa = 2
+	estoque.sucata = 26
+	estoque.calca_couro = 1
+	equip.armadura = {"torso": {"id": "colete_couro", "reforco": 2, "condicao": 0.85}, "cabeca": {"id": "capuz_couro", "reforco": 1, "condicao": 1.0}, "bracos": {"id": "bracadeiras", "reforco": 0, "condicao": 0.7}}
+	jogador.atualizar_armadura(equip.armadura)
+	_posar_jogador(trailer.global_position - trailer.global_transform.basis.x * 3.2 + trailer.global_transform.basis.z * 1.0, trailer.global_position + Vector3(0, 1.0, 0), -0.1, 0.3)
+	criacao.aba = "couro"
+	_atualizar_hud()
+	_abrir_painel(criacao.painel)
+	await _salvar("105_criacao_couro")
+	criacao.aba = "metal"
+	painel.atualizar()
+	await _salvar("106_forja_metal")
+	_fechar_janela()
+	# 107 — o sobrevivente de armadura reforçada e espingarda, de frente
+	equip.selecionar("espingarda")
+	jogador.corpo.arma = "espingarda"
+	jogador.corpo.construir()
+	jogador.atualizar_armadura(equip.armadura)
+	jogador.visible = true
+	jogador.corpo.rotation.y = jogador.yaw + PI
+	jogador.corpo.pose_caminhada(0.0, 0.0)
+	hud.visible = false
+	var fj := jogador.global_position
+	var fr := Vector3(sin(jogador.corpo.rotation.y), 0, cos(jogador.corpo.rotation.y))
+	cam.fov = 40.0
+	cam.look_at_from_position(fj + fr * 3.4 + Vector3(0.6, 1.5, 0), fj + Vector3(0, 1.1, 0), Vector3.UP)
+	cam.current = true
+	await _salvar("107_armadura_reforcada")
+	# 108 — molotov queimando zumbis na estrada
+	hora = 19.6
+	_atualizar_ceu()
+	var pm2 := mundo.ponto_estrada(zc + 30.0, 0.5)
+	for i in 4:
+		var qz := pm2 + Vector3(r.randf_range(-2, 2), 0, r.randf_range(-2, 2))
+		_zumbi_posado(qz, comboio.pos, ["comum", "corredor", "comum", "brutamonte"][i], 600 + i, r.randf() * 5.0, true)
+	var mv := Arremesso.new()
+	mv.main = self
+	mv.tipo = "molotov"
+	add_child(mv)
+	mv.global_position = pm2 + Vector3(0, 0.1, 0)
+	mv._cair()
+	_posar_jogador(pm2 - mundo.direcao(zc) * 11.0 + Vector3(1.5, 0, 0), pm2 + Vector3(0, 1.0, 0), -0.08, 0.2)
+	equip.selecionar("molotov")
+	estoque.molotov = 2
+	hud.visible = true
+	_atualizar_hud()
+	await _salvar("108_molotov")
+	get_tree().quit()
+
+## Prints da etapa 4: assentamento, líder, preparação, ondas, brecha e vitória.
+func _capturar_defesa() -> void:
+	comboio.set_physics_process(false)
+	mundo.mat_capim.set_shader_parameter("tempo", 1.3)
+	var cam := Camera3D.new()
+	cam.far = 2500.0
+	cam.near = 0.05
+	add_child(cam)
+	hud.visible = false
+	for t in [["apartamentos", 2, 0.85], ["oficina", 2, 0.8]]:
+		comboio.engatar(_novo_reboque(t[0], t[1], t[2]), true)
+	var nomes := [["Tião", "vigia"], ["Marta", "medico"], ["Pedrão", "mecanico"], ["Dinho", "batedor"]]
+	for i in nomes.size():
+		var rc := Recrutas.novo(nomes[i][0], nomes[i][1], 7000 + i * 13)
+		base.lista.append(rc)
+	base.distribuir_camas()
+	estoque.sucata = 30
+	estoque.pecas = 10
+	estoque.comida = 4
+	estoque.agua = 3
+	estoque.galoes_diesel = 2
+	var l := {}
+	for ll in mundo.lugares_da_regiao(0):
+		if ll.tipo == "assentamento":
+			l = ll
+	var id: String = l.id
+	defesa.z_horda = float(l.pos.z) - 3600.0
+	jogador.position = l.pos
+	mundo.atualizar(l.pos)
+	await get_tree().process_frame
+	var a := defesa.no_de(id)
+	var e: Dictionary = defesa.obter(id)
+	var R := Assentamento.R
+	var yaw_a := a.global_rotation.y
+	_limpar_zumbis_perto(a.global_position, 90.0)
+	# comboio chegando pela estrada de terra, de frente para o portão
+	var pc := a.global_de(Vector3(-1.0, 0, R + 17.0))
+	pc.y = mundo.altura(pc.x, pc.z)
+	comboio.posicionar_livre(pc, yaw_a + PI, 0.0)
+
+	# 88 — chegando ao assentamento
+	hora = 16.4
+	_atualizar_ceu()
+	jogador.visible = false
+	var de := a.global_de(Vector3(9.0, 4.2, R + 34.0))
+	_abrir_vista(de, a.global_position)
+	cam.fov = 55.0
+	cam.look_at_from_position(de, a.global_de(Vector3(0, 2.6, R - 2.0)), Vector3.UP)
+	cam.current = true
+	await _salvar("88_chegando_assentamento")
+
+	# 89 — do alto
+	var de2 := a.global_de(Vector3(34.0, 48.0, 62.0))
+	_abrir_vista(de2, a.global_position)
+	cam.fov = 50.0
+	cam.look_at_from_position(de2, a.global_de(Vector3(0, 0, -2.0)), Vector3.UP)
+	await _salvar("89_assentamento_do_alto")
+
+	# 90 — conversa com o líder: ficar ou seguir
+	var lider: Node3D = null
+	for h in mundo.npcs:
+		if is_instance_valid(h) and h.get_meta("funcao", "") == "lider":
+			lider = h
+	hud.visible = true
+	if lider:
+		var fr := lider.global_transform.basis.z
+		_posar_jogador(lider.global_position + fr * 2.4 + lider.global_transform.basis.x * 0.7, lider.global_position + Vector3(0, 1.2, 0), -0.08, 0.25)
+		_atualizar_hud()
+		_abrir_painel(_painel_npc.bind(lider))
+		await _salvar("90_lider_ficar_ou_seguir")
+		_fechar_janela()
+
+	# 91 — ficou: preparando, com parte das obras feitas
+	defesa.ficar(id)
+	e.chapas = true
+	e.torres[1] = true
+	e.torres[2] = true
+	e.holofotes[0] = true
+	e.holofotes[2] = true
+	var atras_l := a.local_de(a.global_position + Vector3(0, 0, -50.0))
+	var setor_horda := Assentamento.setor(atras_l)
+	e.armadilhas[setor_horda] = 12
+	for i in Assentamento.N:
+		e.muro[i] = a.hp_max(i)
+	e.estoque.sucata = 18
+	e.estoque.pecas = 4
+	a.redesenhar()
+	defesa.z_horda = float(e.pos.z) - 250.0 - defesa.velocidade_horda() * 5.4
+	hora = 17.6
+	_atualizar_ceu()
+	if lider:
+		_atualizar_hud()
+		_abrir_painel(_painel_npc.bind(lider))
+		await _salvar("91_preparando_defesa")
+		_fechar_janela()
+
+	# 92 — muralha pronta, comboio estacionado no portão, entardecer
+	hora = 18.5
+	_atualizar_ceu()
+	var pg := a.global_de(Vector3(9.5, 0, R + 4.0))
+	pg.y = mundo.altura(pg.x, pg.z)
+	comboio.posicionar_livre(pg, yaw_a - PI * 0.5, 0.0)
+	jogador.visible = false
+	hud.visible = false
+	var de3 := a.global_de(Vector3(-46.0, 34.0, 44.0))
+	_abrir_vista(de3, a.global_position)
+	cam.fov = 52.0
+	cam.look_at_from_position(de3, a.global_de(Vector3(4.0, 0, 6.0)), Vector3.UP)
+	cam.current = true
+	await _salvar("92_muralha_pronta")
+
+	# 93 — onda 1 chegando: vista de cima da torre do lado da horda
+	hora = 19.0
+	_atualizar_ceu()
+	jogador.position = a.global_de(Vector3(0, 0, 4.0))
+	defesa.iniciar_onda(id)
+	var ang_h: float = defesa.onda.ang
+	var zs: Array = []
+	var r := RandomNumberGenerator.new()
+	r.seed = 404
+	for i in 26:
+		var an := ang_h + r.randf_range(-0.55, 0.55)
+		var rr := R + r.randf_range(6.0, 30.0)
+		var q := a.global_de(Vector3(sin(an) * rr, 0, cos(an) * rr))
+		var alvo := a.global_de(Vector3(sin(an) * R, 0, cos(an) * R))
+		var tipo: String = ["comum", "comum", "comum", "corredor", "comum", "brutamonte", "comum", "rastejante"][i % 8]
+		var z := _zumbi_posado(q, alvo, tipo, 900 + i, r.randf() * 6.0, tipo == "corredor" or r.randf() < 0.3)
+		z.cerco = a
+		zs.append(z)
+	var torre_h := 0
+	var melhor := 9.0
+	for k in 4:
+		if e.torres[k]:
+			var dd := absf(wrapf(Assentamento.ANG_TORRES[k] - ang_h, -PI, PI))
+			if dd < melhor:
+				melhor = dd
+				torre_h = k
+	for n in defesa.nos:
+		n.pose_caminhada(0.0, 0.0)
+		if n.fixo:
+			n.rotation.y = yaw_a + ang_h
+			n.pose_mirar(1.0)
+	var tp := a.torre_pos(torre_h)
+	var para_fora := (a.global_de(Vector3(sin(ang_h), 0, cos(ang_h)) * (R + 18.0)) - tp)
+	para_fora.y = 0.0
+	var lado_v := para_fora.normalized().cross(Vector3.UP)
+	var de4 := tp - para_fora.normalized() * 7.0 + lado_v * 4.5 + Vector3(0, 2.2, 0)
+	cam.fov = 60.0
+	cam.look_at_from_position(de4, tp + para_fora * 0.75 - Vector3(0, 3.6, 0), Vector3.UP)
+	cam.current = true
+	hud.visible = true
+	_atualizar_hud()
+	await _salvar("93_onda_chegando")
+
+	# 94 — noite: holofotes, tiros, zumbis batendo no muro
+	hud.limpar_banner()
+	hora = 19.75
+	_atualizar_ceu()
+	e.torres[3] = true
+	e.holofotes[3] = true
+	a.ligar_holofotes(true)
+	var i_h := Assentamento.indice_em(Vector3(sin(ang_h), 0, cos(ang_h)))
+	for s2 in [-1, 0, 1, 2]:
+		var j2 := posmod(i_h + s2, Assentamento.N)
+		e.muro[j2] = a.hp_max(j2) * [0.55, 0.3, 0.6, 0.8][s2 + 1]
+	a.redesenhar()
+	for k2 in zs.size():
+		var z: Zumbi = zs[k2]
+		var an2 := ang_h + (k2 - zs.size() * 0.5) * 0.045
+		var rr2 := R + 0.85 + (k2 % 3) * 0.7 + r.randf_range(0.0, 1.5) * float(k2 % 5 == 0) * 4.0
+		var q2 := a.global_de(Vector3(sin(an2) * rr2, 0, cos(an2) * rr2))
+		q2.y = jogador.chao(q2)
+		z.global_position = q2
+		z.rotation.y = yaw_a + an2 + PI
+		z._anim_ataque = r.randf_range(0.2, 0.9)
+		z._fase = r.randf() * 6.0
+		z._animar(0.3)
+	for n in defesa.nos:
+		if n.fixo:
+			n.pose_mirar(1.0)
+			n._flash.visible = r.randf() < 0.6
+	defesa.onda.fila = 0
+	defesa.onda.vivos = zs
+	var de5 := a.global_de(Vector3(sin(ang_h - 0.75) * (R + 15.0), 9.0, cos(ang_h - 0.75) * (R + 15.0)))
+	_abrir_vista(de5, a.global_position)
+	cam.fov = 58.0
+	cam.look_at_from_position(de5, a.global_de(Vector3(sin(ang_h) * R, 1.5, cos(ang_h) * R)), Vector3.UP)
+	cam.current = true
+	jogador.visible = false
+	_atualizar_hud()
+	hud.limpar_aviso()
+	await _salvar("94_ataque_noturno")
+
+	# 95 — brecha: o muro cede e o jogador segura lá dentro
+	hora = 19.85
+	_atualizar_ceu()
+	a.ligar_holofotes(true)
+	e.muro[i_h] = 0.0
+	a.redesenhar()
+	hud.aviso("O muro %s caiu! Tapem a brecha!" % Defesa.NOMES_SETOR[Assentamento.setor(Assentamento.ponto(i_h, 1.0))])
+	var dentro_zs: Array = []
+	for k3 in 6:
+		var z: Zumbi = zs[k3]
+		var off := (k3 - 2.5) * 0.9
+		var l3 := Assentamento.ponto(i_h + off * 0.04, R - 1.5 - k3 * 1.1)
+		var q3 := a.global_de(l3)
+		q3.y = jogador.chao(q3)
+		z.global_position = q3
+		z.rotation.y = yaw_a + Assentamento.ang(i_h) + PI
+		z._fase = r.randf() * 6.0
+		z._animar(3.0)
+		dentro_zs.append(z)
+	defesa.onda.dentro = 6
+	defesa.onda.resistencia = 0.72
+	var pj := a.global_de(Assentamento.ponto(i_h - 0.25, R - 10.5))
+	_posar_jogador(pj, dentro_zs[3].global_position + Vector3(0, 1.0, 0), -0.12, 0.2)
+	jogador.corpo.rotation.y = jogador.yaw
+	jogador._t_golpe = 0.45
+	jogador._process(0.0)
+	for n in defesa.nos:
+		if n.dados.funcao == "batedor" or n.dados.funcao == "agricultor":
+			var q4 = pj + (dentro_zs[1].global_position - pj) * 0.6 + Vector3(1.5, 0, 0)
+			q4.y = jogador.chao(q4)
+			n.global_position = q4
+			n.rotation.y = atan2(dentro_zs[1].global_position.x - q4.x, dentro_zs[1].global_position.z - q4.z)
+			n.pose_caminhada(1.0, 0.8)
+			n.ombro_d.rotation.x = -2.5
+			break
+	_atualizar_hud()
+	await _salvar("95_brecha_no_muro")
+
+	# 96 — vitória
+	hud.limpar_banner()
+	hora = 6.3
+	_atualizar_ceu()
+	for z in zs:
+		if is_instance_valid(z):
+			z.morrer()
+			z.visible = false
+	defesa.onda.vivos = []
+	defesa.onda.fila = 0
+	defesa._vitoria(e, a)
+	e.muro[i_h] = 0.0
+	a.redesenhar()
+	var pj2 := a.global_de(Assentamento.ponto(i_h + 0.35, R - 6.0))
+	_posar_jogador(pj2, a.global_de(Assentamento.ponto(i_h, R + 2.0)) + Vector3(0, 0.8, 0), -0.2, 0.3)
+	hud.limpar_aviso()
+	hud.limpar_banner()
+	_atualizar_hud()
+	await _salvar("96_onda_vencida")
+
+	# 97 — de volta à estrada: a horda no mapa
+	hora = 9.5
+	_atualizar_ceu()
+	hud.relatorio_t = 0.0
+	hud.limpar_banner()
+	conhecidos[id] = {"id": id, "nome": e.nome, "tipo": "assentamento", "pos": e.pos, "regiao": 0}
+	for lv in mundo.lugares_da_regiao(0):
+		if lv.tipo in ["vila", "fazenda"] and float(lv.pos.z) < float(e.pos.z) + 3500.0:
+			conhecidos[lv.id] = {"id": lv.id, "nome": lv.nome, "tipo": lv.tipo, "pos": lv.pos, "regiao": 0}
+	var zr := float(e.pos.z) + 1500.0
+	defesa.z_horda = zr - 6200.0
+	var pr := mundo.ponto_estrada(zr, -4.0)
+	pr.y = mundo.altura(pr.x, pr.z)
+	var dzr := mundo.direcao(zr)
+	comboio.posicionar_livre(pr, atan2(dzr.x, dzr.z), 0.0)
+	mundo.atualizar(pr)
+	_limpar_zumbis_perto(pr, 60.0)
+	_posar_jogador(trailer.global_position - trailer.global_transform.basis.x * 2.6 - trailer.global_transform.basis.z * 2.0, trailer.global_position + trailer.global_transform.basis.z * 6.0 + Vector3(0, 1.0, 0), -0.05, 0.3)
+	_atualizar_hud()
+	_abrir_painel(_painel_mapa)
+	await _salvar("97_mapa_horda")
+	_fechar_janela()
+	get_tree().quit()
+
+func _capturar() -> void:
+	comboio.set_physics_process(false)
+	mundo.mat_capim.set_shader_parameter("tempo", 1.3)
+	var cam := Camera3D.new()
+	cam.far = 2500.0
+	cam.near = 0.05
+	add_child(cam)
+	trailer.cozinha_aberta = 0.0
+	trailer.reconstruir()
+	hud.visible = false
+
+	# 62 / 63 — floresta densa na serra: do alto e por dentro
+	var ri := _achar_regiao("serra")
+	var zs := mundo.reg.inicio(ri) + 2500.0
+	hora = 15.6
+	var achou := false
+	for tent in 40:
+		var zz := zs + tent * 120.0
+		for lat in [40.0, -40.0, 70.0, -70.0]:
+			var q := mundo.ponto_estrada(zz, lat)
+			if mundo.floresta(q.x, q.z) > 0.8:
+				zs = zz
+				achou = true
+				break
+		if achou:
+			break
+	mundo.atualizar(mundo.ponto_estrada(zs, 0.0))
+	_regiao_atual = ri
+	_atualizar_ceu()
+	var pr0 := mundo.ponto_estrada(zs, 0.0)
+	cam.fov = 55.0
+	cam.look_at_from_position(pr0 + Vector3(-60.0, 45.0, -70.0), pr0 + Vector3(25.0, 0, 20.0), Vector3.UP)
+	cam.current = true
+	await _salvar("62_floresta_do_alto")
+	var dentro_mata := Vector3.ZERO
+	for lat in [40.0, -40.0, 60.0, -60.0, 80.0, -80.0, 100.0, -100.0]:
+		var q := mundo.ponto_estrada(zs, lat)
+		if mundo.floresta(q.x, q.z) > 0.85:
+			dentro_mata = q
+			break
+	if dentro_mata != Vector3.ZERO:
+		hud.visible = true
+		_posar_jogador(dentro_mata, dentro_mata + Vector3(8.0, 0, 6.0), -0.05, 0.2)
+		_limpar_zumbis_perto(dentro_mata, 10.0)
+		hud._banner_t = 0.0
+		hud.objetivo = "Explore a mata"
+		hud.subobjetivo = "Cabanas, acampamentos e torres"
+		_atualizar_hud()
+		await _salvar("63_dentro_da_floresta")
+		hud.visible = false
+
+	# 64..68 — lugares escondidos na mata
+	var n := 64
+	for tipo in ["cabana", "acampamento", "torre", "serraria", "carro_mata"]:
+		var l := {}
+		for rr in 30:
+			for lg in mundo.lugares_da_regiao(rr):
+				if lg.tipo == tipo and mundo.agua_em(lg.pos.x, lg.pos.z) < mundo.altura(lg.pos.x, lg.pos.z) - 0.3 and mundo.floresta(lg.pos.x, lg.pos.z) > 0.2:
+					l = lg
+					break
+			if not l.is_empty():
+				break
+		if l.is_empty():
+			continue
+		hora = [16.2, 17.4, 15.8, 16.6, 17.0][n - 64]
+		_atualizar_ceu()
+		mundo.atualizar(l.pos)
+		var c: Vector3 = l.pos
+		var dist: float = l.raio + (6.0 if tipo != "torre" else 10.0)
+		if tipo == "carro_mata":
+			dist = 9.0
+		cam.fov = 55.0
+		var de := c + Vector3(-dist * 0.8, dist * 0.55 + (6.0 if tipo == "torre" else 0.0), -dist * 0.9)
+		var para := c + Vector3(0, 1.5 + (5.0 if tipo == "torre" else 0.0), 0)
+		_abrir_vista(de, para)
+		cam.look_at_from_position(de, para, Vector3.UP)
+		cam.current = true
+		await _salvar("%d_%s" % [n, tipo])
+		n += 1
+
+	# 69..72 — sobrado na beira da estrada: por fora, em corte, térreo e andar de cima
+	var sob := _achar_predio("sobrado", 300.0, 20000.0, 2)
+	if sob:
+		hora = 16.4
+		_atualizar_ceu()
+		mundo.atualizar(sob.global_position)
+		_regiao_atual = mundo.regiao_em(sob.global_position.z)
+		var fr := sob.global_transform.basis.z
+		var de0 := sob.global_position + fr * 14.0 + sob.global_transform.basis.x * 7.0 + Vector3(0, 3.0, 0)
+		_abrir_vista(de0, sob.global_position)
+		cam.fov = 50.0
+		cam.look_at_from_position(de0, sob.global_position + Vector3(0, 2.5, 0), Vector3.UP)
+		cam.current = true
+		await _salvar("69_sobrado")
+		await _corte_aereo(cam, sob, 0, "70_sobrado_em_corte")
+		hud.visible = true
+		hud._banner_t = 0.0
+		hud.objetivo = "Vasculhe a casa"
+		hud.subobjetivo = "Cada móvel guarda algo diferente"
+		_limpar_zumbis_perto(sob.global_position, 12.0)
+		_dentro_predio(sob, 0)
+		_atualizar_hud()
+		_interacao()
+		await _salvar("71_sobrado_terreo")
+		_dentro_predio(sob, 1, "quarto")
+		_atualizar_hud()
+		_interacao()
+		await _salvar("72_sobrado_andar_de_cima")
+		jogador.position.y += 50.0
+		jogador._atualizar_predio(0.0)
+		sob.corte(-1)
+		hud.visible = false
+
+	# 73..75 — prédio de apartamentos na cidade
+	var rc := _achar_regiao("cidade")
+	var ap := _achar_predio("apto", mundo.reg.inicio(rc) + 400.0, mundo.reg.fim(rc), 3)
+	if ap:
+		hora = 15.2
+		_atualizar_ceu()
+		mundo.atualizar(ap.global_position)
+		_regiao_atual = rc
+		var fr2 := ap.global_transform.basis.z
+		jogador.visible = false
+		cam.fov = 52.0
+		cam.look_at_from_position(ap.global_position + fr2 * 18.0 - ap.global_transform.basis.x * 8.0 + Vector3(0, 4.0, 0), ap.global_position + Vector3(0, ap.andares * 1.5, 0), Vector3.UP)
+		cam.current = true
+		await _salvar("73_predio")
+		await _corte_aereo(cam, ap, ap.andares - 1, "74_predio_ultimo_andar_em_corte")
+		hud.visible = true
+		hud._banner_t = 0.0
+		hud.objetivo = "Suba o prédio"
+		hud.subobjetivo = "Andares altos têm mais saque e mais risco"
+		_limpar_zumbis_perto(ap.global_position, 14.0)
+		_dentro_predio(ap, ap.andares - 1)
+		_atualizar_hud()
+		_interacao()
+		await _salvar("75_predio_ultimo_andar")
+		jogador.position.y += 80.0
+		jogador._atualizar_predio(0.0)
+		ap.corte(-1)
+		hud.visible = false
+
+	# 76 — loja por dentro
+	var lj := _achar_predio("loja", mundo.reg.inicio(rc) + 300.0, mundo.reg.fim(rc))
+	if lj:
+		mundo.atualizar(lj.global_position)
+		hud.visible = true
+		_limpar_zumbis_perto(lj.global_position, 10.0)
+		await _corte_aereo(cam, lj, 0, "76_loja_em_corte")
+		_dentro_predio(lj, 0, "porta")
+		hud.objetivo = "Saqueie a loja"
+		hud.subobjetivo = "Prateleiras, caixa e estoque"
+		_atualizar_hud()
+		_interacao()
+		await _salvar("77_loja_por_dentro")
+	get_tree().quit()
