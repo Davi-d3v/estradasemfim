@@ -181,7 +181,9 @@ func _ready() -> void:
 	if capturando:
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
-		if "--rodada5" in OS.get_cmdline_user_args():
+		if "--modelos" in OS.get_cmdline_user_args():
+			_capturar_modelos()
+		elif "--rodada5" in OS.get_cmdline_user_args():
 			_capturar_r5()
 		elif "--rodada4" in OS.get_cmdline_user_args():
 			_capturar_defesa()
@@ -2487,6 +2489,159 @@ func _capturar_recrutas() -> void:
 	get_tree().quit()
 
 ## Prints da rodada 5: casas da vila, mata nos assentamentos, apocalipse, caça, armas, criação.
+func _etapa() -> String:
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--etapa="):
+			return a.substr(8)
+	return ""
+
+## Prints dos modelos novos (personagens com rosto, zumbis, armas, ações).
+func _capturar_modelos() -> void:
+	comboio.set_physics_process(false)
+	var cam := Camera3D.new()
+	cam.far = 900.0
+	add_child(cam)
+	hud.visible = false
+	hora = 16.4
+	_atualizar_ceu()
+	var etapa := _etapa()
+	if etapa == "" or etapa == "1":
+		# zumbis vindo pela estrada, jogador mirando a pistola
+		var z0 := 2000.0
+		var p0 := mundo.ponto_estrada(z0, 0.5)
+		mundo.atualizar(p0)
+		await get_tree().process_frame
+		_limpar_zumbis_perto(p0, 90.0)
+		var dz := mundo.direcao(z0)
+		var lado := Vector3(dz.z, 0, -dz.x)
+		var r := RandomNumberGenerator.new()
+		r.seed = 77
+		var zs: Array = []
+		var tipos := ["comum", "comum", "corredor", "comum", "brutamonte", "comum", "rastejante", "comum", "gritador", "comum", "comum"]
+		for i in tipos.size():
+			var q := p0 + dz * (5.0 + i * 1.25 + r.randf() * 1.5) + lado * r.randf_range(-3.5, 3.5)
+			q.y = jogador.chao(q)
+			var z := mundo.criar_zumbi(mundo, q, atan2(-dz.x, -dz.z) + r.randf_range(-0.3, 0.3), 500 + i, tipos[i])
+			zs.append(z)
+		await get_tree().process_frame
+		for i in zs.size():
+			var z: Zumbi = zs[i]
+			if z.tipo == "rastejante":
+				z.fixar("Crawl_Fwd", r.randf())
+			else:
+				z.fixar(["Zombie_Walk_Fwd", "Zombie_Walk_Fwd", "Zombie_Run_Fwd", "Zombie_Idle"][i % 4], r.randf())
+		estoque.pistola = 1
+		equip.selecionar("pistola")
+		_posar_jogador(p0 - dz * 2.0, zs[0].global_position + Vector3(0, 1.2, 0), 0.02, 0.0)
+		jogador.set_process(false)
+		jogador.corpo.rotation.y = jogador.yaw
+		jogador.corpo.fixar("Pistol_Aim_Neutral", 0.3)
+		var de := p0 - dz * 4.4 + lado * 1.5 + Vector3(0, 1.85, 0)
+		cam.fov = 55.0
+		cam.look_at_from_position(de, p0 + dz * 6.0 + Vector3(0, 1.0, 0), Vector3.UP)
+		cam.current = true
+		await _salvar("119_zumbis_modelo")
+		# de perto: golpe de facão, zumbi apanhando, outro caído
+		for z in zs:
+			z.visible = false
+		var pz := p0 + dz * 1.3
+		pz.y = jogador.chao(pz)
+		var z1: Zumbi = zs[0]
+		z1.visible = true
+		z1.global_position = pz
+		z1.rotation.y = atan2(-dz.x, -dz.z) + 0.2
+		z1.fixar("Hit_Chest", 0.25)
+		Sangue.jorro(mundo, pz + Vector3(0, 1.2, 0), dz + lado * 0.4, 1.4)
+		var z2: Zumbi = zs[1]
+		z2.visible = true
+		z2.global_position = pz + lado * 1.5 + dz * 0.9
+		z2.global_position.y = jogador.chao(z2.global_position)
+		z2.rotation.y = atan2(-dz.x, -dz.z) - 0.5
+		z2.fixar("Zombie_Scratch", 0.45)
+		var z3: Zumbi = zs[3]
+		z3.visible = true
+		z3.global_position = pz - lado * 1.7 + dz * 1.4
+		z3.global_position.y = jogador.chao(z3.global_position)
+		z3.fixar("Death02", 1.0)
+		Sangue.poca(mundo, z3.global_position + lado * 0.3, 1.1)
+		var z4: Zumbi = zs[4]
+		z4.visible = true
+		z4.global_position = pz + dz * 3.5 - lado * 0.4
+		z4.global_position.y = jogador.chao(z4.global_position)
+		z4.fixar("Zombie_Walk_Fwd", 0.2)
+		equip.selecionar("facao")
+		jogador.corpo.trocar_arma("facao")
+		jogador.corpo.destravar()
+		jogador.corpo.fixar("Sword_Regular_A", 0.42)
+		for f in 30:
+			await get_tree().process_frame
+		var de2 := pz + lado * 4.6 - dz * 1.2 + Vector3(0, 1.7, 0)
+		cam.fov = 50.0
+		cam.look_at_from_position(de2, pz - dz * 0.5 + Vector3(0, 1.0, 0), Vector3.UP)
+		await _salvar("120_combate_de_perto")
+		for z in zs:
+			if is_instance_valid(z):
+				z.queue_free()
+		jogador.set_process(true)
+	if etapa == "" or etapa == "2":
+		var vila := _achar_lugar("vila")
+		mundo.atualizar(vila.pos)
+		await get_tree().process_frame
+		_limpar_zumbis_perto(vila.pos, 70.0)
+		var raiz: Node3D = mundo.lugares_ativos.get(vila.id)
+		jogador.visible = false
+		var pessoas: Array = []
+		for h in raiz.find_children("*", "Humanoid", true, false):
+			pessoas.append(h)
+		print("pessoas na vila: ", pessoas.size())
+		var alvo: Vector3 = pessoas[0].global_position if pessoas.size() > 0 else raiz.global_position
+		for f in 20:
+			await get_tree().process_frame
+		var de3 := alvo + Vector3(-3.2, 1.9, 3.6)
+		cam.fov = 55.0
+		cam.look_at_from_position(de3, alvo + Vector3(0, 1.0, 0), Vector3.UP)
+		cam.current = true
+		await _salvar("121_vila_moradores")
+		if pessoas.size() > 2:
+			var a2: Vector3 = pessoas[2].global_position
+			cam.look_at_from_position(a2 + Vector3(2.6, 1.7, 2.8), a2 + Vector3(0, 1.0, 0), Vector3.UP)
+			await _salvar("121b_vila_moradores")
+	if etapa == "" or etapa == "3":
+		# ações do jogador: comer, beber, enfaixar, recarregar, arremessar, ajoelhar
+		var p1 := mundo.ponto_estrada(900.0, -9.0)
+		mundo.atualizar(p1)
+		await get_tree().process_frame
+		_limpar_zumbis_perto(p1, 40.0)
+		var acoes := [["Consume", "", 0.45], ["Drink", "", 0.5], ["Bandage", "", 0.5], ["Pistol_Reload", "pistola", 0.45], ["OverhandThrow", "", 0.35], ["Fixing_Kneeling", "", 0.3]]
+		var dz2 := mundo.direcao(900.0)
+		var lado2 := Vector3(dz2.z, 0, -dz2.x)
+		jogador.visible = false
+		var bonecos: Array = []
+		for i in acoes.size():
+			var h := Humanoid.new()
+			h.cores = jogador.corpo.cores
+			h.com_mochila = true
+			h.com_bone = true
+			h.arma = acoes[i][1]
+			mundo.add_child(h)
+			var q := p1 + lado2 * (i - 2.5) * 1.6
+			q.y = jogador.chao(q)
+			h.global_position = q
+			h.rotation.y = atan2(-dz2.x, -dz2.z) + 0.5
+			bonecos.append(h)
+		for f in 3:
+			await get_tree().process_frame
+		for i in acoes.size():
+			bonecos[i].fixar(acoes[i][0], acoes[i][2])
+		var de4 := p1 - dz2 * 6.5 + Vector3(0, 1.6, 0)
+		cam.fov = 60.0
+		cam.look_at_from_position(de4, p1 + Vector3(0, 0.9, 0), Vector3.UP)
+		cam.current = true
+		await _salvar("124_acoes_jogador")
+		for h in bonecos:
+			h.queue_free()
+	get_tree().quit()
+
 func _capturar_r5() -> void:
 	comboio.set_physics_process(false)
 	mundo.mat_capim.set_shader_parameter("tempo", 1.3)

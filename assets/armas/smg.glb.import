@@ -3,12 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://dsm61wk5biahf"
-valid=false
+uid="uid://dweivyggrq1ri"
+path="res://.godot/imported/smg.glb-04da1db912517ade885c9f19ff38e5f1.scn"
 
 [deps]
 
 source_file="res://assets/armas/smg.glb"
+dest_files=["res://.godot/imported/smg.glb-04da1db912517ade885c9f19ff38e5f1.scn"]
 
 [params]
 

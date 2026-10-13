@@ -3,12 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://t1l6dekk8bp6"
-valid=false
+uid="uid://nm1cou55qhx3"
+path="res://.godot/imported/rifle.glb-00213781384d423d713113b8b3e13604.scn"
 
 [deps]
 
 source_file="res://assets/armas/rifle.glb"
+dest_files=["res://.godot/imported/rifle.glb-00213781384d423d713113b8b3e13604.scn"]
 
 [params]
 

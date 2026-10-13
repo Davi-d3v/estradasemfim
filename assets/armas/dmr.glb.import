@@ -3,12 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://bps5be8e00wm5"
-valid=false
+uid="uid://cjqsbfnmqptup"
+path="res://.godot/imported/dmr.glb-ec5ecbb0dd4a442b7d47982548b60785.scn"
 
 [deps]
 
 source_file="res://assets/armas/dmr.glb"
+dest_files=["res://.godot/imported/dmr.glb-ec5ecbb0dd4a442b7d47982548b60785.scn"]
 
 [params]
 

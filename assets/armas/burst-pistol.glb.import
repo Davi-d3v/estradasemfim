@@ -3,12 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://drvurgvepe7y4"
-valid=false
+uid="uid://dmhw15t0nw1gy"
+path="res://.godot/imported/burst-pistol.glb-26fc16d479a2c66199901e4026d54957.scn"
 
 [deps]
 
 source_file="res://assets/armas/burst-pistol.glb"
+dest_files=["res://.godot/imported/burst-pistol.glb-26fc16d479a2c66199901e4026d54957.scn"]
 
 [params]
 

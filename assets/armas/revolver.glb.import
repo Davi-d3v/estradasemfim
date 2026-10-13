@@ -3,12 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://crf4s5n235xi4"
-valid=false
+uid="uid://cf3qr64une8xh"
+path="res://.godot/imported/revolver.glb-d712bcf323f85b1f7b90239cc53c0fdd.scn"
 
 [deps]
 
 source_file="res://assets/armas/revolver.glb"
+dest_files=["res://.godot/imported/revolver.glb-d712bcf323f85b1f7b90239cc53c0fdd.scn"]
 
 [params]
 

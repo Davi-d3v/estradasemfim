@@ -5,11 +5,26 @@ extends SceneTree
 ## Uso: godot --headless --path . -s tools/gerar_anims.gd
 
 const FPS := 30.0
-const ALVO := "res://assets/personagens/Casual_Male.gltf"
-const SAIDA := "res://assets/personagens/anims_q.res"
+var ALVO := "res://assets/personagens/Casual_Male.gltf"
+var SAIDA := "res://assets/personagens/anims_q.res"
+var MAPA: Dictionary
+var RAIZ_QUADRIL := "Body_2"
 
-# osso da UAL -> osso do personagem
-const MAPA := {
+# Kenney (Animated Characters): esqueleto estilo Mixamo
+const MAPA_K := {
+	"pelvis": "Hips", "spine_01": "Spine", "spine_02": "Chest", "spine_03": "UpperChest", "neck_01": "Neck", "Head": "Head",
+	"clavicle_l": "LeftShoulder", "upperarm_l": "LeftArm", "lowerarm_l": "LeftForeArm", "hand_l": "LeftHand",
+	"index_01_l": "LeftHandIndex1", "index_02_l": "LeftHandIndex2", "index_03_l": "LeftHandIndex3",
+	"thumb_01_l": "LeftHandThumb1", "thumb_02_l": "LeftHandThumb2",
+	"clavicle_r": "RightShoulder", "upperarm_r": "RightArm", "lowerarm_r": "RightForeArm", "hand_r": "RightHand",
+	"index_01_r": "RightHandIndex1", "index_02_r": "RightHandIndex2", "index_03_r": "RightHandIndex3",
+	"thumb_01_r": "RightHandThumb1", "thumb_02_r": "RightHandThumb2",
+	"thigh_l": "LeftUpLeg", "calf_l": "LeftLeg", "foot_l": "LeftFoot", "ball_l": "LeftToes",
+	"thigh_r": "RightUpLeg", "calf_r": "RightLeg", "foot_r": "RightFoot", "ball_r": "RightToes",
+}
+
+# osso da UAL -> osso do personagem (Quaternius)
+const MAPA_Q := {
 	"pelvis": "Body_2", "spine_01": "Hips", "spine_02": "Abdomen", "spine_03": "Torso",
 	"neck_01": "Neck", "Head": "Head",
 	"clavicle_l": "Shoulder.L", "upperarm_l": "UpperArm.L", "lowerarm_l": "LowerArm.L", "hand_l": "Fist.L",
@@ -36,13 +51,25 @@ const CLIPES := ["Idle", "Idle_LookAround", "Idle_Talking", "Idle_Tired", "Idle_
 var fonte_cenas := {}
 
 func _init() -> void:
-	# ---- alvo (personagem com rosto): pose de ligação da malha (T-pose)
+	MAPA = MAPA_Q
+	if "kenney" in OS.get_cmdline_user_args():
+		ALVO = "res://assets/personagens_k/characterMedium.fbx"
+		SAIDA = "res://assets/personagens_k/anims_k.res"
+		MAPA = MAPA_K
+		RAIZ_QUADRIL = "Hips"
+	# ---- alvo (personagem com rosto): pose de ligação da malha (T-pose), em espaço do modelo
 	var alvo: Node3D = load(ALVO).instantiate()
-	var sk_t: Skeleton3D = alvo.find_child("Skeleton3D", true, false)
+	var sk_t: Skeleton3D = alvo.find_children("*", "Skeleton3D", true, false)[0]
+	var cadeia_t := _cadeia(alvo, sk_t)
 	var mi: MeshInstance3D = alvo.find_children("*", "MeshInstance3D", true, false)[0]
 	var bind := {}
+	for b in sk_t.get_bone_count():
+		bind[sk_t.get_bone_name(b)] = cadeia_t * sk_t.get_bone_global_rest(b)
 	for i in mi.skin.get_bind_count():
-		bind[String(mi.skin.get_bind_name(i))] = mi.skin.get_bind_pose(i).affine_inverse()
+		var nm := String(mi.skin.get_bind_name(i))
+		if nm == "" and mi.skin.get_bind_bone(i) >= 0:
+			nm = sk_t.get_bone_name(mi.skin.get_bind_bone(i))
+		bind[nm] = cadeia_t * mi.skin.get_bind_pose(i).affine_inverse()
 	var caminho_t := String(alvo.get_path_to(sk_t))
 	# ---- fontes (UAL1 e UAL2 têm o mesmo esqueleto)
 	var lib := AnimationLibrary.new()
@@ -68,11 +95,12 @@ func _init() -> void:
 		if not t.begins_with("Foot"):
 			a = Quaternion(bt.y.normalized(), rs.y.normalized())
 		VT[t] = Basis(a) * bt
-	var k_alt: float = bind["Body_2"].origin.y / RS["pelvis"].origin.y
-	# deslocamento do tornozelo (pé) no espaço da canela
+	var k_alt: float = bind[RAIZ_QUADRIL].origin.y / RS["pelvis"].origin.y
+	# deslocamento do tornozelo (pé IK do Quaternius) no espaço da canela
 	var tornozelo := {}
-	for lado in ["L", "R"]:
-		tornozelo[lado] = (bind["LowerLeg." + lado].affine_inverse() * bind["Foot." + lado]).origin
+	if MAPA.has("foot_l") and String(MAPA["foot_l"]).begins_with("Foot."):
+		for lado in ["L", "R"]:
+			tornozelo[lado] = (bind["LowerLeg." + lado].affine_inverse() * bind["Foot." + lado]).origin
 	for nome in CLIPES:
 		var anim: Animation = null
 		for c in ual:
@@ -83,7 +111,7 @@ func _init() -> void:
 		if anim == null:
 			faltando.append(nome)
 			continue
-		var nova := _redirecionar(anim, sk_s, caminho_s, cadeia_s, RS, sk_t, caminho_t, VT, k_alt, tornozelo)
+		var nova := _redirecionar(anim, sk_s, caminho_s, cadeia_s, RS, sk_t, caminho_t, cadeia_t, VT, k_alt, tornozelo)
 		nova.loop_mode = Animation.LOOP_LINEAR if nome in LOOPS else Animation.LOOP_NONE
 		lib.add_animation(nome, nova)
 	print("faltando: ", faltando)
@@ -98,7 +126,9 @@ func _cadeia(raiz: Node, n: Node) -> Transform3D:
 	return t
 
 func _redirecionar(anim: Animation, sk_s: Skeleton3D, caminho_s: String, cadeia_s: Transform3D, RS: Dictionary,
-		sk_t: Skeleton3D, caminho_t: String, VT: Dictionary, k_alt: float, tornozelo: Dictionary) -> Animation:
+		sk_t: Skeleton3D, caminho_t: String, cadeia_t: Transform3D, VT: Dictionary, k_alt: float, tornozelo: Dictionary) -> Animation:
+	var esc_t: float = cadeia_t.basis.get_scale().x
+	var cadeia_inv := cadeia_t.affine_inverse()
 	var nova := Animation.new()
 	nova.length = anim.length
 	# trilhas da fonte por osso
@@ -118,7 +148,7 @@ func _redirecionar(anim: Animation, sk_s: Skeleton3D, caminho_s: String, cadeia_
 		var ir := nova.add_track(Animation.TYPE_ROTATION_3D)
 		nova.track_set_path(ir, NodePath(caminho_t + ":" + t))
 		tt[t + "_r"] = ir
-		if t == "Body_2" or t.begins_with("Foot"):
+		if t == RAIZ_QUADRIL or (t.begins_with("Foot") and tornozelo.size() > 0):
 			var ip := nova.add_track(Animation.TYPE_POSITION_3D)
 			nova.track_set_path(ip, NodePath(caminho_t + ":" + t))
 			tt[t + "_p"] = ip
@@ -145,27 +175,35 @@ func _redirecionar(anim: Animation, sk_s: Skeleton3D, caminho_s: String, cadeia_
 			var local := Transform3D(Basis(rot), pos)
 			var par := sk_s.get_bone_parent(b)
 			GS[nm] = (GS[sk_s.get_bone_name(par)] if par >= 0 else cadeia_s) * local
-		# pose global do alvo
+		# pose global do alvo (espaço do modelo, em metros, bases ortonormais)
 		var GT := {}
-		GT["Bone"] = sk_t.get_bone_global_rest(id_t["Bone"])
 		for s in MAPA:
 			var t: String = MAPA[s]
 			var gs: Basis = GS[s].basis.orthonormalized()
 			var base: Basis = gs * RS[s].basis.orthonormalized().inverse() * VT[t]
 			var origem: Vector3
-			if t == "Body_2":
+			var pai_id := sk_t.get_bone_parent(id_t[t])
+			var pai: String = sk_t.get_bone_name(pai_id) if pai_id >= 0 else ""
+			if t == RAIZ_QUADRIL:
 				origem = GS[s].origin * k_alt
-			elif t.begins_with("Foot"):
+			elif tornozelo.size() > 0 and t.begins_with("Foot"):
 				var lado := t.get_slice(".", 1)
 				origem = GT["LowerLeg." + lado] * tornozelo[lado]
+			elif GT.has(pai):
+				origem = GT[pai] * (sk_t.get_bone_rest(id_t[t]).origin * esc_t)
 			else:
-				var pai: String = sk_t.get_bone_name(sk_t.get_bone_parent(id_t[t]))
-				origem = GT[pai] * sk_t.get_bone_rest(id_t[t]).origin
+				origem = (cadeia_t * sk_t.get_bone_global_rest(id_t[t])).origin
 			GT[t] = Transform3D(base, origem)
 		for s in MAPA:
 			var t: String = MAPA[s]
-			var pai: String = sk_t.get_bone_name(sk_t.get_bone_parent(id_t[t]))
-			var local: Transform3D = GT[pai].affine_inverse() * GT[t]
+			var pai_id := sk_t.get_bone_parent(id_t[t])
+			# volta para o espaço do esqueleto
+			var g_sk: Transform3D = cadeia_inv * GT[t]
+			var p_sk: Transform3D = Transform3D()
+			if pai_id >= 0:
+				var pai: String = sk_t.get_bone_name(pai_id)
+				p_sk = cadeia_inv * GT[pai] if GT.has(pai) else sk_t.get_bone_global_rest(pai_id)
+			var local: Transform3D = p_sk.affine_inverse() * g_sk
 			nova.rotation_track_insert_key(tt[t + "_r"], tempo, local.basis.get_rotation_quaternion())
 			if tt.has(t + "_p"):
 				nova.position_track_insert_key(tt[t + "_p"], tempo, local.origin)

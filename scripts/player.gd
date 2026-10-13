@@ -51,10 +51,7 @@ func _ready() -> void:
 	corpo.com_mochila = true
 	corpo.com_bone = true
 	corpo.arma = "facao"
-	corpo.arquivo = "Casual2_Male"
-	corpo.cores = {"Skin": Color(0.74, 0.53, 0.38), "Face": Color(0.07, 0.05, 0.04), "Shirt": Color(0.27, 0.31, 0.27),
-		"Pants": Color(0.3, 0.26, 0.2), "Belt": Color(0.12, 0.08, 0.05), "Hair": Color(0.12, 0.08, 0.05)}
-	corpo.sujeira = 0.15
+	corpo.cores = {"cabelo": "Hair_SimpleParted", "barba": true, "roupa": Color(0.72, 0.8, 0.62), "pele": Color(0.92, 0.84, 0.78), "cor_cabelo": Color(0.12, 0.08, 0.05)}
 	corpo.camisa = Color(0.24, 0.27, 0.26)
 	corpo.calca = Color(0.26, 0.24, 0.2)
 	add_child(corpo)

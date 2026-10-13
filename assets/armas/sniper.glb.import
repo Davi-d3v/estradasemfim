@@ -3,12 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://b3l4f655emf2t"
-valid=false
+uid="uid://b84feylx132ff"
+path="res://.godot/imported/sniper.glb-9fdb8cf1957369d47fc530ca64e55792.scn"
 
 [deps]
 
 source_file="res://assets/armas/sniper.glb"
+dest_files=["res://.godot/imported/sniper.glb-9fdb8cf1957369d47fc530ca64e55792.scn"]
 
 [params]
 

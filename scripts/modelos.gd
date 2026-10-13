@@ -1,45 +1,22 @@
 class_name Modelos
-## Modelos 3D prontos (CC0): personagens com rosto e zumbis da Quaternius
-## (Ultimate Animated Character Pack), animados com a Universal Animation Library
-## redirecionada para o esqueleto deles (assets/personagens/anims_q.res, gerado por
-## tools/gerar_anims.gd); animais e armas.
+## Modelos 3D prontos (CC0, Quaternius): personagens de proporção realista e com rosto
+## (Universal Base Characters + roupa modular, montados em PersonagemU), animados
+## direto pela Universal Animation Library (mesmo esqueleto). Animais e armas.
 
-const ESCALA := 0.55                       # personagem ~1,75 m
-const DIR := "res://assets/personagens/"
-const LIB := DIR + "anims_q.res"
+const ESCALA := 1.0
+const UAL := ["res://assets/personagens/UAL1.glb", "res://assets/personagens/UAL2.glb"]
+const LOOPS := ["Idle", "Idle_LookAround", "Idle_Talking", "Idle_Tired", "Idle_FoldArms", "Idle_Torch", "Walk", "Walk_Formal",
+	"Jog_Fwd", "Sprint", "Crouch_Idle", "Crouch_Fwd", "Crawl_Fwd", "Crawl_Idle", "Pistol_Idle", "Pistol_Aim_Neutral",
+	"Pistol_Aim_Down", "Pistol_Aim_Up", "Fixing_Kneeling", "GroundSit_Idle", "Sitting_Idle", "Sitting_Talking",
+	"Zombie_Idle", "Zombie_Walk_Fwd", "Zombie_Run_Fwd", "Farm_Harvest", "Farm_Watering", "Mining", "TreeChopping",
+	"Walk_Carry", "Sword_Idle", "Driving", "Crying", "Idle_Lantern", "Idle_TalkingPhone", "Idle_Rail", "Consume"]
 
-## Visuais por papel. Cada um lista arquivos (sem .gltf) masculinos e femininos.
-const VISUAIS := {
-	"civil": [["Casual_Male", "Casual2_Male", "Casual3_Male", "Casual_Bald"], ["Casual_Female", "Casual2_Female", "Casual3_Female"]],
-	"trabalhador": [["Worker_Male"], ["Worker_Female"]],
-	"medico": [["Doctor_Male_Young", "Doctor_Male_Old"], ["Doctor_Female_Young", "Doctor_Female_Old"]],
-	"soldado": [["Soldier_Male"], ["Soldier_Female"]],
-	"idoso": [["OldClassy_Male"], ["OldClassy_Female"]],
-	"cowboy": [["Cowboy_Male"], ["Cowboy_Male"]],
-	"cozinheiro": [["Chef_Male"], ["Chef_Male"]],
-	"zumbi": [["Zombie_Male"], ["Zombie_Female"]],
-}
-
-## Tons de pele (sRGB) e cores de roupa gasta.
-const PELES := [Color(0.93, 0.76, 0.62), Color(0.86, 0.66, 0.5), Color(0.74, 0.53, 0.38), Color(0.6, 0.41, 0.28),
-	Color(0.45, 0.3, 0.2), Color(0.33, 0.22, 0.15), Color(0.82, 0.63, 0.48), Color(0.67, 0.47, 0.33)]
-const CABELOS := [Color(0.1, 0.07, 0.05), Color(0.2, 0.12, 0.07), Color(0.32, 0.2, 0.1), Color(0.55, 0.42, 0.25), Color(0.6, 0.6, 0.58), Color(0.05, 0.05, 0.05)]
-const ROUPAS := [Color(0.23, 0.28, 0.34), Color(0.35, 0.33, 0.27), Color(0.42, 0.18, 0.15), Color(0.25, 0.32, 0.22), Color(0.5, 0.48, 0.42),
-	Color(0.18, 0.2, 0.24), Color(0.55, 0.4, 0.22), Color(0.3, 0.24, 0.36), Color(0.62, 0.6, 0.55), Color(0.2, 0.36, 0.42)]
-const CALCAS := [Color(0.16, 0.2, 0.3), Color(0.24, 0.22, 0.18), Color(0.3, 0.28, 0.22), Color(0.12, 0.12, 0.13), Color(0.36, 0.32, 0.24)]
-const PELES_ZUMBI := [Color(0.5, 0.56, 0.45), Color(0.44, 0.48, 0.42), Color(0.55, 0.52, 0.45), Color(0.38, 0.44, 0.36), Color(0.48, 0.42, 0.4)]
-
-## Armas de fogo: arquivo, escala, ponto da empunhadura (no modelo), ponta do cano (no modelo).
-const ARMAS_FOGO := {
-	"pistola": ["revolver", 0.105, Vector3(0.12, -0.18, 0.0), Vector3(1.74, 0.38, 0.0)],
-	"espingarda": ["shotgun", 0.2, Vector3(0.45, -0.2, 0.0), Vector3(4.05, 0.3, 0.0)],
-	"rifle": ["sniper", 0.155, Vector3(0.2, -0.3, 0.0), Vector3(5.25, 0.25, 0.0)],
-	"metralhadora": ["smg", 0.14, Vector3(0.3, -0.35, 0.0), Vector3(2.27, 0.45, 0.0)],
-}
-## Na mão direita (eixos do osso Fist.R): o cano aponta para +Y do osso, o "em cima"
-## da arma para -X do osso. Vale para todas as poses porque a arma é rígida na mão.
-const BASE_MAO := Basis(Vector3(0, 1, 0), Vector3(-1, 0, 0), Vector3(0, 0, 1))
-const CENTRO_MAO := Vector3(0.0, 0.055, 0.012)
+const PELES := [Color(1.0, 1.0, 1.0), Color(0.92, 0.85, 0.8), Color(0.78, 0.66, 0.58), Color(0.62, 0.5, 0.42), Color(0.48, 0.38, 0.32), Color(1.0, 0.94, 0.9)]
+const CABELOS := [Color(0.16, 0.11, 0.07), Color(0.08, 0.06, 0.05), Color(0.3, 0.2, 0.12), Color(0.5, 0.38, 0.24), Color(0.62, 0.6, 0.58), Color(0.42, 0.22, 0.12)]
+const ROUPAS := [Color(1, 1, 1), Color(0.75, 0.82, 0.95), Color(0.95, 0.8, 0.7), Color(0.7, 0.8, 0.65), Color(0.6, 0.6, 0.62), Color(0.9, 0.75, 0.55),
+	Color(0.8, 0.6, 0.6), Color(0.55, 0.6, 0.7)]
+const CABELOS_M := ["Hair_SimpleParted", "Hair_Buzzed", "Hair_SimpleParted", ""]
+const CABELOS_F := ["Hair_Long", "Hair_Buns", "Hair_BuzzedFemale", "Hair_Long"]
 
 static var _cenas := {}
 static var _lib: AnimationLibrary
@@ -48,12 +25,23 @@ static var _ok := -1
 
 static func disponivel() -> bool:
 	if _ok < 0:
-		_ok = 1 if ResourceLoader.exists(LIB) and ResourceLoader.exists(DIR + "Casual_Male.gltf") else 0
+		_ok = 1 if PersonagemU.disponivel() and ResourceLoader.exists(UAL[0]) else 0
 	return _ok == 1
 
+## Uma biblioteca só com as animações das duas UAL (as do pacote 2 não repetem nomes).
 static func biblioteca() -> AnimationLibrary:
 	if _lib == null:
-		_lib = load(LIB)
+		_lib = AnimationLibrary.new()
+		for c in UAL:
+			var n: Node = load(c).instantiate()
+			var ap: AnimationPlayer = n.find_children("*", "AnimationPlayer", true, false)[0]
+			var l: AnimationLibrary = ap.get_animation_library("")
+			for nome in l.get_animation_list():
+				if not _lib.has_animation(nome):
+					var an: Animation = l.get_animation(nome)
+					an.loop_mode = Animation.LOOP_LINEAR if String(nome) in LOOPS else Animation.LOOP_NONE
+					_lib.add_animation(nome, an)
+			n.free()
 	return _lib
 
 static func _cena(caminho: String) -> PackedScene:
@@ -71,62 +59,43 @@ static func mat(cor: Color, rough := 0.85, metal := 0.0) -> StandardMaterial3D:
 		_mats[k] = m
 	return _mats[k]
 
-## Escolhe um arquivo de visual para o papel.
-static func escolher(papel: String, feminino: bool, rng: RandomNumberGenerator) -> String:
-	var v: Array = VISUAIS.get(papel, VISUAIS.civil)
-	var lista: Array = v[1 if feminino else 0]
-	return lista[rng.randi() % lista.size()]
+## Visual aleatório para um papel: {cabelo, barba, roupa, pele, cor_cabelo}.
+static func escolher(papel: String, feminino: bool, rng: RandomNumberGenerator) -> Dictionary:
+	var v := {
+		"cabelo": (CABELOS_F if feminino else CABELOS_M)[rng.randi() % 4],
+		"barba": not feminino and rng.randf() < 0.45,
+		"roupa": ROUPAS[rng.randi() % ROUPAS.size()],
+		"pele": PELES[rng.randi() % PELES.size()],
+		"cor_cabelo": CABELOS[rng.randi() % CABELOS.size()],
+	}
+	match papel:
+		"zumbi":
+			v.pele = [Color(0.8, 1.0, 0.78), Color(0.85, 0.92, 0.88), Color(0.9, 0.95, 0.75), Color(0.78, 0.9, 0.82)][rng.randi() % 4]
+			v.roupa = [Color(0.85, 0.75, 0.68), Color(0.72, 0.72, 0.78), Color(0.9, 0.72, 0.6), Color(0.75, 0.8, 0.7)][rng.randi() % 4]
+			v.cor_cabelo = v.cor_cabelo.darkened(0.3)
+		"medico":
+			v.roupa = Color(1.1, 1.1, 1.12)
+		"soldado":
+			v.roupa = Color(0.62, 0.7, 0.5)
+			v.barba = false
+		"trabalhador":
+			v.roupa = Color(0.95, 0.72, 0.45)
+		"idoso":
+			v.cor_cabelo = Color(0.7, 0.7, 0.68)
+	return v
 
-## Cores aleatórias coerentes para um personagem.
-static func cores_aleatorias(arquivo: String, rng: RandomNumberGenerator) -> Dictionary:
-	var c := {}
-	if arquivo.begins_with("Zombie"):
-		var pz: Color = PELES_ZUMBI[rng.randi() % PELES_ZUMBI.size()]
-		c["Skin"] = pz
-		c["Clothes"] = ROUPAS[rng.randi() % ROUPAS.size()].darkened(0.35)
-		c["DarkClothes"] = CALCAS[rng.randi() % CALCAS.size()].darkened(0.3)
-		c["Pants"] = CALCAS[rng.randi() % CALCAS.size()].darkened(0.2)
-		c["Guts"] = Color(0.42, 0.07, 0.05)
-		c["Face"] = Color(0.08, 0.04, 0.03)
-		c["Hair"] = CABELOS[rng.randi() % CABELOS.size()].darkened(0.3)
-		return c
-	var pele: Color = PELES[rng.randi() % PELES.size()]
-	c["Skin"] = pele
-	c["Face"] = Color(0.07, 0.05, 0.04) if pele.get_luminance() > 0.33 else Color(0.95, 0.93, 0.88)
-	c["Hair"] = CABELOS[rng.randi() % CABELOS.size()]
-	if arquivo.begins_with("Casual"):
-		c["Shirt"] = ROUPAS[rng.randi() % ROUPAS.size()]
-		c["Pants"] = CALCAS[rng.randi() % CALCAS.size()]
-	elif arquivo.begins_with("Worker"):
-		c["Shirt"] = ROUPAS[rng.randi() % ROUPAS.size()]
-	return c
-
-## Instancia um personagem. Devolve {raiz, esqueleto, player, malha}.
-static func personagem(arquivo: String, cores: Dictionary, sujeira := 0.0) -> Dictionary:
-	var raiz: Node3D = _cena(DIR + arquivo + ".gltf").instantiate()
-	raiz.scale = Vector3.ONE * ESCALA
-	var ap: AnimationPlayer = raiz.get_node("AnimationPlayer")
+## Instancia um personagem. Devolve {raiz, esqueleto, player}.
+static func personagem(feminino: bool, vis: Dictionary) -> Dictionary:
+	var d := PersonagemU.montar(feminino, vis.get("cabelo", ""), vis.get("barba", false), vis.get("roupa", Color.WHITE), vis.get("pele", Color.WHITE), vis.get("cor_cabelo", Color(0.2, 0.14, 0.08)))
+	var ap: AnimationPlayer = d.player
+	ap.root_node = ap.get_path_to(d.raiz)
 	ap.add_animation_library("q", biblioteca())
-	var sk: Skeleton3D = raiz.find_child("Skeleton3D", true, false)
-	var malha: MeshInstance3D = null
-	for mi in sk.get_children():
+	for mi in d.esqueleto.get_children():
 		if mi is MeshInstance3D:
-			malha = mi
-			for s in mi.mesh.get_surface_count():
-				var m: Material = mi.mesh.surface_get_material(s)
-				var nome := m.resource_name if m else ""
-				if cores.has(nome):
-					var cor: Color = cores[nome]
-					if sujeira > 0.0 and nome != "Face" and nome != "Skin":
-						cor = cor.lerp(Color(0.3, 0.25, 0.18), sujeira)
-					mi.set_surface_override_material(s, mat(cor, 0.9))
-				elif m is StandardMaterial3D:
-					# cores originais em linear: deixa um pouco mais claras para o nosso céu
-					mi.set_surface_override_material(s, mat((m as StandardMaterial3D).albedo_color.linear_to_srgb().darkened(0.05), 0.9))
 			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
-	return {"raiz": raiz, "esqueleto": sk, "player": ap, "malha": malha}
+	return d
 
-## Ponto de fixação num osso, em metros (desfaz a escala do modelo).
+## Ponto de fixação num osso, em metros e no espaço do osso.
 static func anexo(sk: Skeleton3D, osso: String, nome: String) -> Node3D:
 	var ba := BoneAttachment3D.new()
 	ba.name = "BA_" + nome
@@ -134,11 +103,27 @@ static func anexo(sk: Skeleton3D, osso: String, nome: String) -> Node3D:
 	sk.add_child(ba)
 	var n := Node3D.new()
 	n.name = nome
-	n.scale = Vector3.ONE / ESCALA
+	var esc := 1.0
+	var no: Node = sk
+	while no != null and no is Node3D:
+		esc *= (no as Node3D).scale.x
+		no = no.get_parent()
+	n.scale = Vector3.ONE / maxf(esc, 0.0001)
 	ba.add_child(n)
 	return n
 
 # ------------------------------------------------------------ armas
+## Armas de fogo: arquivo, escala, ponto da empunhadura (no modelo), ponta do cano (no modelo).
+const ARMAS_FOGO := {
+	"pistola": ["revolver", 0.105, Vector3(0.12, -0.18, 0.0), Vector3(1.74, 0.38, 0.0)],
+	"espingarda": ["shotgun", 0.2, Vector3(0.45, -0.2, 0.0), Vector3(4.05, 0.3, 0.0)],
+	"rifle": ["sniper", 0.155, Vector3(0.2, -0.3, 0.0), Vector3(5.25, 0.25, 0.0)],
+	"metralhadora": ["smg", 0.14, Vector3(0.3, -0.35, 0.0), Vector3(2.27, 0.45, 0.0)],
+}
+## Na mão direita (osso hand_r da UAL): o cano aponta para +Y do osso e o "em cima" da
+## arma para +Z. Vale para todas as poses, porque a arma é rígida na mão.
+const BASE_MAO := Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0))
+const CENTRO_MAO := Vector3(0.0, 0.08, 0.0)
 ## Monta a arma na âncora da mão direita. Cria o nó "Arma" e, nas de fogo, "Boca".
 static func arma_na_mao(mao: Node3D, id: String) -> Node3D:
 	var velho := mao.get_node_or_null("Arma")
@@ -163,9 +148,9 @@ static func arma_na_mao(mao: Node3D, id: String) -> Node3D:
 		boca.position = CENTRO_MAO + BASE_MAO * ((d[3] - d[2]) * esc)
 		arma.add_child(boca)
 		return arma
-	# armas brancas: lâmina/cabo ao longo de -X do osso (sai pelo polegar), gume para +Y
+	# armas brancas: lâmina/cabo ao longo de +Z do osso (sai pelo polegar), gume para +Y
 	var lam := Node3D.new()
-	lam.transform = Transform3D(Basis(Vector3(0, 0, -1), Vector3(-1, 0, 0), Vector3(0, 1, 0)), CENTRO_MAO)
+	lam.transform = Transform3D(Basis(Vector3(-1, 0, 0), Vector3(0, 0, 1), Vector3(0, 1, 0)), CENTRO_MAO)
 	arma.add_child(lam)
 	# no espaço "lam": +Y = ao longo do cabo para a ponta, +Z = gume
 	match id:

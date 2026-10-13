@@ -374,11 +374,10 @@ func _construir_modelo(rng: RandomNumberGenerator) -> void:
 		visual = "medico"
 	elif chapeu:
 		visual = "trabalhador"
-	var arq := arquivo if arquivo != "" else Modelos.escolher(visual, feminino, rng)
-	var c := Modelos.cores_aleatorias(arq, rng)
+	var vis := Modelos.escolher(visual, feminino, rng)
 	for k in cores:
-		c[k] = cores[k]
-	_m = Modelos.personagem(arq, c, sujeira)
+		vis[k] = cores[k]
+	_m = Modelos.personagem(feminino, vis)
 	add_child(_m.raiz)
 	_m.raiz.rotation.y = 0.0
 	_ap = _m.player
@@ -402,18 +401,18 @@ func _construir_modelo(rng: RandomNumberGenerator) -> void:
 	cotovelo_d = _junta(ombro_d, Vector3(0, -0.3, 0))
 	# pontos de fixação reais (em metros)
 	var sk: Skeleton3D = _m.esqueleto
-	mao_d = Modelos.anexo(sk, "Fist.R", "mao_d")
-	mao_e = Modelos.anexo(sk, "Fist.L", "mao_e")
-	costas = Modelos.anexo(sk, "Torso", "costas")
+	mao_d = Modelos.anexo(sk, "hand_r", "mao_d")
+	mao_e = Modelos.anexo(sk, "hand_l", "mao_e")
+	costas = Modelos.anexo(sk, "spine_03", "costas")
 	cabeca_a = Modelos.anexo(sk, "Head", "cabeca")
-	coxa_e = Modelos.anexo(sk, "UpperLeg.L", "coxa_e")
-	coxa_d = Modelos.anexo(sk, "UpperLeg.R", "coxa_d")
-	canela_e = Modelos.anexo(sk, "LowerLeg.L", "canela_e")
-	canela_d = Modelos.anexo(sk, "LowerLeg.R", "canela_d")
-	braco_e = Modelos.anexo(sk, "UpperArm.L", "braco_e")
-	braco_d = Modelos.anexo(sk, "UpperArm.R", "braco_d")
-	antebraco_e = Modelos.anexo(sk, "LowerArm.L", "antebraco_e")
-	antebraco_d = Modelos.anexo(sk, "LowerArm.R", "antebraco_d")
+	coxa_e = Modelos.anexo(sk, "thigh_l", "coxa_e")
+	coxa_d = Modelos.anexo(sk, "thigh_r", "coxa_d")
+	canela_e = Modelos.anexo(sk, "calf_l", "canela_e")
+	canela_d = Modelos.anexo(sk, "calf_r", "canela_d")
+	braco_e = Modelos.anexo(sk, "upperarm_l", "braco_e")
+	braco_d = Modelos.anexo(sk, "upperarm_r", "braco_d")
+	antebraco_e = Modelos.anexo(sk, "lowerarm_l", "antebraco_e")
+	antebraco_d = Modelos.anexo(sk, "lowerarm_r", "antebraco_d")
 	_acessorios_modelo()
 	_arma_modelo()
 	set_process(true)
@@ -425,14 +424,61 @@ func _construir_modelo(rng: RandomNumberGenerator) -> void:
 		_ap.seek(rng.randf() * 2.0, true)
 
 func _acessorios_modelo() -> void:
+	if zumbi:
+		_sangue_modelo()
 	if com_mochila:
 		_mochila_modelo()
+	_chapeu_modelo()
+
+## Manchas de sangue e rasgos (zumbi): placas finas presas ao peito, braços e rosto.
+func _sangue_modelo() -> void:
+	var r := RandomNumberGenerator.new()
+	r.seed = semente + 17
+	var vermelho := Modelos.mat(Color(0.32, 0.03, 0.02), 0.35)
+	var escuro := Modelos.mat(Color(0.12, 0.04, 0.03), 0.6)
+	for i in r.randi_range(3, 6):
+		var lado := 1.0 if r.randf() < 0.75 else -1.0
+		var p := Vector3(r.randf_range(-0.12, 0.12), r.randf_range(-0.12, 0.14), 0.135 * lado)
+		var b := B.box(costas, Vector3(r.randf_range(0.04, 0.11), r.randf_range(0.04, 0.16), 0.008), p, vermelho if r.randf() < 0.7 else escuro)
+		b.rotation.z = r.randf_range(-0.6, 0.6)
+	# boca e queixo sujos
+	B.box(cabeca_a, Vector3(0.05, 0.035, 0.008), Vector3(0, 0.03, 0.105), vermelho)
+	for q in [antebraco_e, antebraco_d]:
+		if r.randf() < 0.7:
+			B.box(q, Vector3(0.07, 0.1, 0.07), Vector3(0, r.randf_range(0.05, 0.2), 0), vermelho)
+
+## Chapéus e capacetes por papel (osso Head: +Y para cima, +Z para a frente; cabeça ~0,45 m).
+func _chapeu_modelo() -> void:
+	var h := cabeca_a
+	var tipo := ""
 	if com_bone and not zumbi:
-		var bone := Modelos.mat(Color(0.2, 0.22, 0.17), 0.9)
-		# a cabeça dos personagens é grande: o boné acompanha
-		var b := B.sphere(cabeca_a, 0.24, Vector3(0, 0.32, -0.01), bone, Vector3(1.0, 0.55, 1.05))
-		b.name = "Bone"
-		B.box(cabeca_a, Vector3(0.36, 0.025, 0.2), Vector3(0, 0.33, 0.24), bone, Vector3(-8, 0, 0))
+		tipo = "bone"
+	match visual:
+		"soldado":
+			tipo = "capacete"
+		"trabalhador":
+			tipo = "palha" if chapeu else "obra"
+		"idoso", "cowboy":
+			tipo = "chapeu"
+	if chapeu and tipo == "":
+		tipo = "palha"
+	match tipo:
+		"bone":
+			var bone := Modelos.mat(Color(0.2, 0.22, 0.17), 0.9)
+			B.sphere(h, 0.105, Vector3(0, 0.155, -0.005), bone, Vector3(1.0, 0.55, 1.08))
+			B.box(h, Vector3(0.15, 0.012, 0.09), Vector3(0, 0.155, 0.11), bone, Vector3(-6, 0, 0))
+		"capacete":
+			var verde := Modelos.mat(Color(0.28, 0.32, 0.2), 0.75)
+			B.sphere(h, 0.118, Vector3(0, 0.15, -0.005), verde, Vector3(1.04, 0.66, 1.12))
+			B.cyl(h, 0.128, 0.018, Vector3(0, 0.135, -0.005), verde, Vector3.ZERO, 14)
+		"obra":
+			var am := Modelos.mat(Color(0.9, 0.7, 0.1), 0.45)
+			B.sphere(h, 0.112, Vector3(0, 0.16, -0.005), am, Vector3(1.0, 0.62, 1.1))
+			B.box(h, Vector3(0.15, 0.012, 0.06), Vector3(0, 0.15, 0.11), am)
+		"palha", "chapeu":
+			var c := Modelos.mat(Color(0.78, 0.66, 0.4), 0.95) if tipo == "palha" else Modelos.mat(Color(0.25, 0.17, 0.1), 0.85)
+			B.cyl(h, 0.19, 0.012, Vector3(0, 0.17, 0), c, Vector3.ZERO, 16)
+			B.cyl(h, 0.1, 0.09, Vector3(0, 0.215, 0), c, Vector3.ZERO, 12, 0.09)
 
 ## Mochila de sobrevivente: proporcional ao corpo novo (menor que a antiga).
 func _mochila_modelo() -> void:
@@ -442,8 +488,9 @@ func _mochila_modelo() -> void:
 	var n := Node3D.new()
 	n.name = "Mochila"
 	# no osso Torso: +Y sobe pela coluna, +Z é a frente do peito
-	n.position = Vector3(0, 0.08, -0.17)
+	n.position = Vector3(0, 0.02, -0.2)
 	t.add_child(n)
+	n.rotation_degrees = Vector3(0, 0, 0)
 	B.box(n, Vector3(0.27, 0.32, 0.13), Vector3(0, 0, 0), verde)
 	B.box(n, Vector3(0.21, 0.12, 0.05), Vector3(0, -0.06, -0.085), escuro)
 	B.box(n, Vector3(0.28, 0.06, 0.14), Vector3(0, 0.17, 0), escuro)

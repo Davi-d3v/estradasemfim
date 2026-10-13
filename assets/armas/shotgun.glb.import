@@ -3,12 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://kcy8kwsgen57"
-valid=false
+uid="uid://c4homcoyldijo"
+path="res://.godot/imported/shotgun.glb-20c1398c59317f0c4b52b31ad353a709.scn"
 
 [deps]
 
 source_file="res://assets/armas/shotgun.glb"
+dest_files=["res://.godot/imported/shotgun.glb-20c1398c59317f0c4b52b31ad353a709.scn"]
 
 [params]
 

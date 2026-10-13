@@ -20,7 +20,9 @@ func _init() -> void:
 			lado = true
 		elif a.begins_with("modelos="):
 			modelos = a.substr(8).split(",")
+	var k := "kenney" in args
 	var lib: AnimationLibrary = load("res://assets/personagens/anims_q.res")
+	var skins := ["humanMaleA", "survivorFemaleA", "criminalMaleA", "humanFemaleA", "skaterMaleA", "zombieMaleA", "zombieA", "zombieFemaleA"]
 	var mundo := Node3D.new()
 	root.add_child(mundo)
 	var env := WorldEnvironment.new()
@@ -39,13 +41,27 @@ func _init() -> void:
 	mundo.add_child(chao)
 	var n := clipes.size()
 	for i in n:
-		var cena: Node3D = load("res://assets/personagens/%s.gltf" % modelos[i % modelos.size()]).instantiate()
-		cena.scale = Vector3.ONE * 0.55
+		var cena: Node3D
+		if k:
+			cena = load("res://assets/personagens_k/characterMedium.fbx").instantiate()
+			cena.scale = Vector3.ONE * 0.47
+			var mi: MeshInstance3D = cena.find_children("*", "MeshInstance3D", true, false)[0]
+			var m := StandardMaterial3D.new()
+			m.albedo_texture = load("res://assets/personagens_k/skins/%s.png" % skins[i % skins.size()])
+			m.roughness = 0.85
+			mi.material_override = m
+		else:
+			cena = load("res://assets/personagens/%s.gltf" % modelos[i % modelos.size()]).instantiate()
+			cena.scale = Vector3.ONE * 0.55
 		cena.position = Vector3((i - (n - 1) * 0.5) * 1.5, 0, 0)
 		if lado:
 			cena.rotation.y = PI * 0.5
 		mundo.add_child(cena)
-		var ap: AnimationPlayer = cena.get_node("AnimationPlayer")
+		var ap: AnimationPlayer = cena.find_children("*", "AnimationPlayer", true, false)[0] if cena.find_children("*", "AnimationPlayer", true, false).size() > 0 else null
+		if ap == null:
+			ap = AnimationPlayer.new()
+			cena.add_child(ap)
+			ap.root_node = NodePath("..")
 		ap.add_animation_library("q", lib)
 		ap.play("q/" + clipes[i])
 		ap.seek(tempo * ap.current_animation_length, true)
