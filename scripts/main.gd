@@ -87,6 +87,7 @@ var base: BaseRecrutas
 var fumacas: Node3D
 var cinzas: CPUParticles3D
 var equip: Equipamento
+var tutorial: Tutorial
 var _compartimento_preso := false     # prints: deixa a porta aberta ao fechar o painel
 var criacao: Criacao
 var defesa: Defesa
@@ -172,6 +173,9 @@ func _ready() -> void:
 	painel = Painel.new()
 	painel.fechado.connect(_fechar_janela)
 	cl.add_child(painel)
+	tutorial = Tutorial.new()
+	tutorial.main = self
+	cl.add_child(tutorial)
 	menu = Menu.new()
 	menu.escolheu.connect(_comecar)
 	menu.continuar.connect(_acordar_apos_queda)
@@ -481,6 +485,8 @@ func _comecar(m: String) -> void:
 	jogador.set_process(true)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	hud.banner("Modo: " + ("Sobrevivência total" if m == Jogo.MODO_TOTAL else "Estrada sem fim"), "Boa sorte na estrada.")
+	if not Tutorial.ja_visto():
+		get_tree().create_timer(3.0).timeout.connect(tutorial.iniciar)
 
 func _novo_jogo() -> void:
 	Jogo.semente = randi()
@@ -579,11 +585,11 @@ func _atualizar_ceu() -> void:
 	var cor_lua := Color(0.45, 0.55, 0.85)
 	var cor_luz := cor_tarde.lerp(cor_dia, dia_f).lerp(cor_lua, noite_f)
 	sol.light_color = cor_luz
-	sol.light_energy = lerpf(lerpf(1.5, 1.25, dia_f), 0.12, noite_f)
+	sol.light_energy = lerpf(lerpf(1.5, 1.25, dia_f), 0.32, noite_f)
 	# céu
 	var topo := Color(0.17, 0.12, 0.3).lerp(Color(0.22, 0.42, 0.75), dia_f).lerp(Color(0.02, 0.025, 0.05), noite_f)
-	var meio := Color(0.52, 0.26, 0.4).lerp(Color(0.45, 0.62, 0.85), dia_f).lerp(Color(0.04, 0.05, 0.09), noite_f)
-	var horiz := Color(1.0, 0.42, 0.15).lerp(Color(0.75, 0.82, 0.88), dia_f).lerp(Color(0.07, 0.07, 0.11), noite_f)
+	var meio := Color(0.52, 0.26, 0.4).lerp(Color(0.45, 0.62, 0.85), dia_f).lerp(Color(0.06, 0.08, 0.14), noite_f)
+	var horiz := Color(1.0, 0.42, 0.15).lerp(Color(0.75, 0.82, 0.88), dia_f).lerp(Color(0.1, 0.11, 0.17), noite_f)
 	ceu.set_shader_parameter("cor_topo", topo)
 	ceu.set_shader_parameter("cor_meio", meio)
 	ceu.set_shader_parameter("cor_horizonte", horiz)
@@ -597,7 +603,7 @@ func _atualizar_ceu() -> void:
 	ambiente.fog_light_color = Color(0.55, 0.33, 0.35).lerp(cor_bioma, 0.6).lerp(Color(0.7, 0.75, 0.82), dia_f * 0.8).lerp(Color(0.03, 0.035, 0.06), noite_f)
 	if mundo:
 		ambiente.fog_density = mundo.reg.param(zf, "nevoa")
-	ambiente.ambient_light_energy = lerpf(1.1, 0.9, dia_f) * lerpf(1.0, 0.35, noite_f)
+	ambiente.ambient_light_energy = lerpf(1.1, 0.9, dia_f) * lerpf(1.0, 0.6, noite_f)
 	if trailer:
 		trailer.luz_interna = alt < 0.2
 
@@ -2774,6 +2780,21 @@ func _capturar_modelos() -> void:
 		await _salvar("124_acoes_jogador")
 		for h in bonecos:
 			h.queue_free()
+	if etapa == "6":
+		# tutorial na tela
+		var p6 := mundo.ponto_estrada(-4.0, -0.6)
+		_posar_jogador(trailer.global_transform * Vector3(4.0, 0, -2.0), trailer.global_position + Vector3(0, 1.0, 0), -0.12, 0.35)
+		hud.visible = true
+		_atualizar_hud()
+		tutorial.iniciar()
+		for f in 20:
+			tutorial._process(0.05)
+		await _salvar("128_tutorial_1")
+		tutorial.passo = 5
+		tutorial._comecar_passo()
+		for f in 20:
+			tutorial._process(0.05)
+		await _salvar("128_tutorial_2")
 	if etapa == "" or etapa == "5":
 		# vila e assentamento: do alto e da rua
 		hora = 15.8
