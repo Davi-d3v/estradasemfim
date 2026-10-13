@@ -425,6 +425,8 @@ func _vigias_parados() -> void:
 		h.semente = hash([id, t.get_index()])
 		h.arma = "rifle"
 		h.com_bone = true
+		h.visual = "soldado"
+		h.anim_parado = "Idle_LookAround"
 		h.camisa = Color(0.3, 0.33, 0.25)
 		h.position = Vector3(0.3, H_TORRE, 0.4)
 		t.add_child(h)

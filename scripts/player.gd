@@ -32,6 +32,18 @@ var _t_flash := 0.0
 var _flash_luz: OmniLight3D
 var _armadura_nos: Array = []
 var _armadura := {}
+var tremor := 0.0          # tremor de câmera (0..1)
+var _vel_real := 0.0
+var _t_acao := 0.0         # animação de ação (comer, enfaixar...) em curso
+
+## Golpe de cada arma no modelo animado: [animação, velocidade, fração do impacto].
+const MODELO_GOLPE := {
+	"facao": ["Sword_Regular_A", 1.2, 0.42], "machado": ["Sword_Heavy_A", 0.95, 0.5],
+	"taco": ["Sword_Regular_B", 1.05, 0.45], "pe_de_cabra": ["Sword_Light_A", 1.05, 0.42],
+	"chave": ["Sword_Light_A", 1.05, 0.42], "": ["Punch_Cross", 1.2, 0.4], "arremesso": ["OverhandThrow", 1.25, 0.42],
+}
+const MODELO_ACAO := {"comida": "Consume", "carne_assada": "Consume", "carne_crua": "Consume", "agua": "Drink",
+	"bandagem": "Bandage", "remedio": "Drink", "analgesico": "Consume"}
 signal golpeou(origem: Vector3, frente: Vector3)
 
 func _ready() -> void:
@@ -39,6 +51,10 @@ func _ready() -> void:
 	corpo.com_mochila = true
 	corpo.com_bone = true
 	corpo.arma = "facao"
+	corpo.arquivo = "Casual2_Male"
+	corpo.cores = {"Skin": Color(0.74, 0.53, 0.38), "Face": Color(0.07, 0.05, 0.04), "Shirt": Color(0.27, 0.31, 0.27),
+		"Pants": Color(0.3, 0.26, 0.2), "Belt": Color(0.12, 0.08, 0.05), "Hair": Color(0.12, 0.08, 0.05)}
+	corpo.sujeira = 0.15
 	corpo.camisa = Color(0.24, 0.27, 0.26)
 	corpo.calca = Color(0.26, 0.24, 0.2)
 	add_child(corpo)
@@ -63,10 +79,28 @@ func _unhandled_input(e: InputEvent) -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 ## Animação do golpe (o dano é resolvido no Equipamento).
-func golpear(custo := 0.06, uso := false) -> void:
+## Devolve o tempo até o impacto (o Equipamento resolve o dano nesse momento).
+func golpear(custo := 0.06, uso := false, estilo := "") -> float:
 	_t_golpe = 1.0 if not uso else 0.5
 	estamina = maxf(0.0, estamina - custo)
 	corpo.rotation.y = yaw
+	if corpo.modelo and not uso:
+		var g: Array = MODELO_GOLPE.get(estilo if estilo != "" else corpo.arma, MODELO_GOLPE.facao)
+		var dur := corpo.tocar(g[0], g[1], 0.06)
+		return dur * float(g[2])
+	return 0.12
+
+## Animação de usar um item (comer, beber, enfaixar). Devolve a duração.
+func tocar_acao(id: String) -> float:
+	_t_acao = 0.0
+	if not corpo.modelo:
+		return 0.0
+	var a: String = MODELO_ACAO.get(id, "Consume")
+	_t_acao = corpo.tocar(a, 1.0, 0.15)
+	return _t_acao
+
+func tremer(q: float) -> void:
+	tremor = minf(1.0, tremor + q)
 
 func flash_tiro() -> void:
 	_t_flash = 0.06
@@ -88,6 +122,9 @@ func atualizar_armadura(arm: Dictionary) -> void:
 	_armadura_nos.clear()
 	var couro := Texturas.material("tecido", Color(0.36, 0.24, 0.14), 0.85)
 	var metal := Texturas.material("metal", Color(0.42, 0.42, 0.4), 0.5, 0.7)
+	if corpo.modelo:
+		_armadura_modelo(arm, couro, metal)
+		return
 	for slot in arm:
 		var a: Dictionary = arm[slot]
 		var ref: int = a.reforco
@@ -116,6 +153,11 @@ func atualizar_armadura(arm: Dictionary) -> void:
 func levar_dano(d: float) -> void:
 	vida = maxf(0.0, vida - d)
 	_t_dano = 1.0
+	tremer(clampf(d * 4.0, 0.25, 0.8))
+	if corpo.modelo and not mirando:
+		corpo.tocar(["Hit_Chest", "Hit_Stomach", "Hit_Shoulder_L", "Hit_Shoulder_R"][randi() % 4], 1.3, 0.05)
+	if is_inside_tree():
+		Sangue.jorro(get_parent(), global_position + Vector3(0, 1.2, 0), Vector3(randf_range(-1, 1), 0.3, randf_range(-1, 1)), 0.5)
 
 func _process(dt: float) -> void:
 	pivo.rotation = Vector3(pitch, yaw, 0)
@@ -147,6 +189,7 @@ func _process(dt: float) -> void:
 				nova = so_z
 			else:
 				nova = position
+		_vel_real = position.distance_to(nova) / maxf(dt, 0.0001)
 		position = nova
 		var alvo := atan2(mov.x, mov.z)
 		corpo.rotation.y = lerp_angle(corpo.rotation.y, alvo, 10.0 * dt)
@@ -157,6 +200,20 @@ func _process(dt: float) -> void:
 	else:
 		intensidade = move_toward(intensidade, 0.0, dt * 4.0)
 		estamina = minf(1.0, estamina + dt * 0.05)
+		_vel_real = 0.0
+	_tremor_camera(dt)
+	if corpo.modelo:
+		corpo.vel_anim = _vel_real
+		corpo.agachado_anim = agachado
+		var fogo = Armas.LISTA.has(corpo.arma) and Armas.LISTA[corpo.arma].tipo == "fogo"
+		corpo.anim_parado = "Pistol_Idle" if fogo else "Idle"
+		if mirando:
+			corpo.rotation.y = lerp_angle(corpo.rotation.y, yaw, minf(1.0, dt * 14.0))
+			corpo.pose_mirar(1.0)
+		else:
+			corpo.pose_caminhada(fase, intensidade)
+		_sobrevivencia(dt)
+		return
 	corpo.pose_caminhada(fase, intensidade)
 	if agachado:
 		corpo.tronco.rotation.x = 0.35
@@ -183,6 +240,9 @@ func _process(dt: float) -> void:
 		corpo.tronco.rotation.y = lerpf(0.4, -0.35, smoothstep(0.15, 0.7, k))
 	else:
 		corpo.tronco.rotation.y = 0.0
+	_sobrevivencia(dt)
+
+func _sobrevivencia(dt: float) -> void:
 	# infecção avança sozinha
 	if infeccao > 0.0:
 		infeccao = minf(1.0, infeccao + dt * 0.0016)
@@ -221,3 +281,36 @@ func chao(p: Vector3) -> float:
 	if d < 12.0:
 		return maxf(mundo.altura(p.x, p.z), mundo.elevacao(p.z) - 0.1)
 	return mundo.altura(p.x, p.z)
+
+## Armadura no personagem animado: peças presas aos ossos (osso: +Y ao longo dele, +Z para a frente).
+func _armadura_modelo(arm: Dictionary, couro: Material, metal: Material) -> void:
+	for slot in arm:
+		var ref: int = arm[slot].reforco
+		match slot:
+			"torso":
+				_armadura_nos.append(B.box(corpo.costas, Vector3(0.36, 0.34, 0.24), Vector3(0, 0.04, 0.0), couro))
+				for q in ref:
+					_armadura_nos.append(B.box(corpo.costas, Vector3(0.26, 0.08, 0.02), Vector3(0, 0.14 - q * 0.1, 0.125), metal))
+			"cabeca":
+				_armadura_nos.append(B.sphere(corpo.cabeca_a, 0.27, Vector3(0, 0.3, -0.02), couro, Vector3(1.02, 0.62, 1.05), 10))
+				if ref > 0:
+					_armadura_nos.append(B.box(corpo.cabeca_a, Vector3(0.3, 0.035 * ref, 0.26), Vector3(0, 0.46, -0.02), metal))
+			"pernas":
+				for q in [corpo.coxa_e, corpo.coxa_d]:
+					_armadura_nos.append(B.box(q, Vector3(0.15, 0.2, 0.15), Vector3(0, 0.1, 0), couro))
+				if ref > 0:
+					for q in [corpo.canela_e, corpo.canela_d]:
+						_armadura_nos.append(B.box(q, Vector3(0.1, 0.06 * ref + 0.06, 0.03), Vector3(0, 0.12, 0.07), metal))
+			"bracos":
+				for q in [corpo.antebraco_e, corpo.antebraco_d]:
+					_armadura_nos.append(B.box(q, Vector3(0.1, 0.17, 0.1), Vector3(0, 0.1, 0), couro))
+					if ref > 0:
+						_armadura_nos.append(B.box(q, Vector3(0.11, 0.05 * ref + 0.04, 0.025), Vector3(0, 0.1, 0.055), metal))
+
+func _tremor_camera(dt: float) -> void:
+	tremor = maxf(0.0, tremor - dt * 2.2)
+	if camera == null:
+		return
+	var k := tremor * tremor
+	camera.h_offset = (randf() * 2.0 - 1.0) * 0.12 * k
+	camera.v_offset = (randf() * 2.0 - 1.0) * 0.09 * k

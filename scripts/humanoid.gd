@@ -14,6 +14,36 @@ extends Node3D
 @export var chapeu := false     # chapéu de palha
 @export var jaleco := false     # avental branco com cruz
 @export var semente := 0
+## Modelo pronto (personagem com rosto + animações). Falso = corpo montado por partes.
+var modelo := false
+var feminino := false
+var visual := "civil"          # civil, trabalhador, medico, soldado, idoso, cowboy, cozinheiro, zumbi
+var arquivo := ""              # força um visual específico (ex.: "Worker_Female")
+var cores := {}                # cores por material (Skin, Shirt, Pants, Hair...)
+var sujeira := 0.0
+var _m := {}
+var _ap: AnimationPlayer
+var _loop := ""
+var _loop_vel := 1.0
+var _oneshot := false
+var _oneshot_fim := 0.0
+var _travado := false
+var _pend := false
+var vel_anim := 0.0            # m/s reais (escolhe andar/correr)
+var agachado_anim := false
+var anim_parado := "Idle"
+var mao_d: Node3D
+var mao_e: Node3D
+var costas: Node3D
+var cabeca_a: Node3D
+var coxa_e: Node3D
+var coxa_d: Node3D
+var canela_e: Node3D
+var canela_d: Node3D
+var braco_e: Node3D
+var braco_d: Node3D
+var antebraco_e: Node3D
+var antebraco_d: Node3D
 
 var quadril_e: Node3D
 var quadril_d: Node3D
@@ -34,6 +64,9 @@ func construir() -> void:
 		c.queue_free()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = semente
+	if Modelos.disponivel():
+		_construir_modelo(rng)
+		return
 	var m_pele := B.mat(pele, 0.7)
 	var m_camisa := B.mat(camisa, 0.9)
 	var m_calca := B.mat(calca, 0.9)
@@ -165,6 +198,9 @@ func _junta(parent: Node3D, pos: Vector3) -> Node3D:
 
 ## Pose de caminhada. fase em radianos, intensidade 0..1.
 func pose_caminhada(fase: float, intensidade: float) -> void:
+	if modelo:
+		_locomover(intensidade)
+		return
 	var a := sin(fase) * 0.6 * intensidade
 	quadril_e.rotation.x = a
 	quadril_d.rotation.x = -a
@@ -185,6 +221,14 @@ func pose_caminhada(fase: float, intensidade: float) -> void:
 	tronco.position.y = 0.95 - absf(cos(fase)) * 0.03 * intensidade
 
 func pose_zumbi(fase: float) -> void:
+	if modelo:
+		if vel_anim < 0.12:
+			loop("Zombie_Idle")
+		elif vel_anim < 1.6:
+			loop("Zombie_Walk_Fwd", clampf(vel_anim / 0.9, 0.6, 1.8))
+		else:
+			loop("Zombie_Run_Fwd", clampf(vel_anim / 3.2, 0.7, 1.5))
+		return
 	var a := sin(fase) * 0.3
 	quadril_e.rotation.x = a
 	quadril_d.rotation.x = -a
@@ -203,6 +247,9 @@ func pose_zumbi(fase: float) -> void:
 
 ## Arma apontada (rifle): os dois braços para frente.
 func pose_mirar(k := 1.0) -> void:
+	if modelo:
+		loop("Pistol_Aim_Neutral")
+		return
 	ombro_d.rotation.x = lerpf(ombro_d.rotation.x, -1.45, k)
 	ombro_d.rotation.z = lerpf(ombro_d.rotation.z, -0.15, k)
 	cotovelo_d.rotation.x = lerpf(cotovelo_d.rotation.x, -0.15, k)
@@ -217,6 +264,9 @@ func pose_mirar(k := 1.0) -> void:
 
 ## Ajoelhado mexendo em algo (consertando, plantando).
 func pose_trabalhar(fase: float) -> void:
+	if modelo:
+		loop("Fixing_Kneeling")
+		return
 	pose_caminhada(0.0, 0.0)
 	quadril_e.rotation.x = -1.4
 	joelho_e.rotation.x = 1.5
@@ -234,6 +284,9 @@ func pose_trabalhar(fase: float) -> void:
 
 ## Deitado de costas (dormindo numa cama).
 func pose_dormir() -> void:
+	if modelo:
+		fixar("IdleToLay", 1.0)
+		return
 	pose_caminhada(0.0, 0.0)
 	ombro_e.rotation.x = -0.1
 	ombro_d.rotation.x = -0.1
@@ -243,6 +296,9 @@ func pose_dormir() -> void:
 
 ## Sentado (no chão ou numa cadeira baixa).
 func pose_sentar() -> void:
+	if modelo:
+		loop("GroundSit_Idle")
+		return
 	pose_caminhada(0.0, 0.0)
 	quadril_e.rotation.x = -1.5
 	quadril_d.rotation.x = -1.5
@@ -258,6 +314,8 @@ func pose_sentar() -> void:
 	cotovelo_d.rotation.x = -0.9
 
 func _resetar_altura() -> void:
+	if modelo:
+		return
 	quadril_e.position.y = 0.95
 	quadril_d.position.y = 0.95
 	tronco.position.y = 0.95
@@ -306,3 +364,206 @@ func _arma_extra() -> void:
 				B.box(rf, Vector3(0.6, 0.004, 0.004), Vector3(0, 0.04, 0.3), B.mat(Color(0.8, 0.78, 0.7), 0.8))
 				B.cyl(rf, 0.008, 0.36, Vector3(0, 0.05, 0.25), aco, Vector3(90, 0, 0), 4)
 				boca.position = Vector3(0, 0.05, 0.45)
+
+# ================================================================ modelo pronto
+func _construir_modelo(rng: RandomNumberGenerator) -> void:
+	modelo = true
+	if zumbi:
+		visual = "zumbi"
+	elif jaleco:
+		visual = "medico"
+	elif chapeu:
+		visual = "trabalhador"
+	var arq := arquivo if arquivo != "" else Modelos.escolher(visual, feminino, rng)
+	var c := Modelos.cores_aleatorias(arq, rng)
+	for k in cores:
+		c[k] = cores[k]
+	_m = Modelos.personagem(arq, c, sujeira)
+	add_child(_m.raiz)
+	_m.raiz.rotation.y = 0.0
+	_ap = _m.player
+	_ap.playback_default_blend_time = 0.18
+	if not _ap.animation_finished.is_connected(_fim_anim):
+		_ap.animation_finished.connect(_fim_anim)
+	# articulações "fantasma": o código antigo de pose ainda pode mexer nelas sem efeito
+	var sombra := Node3D.new()
+	sombra.name = "Sombra"
+	sombra.visible = false
+	add_child(sombra)
+	tronco = _junta(sombra, Vector3(0, 0.95, 0))
+	cabeca = _junta(tronco, Vector3(0, 0.66, 0))
+	quadril_e = _junta(sombra, Vector3(-0.1, 0.95, 0))
+	quadril_d = _junta(sombra, Vector3(0.1, 0.95, 0))
+	joelho_e = _junta(quadril_e, Vector3(0, -0.45, 0))
+	joelho_d = _junta(quadril_d, Vector3(0, -0.45, 0))
+	ombro_e = _junta(tronco, Vector3(-0.23, 0.53, 0))
+	ombro_d = _junta(tronco, Vector3(0.23, 0.53, 0))
+	cotovelo_e = _junta(ombro_e, Vector3(0, -0.3, 0))
+	cotovelo_d = _junta(ombro_d, Vector3(0, -0.3, 0))
+	# pontos de fixação reais (em metros)
+	var sk: Skeleton3D = _m.esqueleto
+	mao_d = Modelos.anexo(sk, "Fist.R", "mao_d")
+	mao_e = Modelos.anexo(sk, "Fist.L", "mao_e")
+	costas = Modelos.anexo(sk, "Torso", "costas")
+	cabeca_a = Modelos.anexo(sk, "Head", "cabeca")
+	coxa_e = Modelos.anexo(sk, "UpperLeg.L", "coxa_e")
+	coxa_d = Modelos.anexo(sk, "UpperLeg.R", "coxa_d")
+	canela_e = Modelos.anexo(sk, "LowerLeg.L", "canela_e")
+	canela_d = Modelos.anexo(sk, "LowerLeg.R", "canela_d")
+	braco_e = Modelos.anexo(sk, "UpperArm.L", "braco_e")
+	braco_d = Modelos.anexo(sk, "UpperArm.R", "braco_d")
+	antebraco_e = Modelos.anexo(sk, "LowerArm.L", "antebraco_e")
+	antebraco_d = Modelos.anexo(sk, "LowerArm.R", "antebraco_d")
+	_acessorios_modelo()
+	_arma_modelo()
+	set_process(true)
+	if zumbi:
+		loop("Zombie_Idle")
+		_ap.seek(rng.randf() * 2.0, true)
+	else:
+		loop(anim_parado)
+		_ap.seek(rng.randf() * 2.0, true)
+
+func _acessorios_modelo() -> void:
+	if com_mochila:
+		_mochila_modelo()
+	if com_bone and not zumbi:
+		var bone := Modelos.mat(Color(0.2, 0.22, 0.17), 0.9)
+		# a cabeça dos personagens é grande: o boné acompanha
+		var b := B.sphere(cabeca_a, 0.24, Vector3(0, 0.32, -0.01), bone, Vector3(1.0, 0.55, 1.05))
+		b.name = "Bone"
+		B.box(cabeca_a, Vector3(0.36, 0.025, 0.2), Vector3(0, 0.33, 0.24), bone, Vector3(-8, 0, 0))
+
+## Mochila de sobrevivente: proporcional ao corpo novo (menor que a antiga).
+func _mochila_modelo() -> void:
+	var t := costas
+	var verde := Modelos.mat(Color(0.26, 0.29, 0.2), 0.95)
+	var escuro := Modelos.mat(Color(0.15, 0.16, 0.13), 0.9)
+	var n := Node3D.new()
+	n.name = "Mochila"
+	# no osso Torso: +Y sobe pela coluna, +Z é a frente do peito
+	n.position = Vector3(0, 0.08, -0.17)
+	t.add_child(n)
+	B.box(n, Vector3(0.27, 0.32, 0.13), Vector3(0, 0, 0), verde)
+	B.box(n, Vector3(0.21, 0.12, 0.05), Vector3(0, -0.06, -0.085), escuro)
+	B.box(n, Vector3(0.28, 0.06, 0.14), Vector3(0, 0.17, 0), escuro)
+	for sx in [-1.0, 1.0]:
+		B.box(n, Vector3(0.05, 0.14, 0.09), Vector3(sx * 0.16, -0.04, 0), escuro)
+	B.cyl(n, 0.06, 0.3, Vector3(0, -0.2, -0.01), Modelos.mat(Color(0.32, 0.3, 0.22), 0.95), Vector3(0, 0, 90), 10)
+
+## Arma visível na mão direita.
+func _arma_modelo() -> void:
+	if mao_d == null:
+		return
+	Modelos.arma_na_mao(mao_d, arma)
+
+func trocar_arma(id: String) -> void:
+	arma = id
+	if modelo:
+		_arma_modelo()
+	else:
+		construir()
+
+func anexo(nome: String) -> Node3D:
+	match nome:
+		"mao_d": return mao_d
+		"mao_e": return mao_e
+		"costas": return costas
+		"cabeca": return cabeca_a
+	return get(nome)
+
+# ------------------------------------------------------------ animação
+func _nome(n: String) -> String:
+	return "q/" + n
+
+func tem_anim(n: String) -> bool:
+	return _ap != null and _ap.has_animation(_nome(n))
+
+## Animação contínua (andar, parado, mirar...). Não interrompe um golpe em curso.
+func loop(nome: String, vel := 1.0) -> void:
+	if _ap == null or _travado:
+		return
+	_loop = nome
+	_loop_vel = vel
+	# aplicado uma vez no fim do quadro (várias poses no mesmo quadro: vale a última)
+	if not _pend:
+		_pend = true
+		call_deferred("_aplicar_loop")
+
+func _aplicar_loop() -> void:
+	_pend = false
+	if _ap == null or _oneshot or _travado or _loop == "":
+		return
+	if _ap.current_animation != _nome(_loop) and tem_anim(_loop):
+		_ap.play(_nome(_loop))
+	_ap.speed_scale = _loop_vel
+
+## Animação única (golpe, dano, comer). Devolve a duração em segundos.
+func tocar(nome: String, vel := 1.0, blend := 0.1) -> float:
+	if _ap == null or not tem_anim(nome) or _travado:
+		return 0.0
+	_oneshot = true
+	_ap.play(_nome(nome), blend)
+	_ap.seek(0.0, true)
+	_ap.speed_scale = vel
+	var dur := _ap.get_animation(_nome(nome)).length / maxf(vel, 0.01)
+	_oneshot_fim = Time.get_ticks_msec() / 1000.0 + dur
+	return dur
+
+func ocupado_anim() -> bool:
+	return _oneshot
+
+func _fim_anim(_n: StringName) -> void:
+	if _oneshot:
+		_oneshot = false
+		if _loop != "":
+			_aplicar_loop()
+
+## Trava numa pose (prints, morte). frac = 0..1 da animação.
+func fixar(nome: String, frac := 1.0) -> void:
+	if _ap == null or not tem_anim(nome):
+		return
+	_travado = true
+	_oneshot = false
+	_ap.play(_nome(nome), 0.0)
+	_ap.seek(_ap.get_animation(_nome(nome)).length * clampf(frac, 0.0, 1.0), true)
+	_ap.pause()
+
+## Toca uma vez e fica parado no último quadro (morte).
+func cair(nome: String, vel := 1.0) -> void:
+	if _ap == null or not tem_anim(nome):
+		return
+	_travado = true
+	_oneshot = false
+	var a := _ap.get_animation(_nome(nome))
+	a.loop_mode = Animation.LOOP_NONE
+	_ap.play(_nome(nome), 0.12)
+	_ap.speed_scale = vel
+
+func destravar() -> void:
+	_travado = false
+	_oneshot = false
+	if _ap:
+		_ap.play()
+		loop(_loop if _loop != "" else anim_parado)
+
+func _process(_dt: float) -> void:
+	if modelo and _oneshot and Time.get_ticks_msec() / 1000.0 > _oneshot_fim + 0.25:
+		_fim_anim(&"")
+
+## Escolhe parado/andar/correr/agachado pela velocidade real.
+func _locomover(intensidade: float) -> void:
+	var v := 0.0 if intensidade <= 0.001 else (vel_anim if vel_anim > 0.0 else intensidade * 2.2)
+	if agachado_anim:
+		if v < 0.15:
+			loop("Crouch_Idle")
+		else:
+			loop("Crouch_Fwd", clampf(v / 1.1, 0.6, 1.6))
+	elif v < 0.15:
+		loop(anim_parado)
+	elif v < 2.9:
+		loop("Walk", clampf(v / 1.45, 0.6, 1.7))
+	elif v < 4.6:
+		loop("Jog_Fwd", clampf(v / 3.6, 0.8, 1.4))
+	else:
+		loop("Sprint", clampf(v / 5.6, 0.8, 1.35))

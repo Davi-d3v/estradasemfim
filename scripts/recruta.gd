@@ -38,6 +38,22 @@ static func criar(d: Dictionary) -> Recruta:
 	r.camisa = d.camisa
 	r.calca = d.calca
 	r.com_bone = d.bone
+	r.feminino = String(d.get("nome", "")).ends_with("a") and not String(d.get("nome", "")).ends_with("ça")
+	r.cores = {"Skin": d.pele, "Shirt": d.camisa, "Pants": d.calca}
+	match d.funcao:
+		"vigia":
+			r.visual = "soldado"
+			r.anim_parado = "Idle_LookAround"
+		"mecanico":
+			r.visual = "trabalhador"
+			r.anim_parado = "Idle_Tired"
+		"agricultor":
+			r.visual = "trabalhador"
+		"medico":
+			r.visual = "medico"
+			r.anim_parado = "Idle_FoldArms"
+		"batedor":
+			r.visual = "civil"
 	match d.funcao:
 		"vigia":
 			r.arma = "rifle"
@@ -60,7 +76,7 @@ static func criar(d: Dictionary) -> Recruta:
 func _ready() -> void:
 	super._ready()
 	_flash = Node3D.new()
-	var boca := cotovelo_d.get_node_or_null("Rifle/Boca")
+	var boca: Node = find_child("Boca", true, false)
 	if boca:
 		boca.add_child(_flash)
 		B.sphere(_flash, 0.09, Vector3.ZERO, B.emissive(Color(1.0, 0.8, 0.35), 6.0), Vector3(1, 1, 2.2), 6)
@@ -76,8 +92,15 @@ func funcao() -> String:
 	return dados.funcao
 
 func ferir(d: float) -> void:
+	var vivo_antes := vivo()
 	dados.vida = maxf(0.0, dados.vida - d)
 	_t_dano = 0.4
+	if modelo and is_inside_tree():
+		Sangue.jorro(get_parent(), global_position + Vector3(0, 1.15, 0), -global_transform.basis.z, 0.6)
+		if vivo_antes and not vivo():
+			cair("Death01" if randf() < 0.5 else "Death02")
+		elif vivo():
+			tocar("Hit_Chest", 1.2, 0.05)
 
 func vivo() -> bool:
 	return dados.vida > 0.0
@@ -123,7 +146,7 @@ func _process(dt: float) -> void:
 				_andar_ate(refugio, 2.0, dt)
 			else:
 				_andar_ate(main.trailer.global_position + main.trailer.global_transform.basis.x * 2.2, 3.0, dt)
-	if _t_dano > 0.0:
+	if _t_dano > 0.0 and not modelo:
 		tronco.rotation.x = -0.25 * _t_dano / 0.4
 
 func _zumbi_mais_perto() -> Zumbi:
@@ -187,6 +210,7 @@ func _andar_ate(p: Vector3, perto: float, dt: float, vel := 2.6) -> bool:
 			nova.y = main.mundo.elevacao(nova.z) + 0.06
 		global_position = nova
 	_fase += dt * vel * 2.6
+	vel_anim = vel
 	pose_caminhada(_fase, clampf(vel / 2.6, 0.4, 1.0))
 	return false
 
@@ -210,6 +234,8 @@ func _lutar(dt: float) -> void:
 		if _t_ataque <= 0.0:
 			_t_ataque = 1.6
 			_t_flash = 0.07
+			if modelo:
+				tocar("Pistol_Shoot", 1.4, 0.04)
 			main.ruido(global_position, 38.0, "tiro")
 			var acerto := 0.8 - clampf((d - 10.0) / 40.0, 0.0, 0.4)
 			if assent and main.eh_noite() and not _iluminado(alvo.global_position):
@@ -229,6 +255,8 @@ func _lutar(dt: float) -> void:
 		if _t_ataque <= 0.0:
 			_t_ataque = 1.1
 			_anim_golpe = 1.0
+			if modelo:
+				tocar(["Sword_Regular_A", "Sword_Regular_B", "Sword_Light_A"][randi() % 3] if arma != "" else "Punch_Cross", 1.15)
 			var dano := 28.0 if dados.funcao != "batedor" else 40.0
 			if dados.funcao == "medico":
 				dano = 15.0
@@ -241,7 +269,7 @@ func _lutar(dt: float) -> void:
 			if not alvo.vivo():
 				dados.abates += 1
 				main.abate_recruta(self)
-	if _anim_golpe > 0.0:
+	if _anim_golpe > 0.0 and not modelo:
 		var k := 1.0 - _anim_golpe
 		ombro_d.rotation.x = lerpf(-2.6, 0.2, smoothstep(0.15, 0.7, k))
 		ombro_d.rotation.z = lerpf(0.6, -0.5, smoothstep(0.15, 0.7, k))

@@ -542,7 +542,7 @@ func _corpo_apartamentos() -> void:
 				hm.camisa = m.camisa
 				hm.calca = m.calca
 				nd.add_child(hm)
-				hm.rotation = Vector3(-PI * 0.5, PI, 0)
+				hm.rotation = Vector3(-PI * 0.5, PI, 0) if not Modelos.disponivel() else Vector3(0, PI * 0.5, 0)
 				hm.position = Vector3(0, 0.2, -0.88)
 				hm.scale = Vector3.ONE * 0.92
 				hm.call_deferred("pose_dormir")

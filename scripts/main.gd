@@ -598,6 +598,13 @@ func _atualizar_ceu() -> void:
 
 
 # ------------------------------------------------------------ ciclo principal
+## Pausa curtinha no impacto (dá peso ao golpe).
+func impacto(pausa := 0.05) -> void:
+	if capturando:
+		return
+	Engine.time_scale = 0.08
+	get_tree().create_timer(pausa, true, false, true).timeout.connect(func(): Engine.time_scale = 1.0)
+
 func _process(dt: float) -> void:
 	if capturando:
 		return

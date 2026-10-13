@@ -34,6 +34,15 @@ func configurar(t: String) -> void:
 	vida = TIPOS[t].vida
 	var esc: float = TIPOS[t].escala
 	scale = Vector3.ONE * esc * randf_range(0.94, 1.04)
+	feminino = randf() < 0.4 and t != "brutamonte"
+	sujeira = randf_range(0.2, 0.6)
+	match t:
+		"brutamonte":
+			cores = {"Skin": Color(0.42, 0.44, 0.38), "Clothes": Color(0.16, 0.15, 0.14)}
+		"gritador":
+			cores = {"Skin": Color(0.62, 0.6, 0.55), "Clothes": Color(0.55, 0.52, 0.48)}
+		"corredor":
+			cores = {"Clothes": Color(0.4, 0.12, 0.1)}
 	match t:
 		"brutamonte":
 			camisa = Color(0.18, 0.16, 0.15)
@@ -65,6 +74,22 @@ func ferir(dano: float, empurrao := Vector3.ZERO, origem := Vector3.ZERO) -> voi
 		return
 	vida -= dano
 	_empurrao = empurrao
+	if modelo and is_inside_tree():
+		var peito := global_position + Vector3(0, 1.15 * scale.x, 0)
+		Sangue.jorro(get_parent(), peito, empurrao if empurrao.length() > 0.1 else (peito - origem), clampf(dano / 40.0, 0.4, 1.8))
+		if vida > 0.0 and tipo != "rastejante":
+			var lado := 0.0
+			if origem != Vector3.ZERO:
+				var v := (origem - global_position)
+				lado = v.normalized().dot(global_transform.basis.x.normalized())
+			var reac := "Hit_Chest"
+			if empurrao.length() > 7.5:
+				reac = "Hit_Knockback"
+			elif dano > 60.0:
+				reac = "Hit_Head"
+			elif absf(lado) > 0.35:
+				reac = "Hit_Shoulder_L" if lado > 0.0 else "Hit_Shoulder_R"
+			tocar(reac, 1.25, 0.05)
 	if origem != Vector3.ZERO:
 		alvo_pos = origem
 		estado = Estado.PERSEGUINDO
@@ -74,6 +99,11 @@ func ferir(dano: float, empurrao := Vector3.ZERO, origem := Vector3.ZERO) -> voi
 func morrer() -> void:
 	estado = Estado.MORTO
 	_t_morto = 0.0
+	if modelo:
+		if tipo == "rastejante":
+			fixar("Crawl_Idle", 0.0)
+		else:
+			cair("Death01" if _rng.randf() < 0.55 else "Death02", _rng.randf_range(0.9, 1.25))
 	if mundo:
 		mundo.zumbis_vivos.erase(self)
 
@@ -130,6 +160,8 @@ func _process(dt: float) -> void:
 				if _t_ataque <= 0.0:
 					_t_ataque = 1.3 if tipo != "brutamonte" else 1.9
 					_anim_ataque = 1.0
+					if modelo:
+						tocar("Zombie_Bite" if _rng.randf() < 0.4 else "Zombie_Scratch", 1.1 if tipo != "brutamonte" else 0.85)
 					main.call("zumbi_atacou", self, alvo)
 			else:
 				estado = Estado.PERSEGUINDO
@@ -282,6 +314,13 @@ func _perceber(main: Node) -> void:
 			alvo_pos = r.pos + Vector3(_rng.randf_range(-3, 3), 0, _rng.randf_range(-3, 3))
 
 func _animar(vel: float) -> void:
+	if modelo:
+		vel_anim = vel
+		if tipo == "rastejante":
+			loop("Crawl_Fwd" if vel > 0.1 else "Crawl_Idle", clampf(vel / 0.6, 0.6, 1.6))
+		else:
+			pose_zumbi(_fase)
+		return
 	if tipo == "rastejante":
 		pose_rastejar(_fase)
 		return
@@ -311,6 +350,14 @@ func pose_rastejar(f: float) -> void:
 	cabeca.rotation.x = -0.9
 
 func _animar_morte(dt: float) -> void:
+	if modelo:
+		var t0 := _t_morto
+		_t_morto += dt
+		if t0 < 1.0 and _t_morto >= 1.0:
+			Sangue.poca(get_parent(), global_position + global_transform.basis.z * -0.5 * scale.x, 1.0 * scale.x)
+		if _t_morto > 40.0:
+			queue_free()
+		return
 	_t_morto += dt
 	var t := clampf(_t_morto * 2.2, 0.0, 1.0)
 	rotation.x = lerpf(0.0, -1.5, t * t)

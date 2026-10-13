@@ -15,6 +15,9 @@ var _recarga_t := 0.0
 var _uso_t := 0.0
 var _uso_id := ""
 var _tracos: Array = []
+var _golpe_pendente := -1.0   # segundos até o impacto do golpe em curso
+var _arremesso_pendente := -1.0
+var _arremesso_id := ""
 
 # ------------------------------------------------------------ barra rápida
 func slots() -> Array:
@@ -41,10 +44,9 @@ func selecionar(id: String) -> void:
 		return
 	sel = id
 	_recarga_t = 0.0
-	var visual := id if eh_arma(id) else "facao"
+	var visual := id if eh_arma(id) else ("facao" if not main.jogador.corpo.modelo else "")
 	if main.jogador.corpo.arma != visual:
-		main.jogador.corpo.arma = visual
-		main.jogador.corpo.construir()
+		main.jogador.corpo.trocar_arma(visual)
 
 ## Itens da barra para o HUD: [id, texto da contagem].
 func itens_hud() -> Array:
@@ -125,6 +127,14 @@ func atualizar(dt: float, ativo: bool) -> void:
 	if enjoo_t > 0.0:
 		main.jogador.vida = maxf(0.05, main.jogador.vida - dt * 0.004)
 	_atualizar_tracos(dt)
+	if _golpe_pendente >= 0.0:
+		_golpe_pendente -= dt
+		if _golpe_pendente < 0.0:
+			_resolver_golpe()
+	if _arremesso_pendente >= 0.0:
+		_arremesso_pendente -= dt
+		if _arremesso_pendente < 0.0:
+			_lancar(_arremesso_id)
 	if _recarga_t > 0.0:
 		_recarga_t -= dt
 		if _recarga_t <= 0.0:
@@ -169,7 +179,14 @@ func golpear() -> void:
 	if _cd > 0.0 or main.jogador.estamina < 0.08:
 		return
 	_cd = a.cad + peso_armadura() * 0.5
-	main.jogador.golpear(a.estamina + peso_armadura() * 0.05)
+	_golpe_pendente = main.jogador.golpear(a.estamina + peso_armadura() * 0.05)
+	main.ruido(main.jogador.global_position, a.ruido * 0.5)
+
+## O dano do golpe sai no meio da animação (quando a lâmina passa na frente).
+func _resolver_golpe() -> void:
+	var a: Dictionary = info()
+	if a.is_empty() or eh_fogo(sel):
+		return
 	var j: Node3D = main.jogador
 	var origem: Vector3 = j.global_position
 	var frente := Vector3(sin(j.yaw), 0, cos(j.yaw))
@@ -187,6 +204,9 @@ func golpear() -> void:
 			acertou = true
 	if acertou:
 		main.hud.acerto()
+		main.jogador.tremer(0.35 if sel != "machado" else 0.55)
+		if main.has_method("impacto"):
+			main.impacto(0.05 if sel != "machado" else 0.08)
 		if a.durab > 0:
 			cond_armas[sel] = cond_armas.get(sel, 1.0) - 1.0 / float(a.durab)
 			if cond_armas[sel] <= 0.0:
@@ -251,6 +271,9 @@ func atirar() -> void:
 	main.ruido(j.global_position, a.ruido, "tiro")
 	j.pitch = clampf(j.pitch + a.coice, -1.0, 0.6)
 	j.flash_tiro()
+	j.tremer(0.25 + a.coice * 4.0)
+	if j.corpo.modelo:
+		j.corpo.tocar("Pistol_Shoot", 1.6 if sel == "pistola" else 1.1, 0.03)
 
 ## O alvo (zumbi ou animal) mais perto ao longo do raio. {alvo, ponto, distancia, cabeca}
 func _raio(o: Vector3, d: Vector3, alcance: float) -> Dictionary:
@@ -277,9 +300,7 @@ func _raio(o: Vector3, d: Vector3, alcance: float) -> Dictionary:
 
 func _boca() -> Vector3:
 	var c: Node = main.jogador.corpo
-	var b: Node3D = c.cotovelo_d.get_node_or_null("Rifle/Boca")
-	if b == null:
-		b = c.cotovelo_d.get_node_or_null("Arma/Boca")
+	var b: Node3D = c.find_child("Boca", true, false)
 	return b.global_position if b else main.jogador.global_position + Vector3(0, 1.4, 0)
 
 func _traco(de: Vector3, ate: Vector3, flecha: bool) -> void:
@@ -307,6 +328,12 @@ func recarregar() -> void:
 		return
 	_recarga_t = a.recarga
 	main.ruido(main.jogador.global_position, 5.0)
+	var corpo: Humanoid = main.jogador.corpo
+	if corpo.modelo:
+		var dur := corpo.tem_anim("Pistol_Reload")
+		if dur:
+			var l: float = corpo._ap.get_animation("q/Pistol_Reload").length
+			corpo.tocar("Pistol_Reload", l / maxf(0.5, float(a.recarga)), 0.1)
 
 func _terminar_recarga() -> void:
 	var a: Dictionary = info()
@@ -329,6 +356,9 @@ func consumir(id: String) -> void:
 	_uso_t = c.tempo
 	_uso_id = id
 	main.jogador.golpear(0.0, true)
+	var dur: float = main.jogador.tocar_acao(id)
+	if dur > 0.0:
+		_uso_t = maxf(c.tempo, dur * 0.85)
 
 func _terminar_uso() -> void:
 	var id := _uso_id
@@ -359,7 +389,11 @@ func arremessar(id: String) -> void:
 	_cd = 0.9
 	main.estoque[id] -= 1
 	var j: Player = main.jogador
-	j.golpear(0.03)
+	_arremesso_pendente = j.golpear(0.03, false, "arremesso") if j.corpo.modelo else 0.0
+	_arremesso_id = id
+
+func _lancar(id: String) -> void:
+	var j: Player = main.jogador
 	var cam: Camera3D = j.camera
 	var d := -cam.global_transform.basis.z
 	d.y = maxf(d.y, -0.2) + 0.35

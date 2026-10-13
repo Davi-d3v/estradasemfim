@@ -84,6 +84,14 @@ static func _pessoa(p: Node3D, pos: Vector3, rot_y: float, funcao: String, r: Ra
 	h.calca = Color.from_hsv(r.randf_range(0.55, 0.65), r.randf_range(0.2, 0.4), r.randf_range(0.15, 0.35))
 	h.com_bone = r.randf() < 0.4
 	h.arma = "facao" if funcao == "vigia" else ""
+	h.feminino = r.randf() < 0.42
+	h.visual = {"vendedor": "civil", "vigia": "soldado", "mecanico": "trabalhador", "agricultor": "trabalhador",
+		"medico": "medico", "batedor": "civil", "lider": "idoso", "morador": "civil"}.get(funcao, "civil")
+	if funcao == "morador" and r.randf() < 0.3:
+		h.visual = ["idoso", "cozinheiro", "cowboy"][r.randi() % 3]
+	h.anim_parado = {"vendedor": "Idle_Talking", "vigia": "Idle_LookAround", "mecanico": "Idle_Tired", "medico": "Idle_FoldArms",
+		"lider": "Idle_FoldArms", "agricultor": "Idle"}.get(funcao, ["Idle", "Idle_Talking", "Idle_LookAround", "Idle_TalkingPhone"][r.randi() % 4])
+	h.sujeira = r.randf_range(0.0, 0.35)
 	h.position = pos
 	h.rotation.y = rot_y
 	p.add_child(h)
