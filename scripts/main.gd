@@ -93,6 +93,7 @@ var clima: Clima
 var progresso: Progresso
 var combate_comboio: CombateComboio
 var comercio: Comercio
+var cachorro: Cachorro = null
 var horda_visivel: HordaVisivel
 var retrovisor: Retrovisor
 var _t_autosave := 0.0
@@ -206,6 +207,10 @@ func _ready() -> void:
 	comercio.main = self
 	add_child(comercio)
 	progresso.registrar_no_mundo()
+	# o primeiro cachorro aparece cedo na estrada (se não for aceito, outros aparecem depois)
+	if not mundo.pois_fixos.has(12):
+		mundo.pois_fixos[12] = "evento"
+		mundo.eventos_tipo[12] = "cachorro"
 	horda_visivel = HordaVisivel.new()
 	horda_visivel.main = self
 	add_child(horda_visivel)
@@ -230,6 +235,8 @@ func _ready() -> void:
 			_capturar_trailer()
 		elif "--eventos" in OS.get_cmdline_user_args():
 			_capturar_eventos()
+		elif "--cachorro" in OS.get_cmdline_user_args():
+			_capturar_cachorro()
 		elif "--comercio" in OS.get_cmdline_user_args():
 			_capturar_comercio()
 		elif "--comboio-combate" in OS.get_cmdline_user_args():
@@ -264,6 +271,10 @@ func _ready() -> void:
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
 		_teste_recrutas()
+	elif "--teste-cachorro" in OS.get_cmdline_user_args():
+		Jogo.modo = Jogo.MODO_INFINITO
+		jogando = true
+		_teste_cachorro()
 	elif "--teste-comercio" in OS.get_cmdline_user_args():
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
@@ -352,6 +363,92 @@ func _teste_salvar() -> void:
 	defesa.z_horda = -3333.0
 	var ok := Salvar.salvar(self)
 	print("TS salvo=", ok, " resumo=", Salvar.resumo())
+	get_tree().quit()
+
+## Teste do cachorro: adoção, seguir, latir, farejar, caçar, defender, caçamba e save.
+func _teste_cachorro() -> void:
+	await get_tree().process_frame
+	var z := 12 * WorldGen.TAM + 32.0
+	jogador.position = mundo.ponto_estrada(z - 12.0, 0.0)
+	jogador.position.y = jogador.chao(jogador.position)
+	mundo.atualizar(jogador.position)
+	await get_tree().process_frame
+	_limpar_zumbis_perto(jogador.position, 80.0)
+	var e: Dictionary = mundo.eventos_ativos.get(12, {})
+	print("TK evento: ", e.get("tipo", "-"), " resolvido=", e.get("resolvido", "-"))
+	eventos._t_checar = 0.0
+	eventos.atualizar(0.1)
+	print("TK painel: ", eventos._painel().titulo)
+	eventos._painel().botoes[0][1].call()
+	await get_tree().process_frame
+	print("TK adotou: ", cachorro != null, " nome=", cachorro.nome if cachorro else "", " raca=", cachorro.raca if cachorro else "")
+	# seguir
+	var t := 0.0
+	for i in 120:
+		jogador.position += Vector3(0, 0, 0.08)
+		jogador.position.y = jogador.chao(jogador.position)
+		await get_tree().process_frame
+	print("TK distancia apos andar: %.1f m" % cachorro.global_position.distance_to(jogador.global_position))
+	# zumbi longe: latido
+	var zp := jogador.position + Vector3(20, 0, 15)
+	zp.y = mundo.altura(zp.x, zp.z)
+	var zb := mundo.criar_zumbi(mundo, zp, 0.0, 5, "comum")
+	zb.set_process(false)
+	cachorro._t_latido = 0.0
+	await get_tree().process_frame
+	print("TK aviso: ", hud._aviso_txt if "_aviso_txt" in hud else "")
+	# zumbi colado: defende
+	zb.global_position = jogador.global_position + Vector3(2.5, 0, 0)
+	cachorro._t_latido = 0.0
+	var tt := 0.0
+	while tt < 10.0 and zb.vivo():
+		await get_tree().process_frame
+		tt += get_process_delta_time()
+	print("TK defendeu em %.1f s: zumbi vivo=" % tt, zb.vivo(), " vida zumbi=", zb.vida, " cachorro vida=", cachorro.vida, " estado=", cachorro.estado)
+	# caça
+	var an := Animal.new()
+	an.tipo = "veado"
+	an.mundo = mundo
+	an.semente = 9
+	var ap := jogador.position + Vector3(-10, 0, 6)
+	ap.y = mundo.altura(ap.x, ap.z)
+	an.position = ap
+	mundo.add_child(an)
+	mundo.animais.append(an)
+	await get_tree().process_frame
+	an.ferir(20.0, Vector3.ZERO, jogador.global_position)
+	var tc := 0.0
+	var log_t := 0.0
+	while tc < 20.0 and an.vivo():
+		await get_tree().process_frame
+		tc += get_process_delta_time()
+		if tc - log_t > 1.0:
+			log_t = tc
+			print("TK  t=%.0f cao=%d dist_cao_veado=%.1f veado_jog=%.1f veado_estado=%d" % [tc, cachorro.estado, cachorro.global_position.distance_to(an.global_position), an.global_position.distance_to(jogador.global_position), an.estado])
+	print("TK caca: veado vivo=", an.vivo(), " vida=", an.vida, " em %.1f s" % tc)
+	# faro
+	var v := Node3D.new()
+	mundo.add_child(v)
+	cachorro.global_position = jogador.global_position + Vector3(1.5, 0, 1.0)
+	v.global_position = jogador.global_position + Vector3(6, 1.0, -4)
+	v.set_meta("nome", "Mochila esquecida")
+	v.set_meta("tabela", "acampamento")
+	v.set_meta("horas", 0.25)
+	v.set_meta("chave", "teste:faro")
+	mundo.vasculhaveis.append(v)
+	cachorro._t_faro = 0.0
+	cachorro.estado = Cachorro.Estado.SEGUINDO
+	for i in 30:
+		await get_tree().process_frame
+	print("TK faro: estado=", cachorro.estado, " (FAREJANDO=", Cachorro.Estado.FAREJANDO, ")")
+	# caçamba
+	_entrar_no_carro()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	print("TK cacamba: estado=", cachorro.estado, " dist picape=%.1f" % cachorro.global_position.distance_to(picape.global_position))
+	_sair_do_carro()
+	var sv := cachorro.salvar()
+	print("TK save: ", sv.nome, " ", sv.raca, " vida=", sv.vida)
 	get_tree().quit()
 
 ## Teste do comércio: preços por lugar, troca, pedido, reputação e facções.
@@ -1466,6 +1563,19 @@ func _avisar_faixa() -> void:
 	hud.banner(fx.nome.to_upper(), "km %d · %s" % [int(fx.km), fx.txt])
 	Som.tela("radio_estatica", -10.0)
 
+## O comboio ganha um cachorro.
+func adotar_cachorro(nome: String, raca: String, pos: Vector3, vida := 1.0) -> void:
+	if cachorro and is_instance_valid(cachorro):
+		cachorro.queue_free()
+	cachorro = Cachorro.new()
+	cachorro.main = self
+	cachorro.nome = nome
+	cachorro.raca = raca
+	cachorro.vida = vida
+	add_child(cachorro)
+	cachorro.global_position = pos
+	cachorro.global_position.y = jogador.chao(pos)
+
 func _queimar_ninho(ni: Ninho) -> void:
 	if estoque.get("molotov", 0) > 0:
 		estoque.molotov -= 1
@@ -1501,6 +1611,11 @@ func _vasculhar(v: Node3D) -> void:
 		if n > 0:
 			ganhos.append("%d %s" % [n, ITENS[item].nome.to_lower()])
 	mundo.vasculhados[chave] = true
+	if cachorro and is_instance_valid(cachorro) and cachorro.vivo() and cachorro.global_position.distance_to(v.global_position) < 8.0 and r.randf() < 0.35:
+		var extra: String = ["comida", "municao_pistola", "bandagem", "pecas", "remedio"][r.randi() % 5]
+		var ne := adicionar(extra, 1 if extra == "remedio" else r.randi_range(1, 3))
+		if ne > 0:
+			ganhos.append("%d %s (o %s achou)" % [ne, ITENS[extra].nome.to_lower(), cachorro.nome])
 	var carta := progresso.talvez_carta(chave)
 	if carta != "":
 		ganhos.append(carta.to_lower())
@@ -1875,6 +1990,8 @@ func _interacao_a_pe() -> void:
 	for v in mundo.vasculhaveis:
 		if is_instance_valid(v) and not mundo.vasculhados.has(v.get_meta("chave")) and absf(v.global_position.y - p.y - 1.0) < 1.6:
 			add.call(v.global_position, 3.5, "interact", "[E] Vasculhar: %s (%s)" % [v.get_meta("nome"), _txt_horas(v.get_meta("horas"))], _vasculhar.bind(v))
+	if cachorro and is_instance_valid(cachorro) and cachorro.vivo():
+		add.call(cachorro.global_position, 1.8, "interact", "[E] %s" % cachorro.nome, _abrir_painel.bind(cachorro.painel))
 	for ni in mundo.ninhos:
 		if is_instance_valid(ni) and not ni.queimado:
 			add.call(ni.global_position, 4.5, "interact", "[E] Queimar o ninho (%s)" % ("molotov" if estoque.get("molotov", 0) > 0 else "1 galão de diesel"), _queimar_ninho.bind(ni))
@@ -3157,6 +3274,86 @@ func _capturar_trailer() -> void:
 			_abrir_painel(_painel_compartimento.bind(id))
 			await _salvar("trailer_painel_%s" % id)
 			_fechar_janela()
+	get_tree().quit()
+
+## Prints do cachorro: o evento de adoção, seguindo você, latindo, e na caçamba.
+func _capturar_cachorro() -> void:
+	var cam := Camera3D.new()
+	cam.far = 900.0
+	add_child(cam)
+	hora = 16.4
+	_atualizar_ceu()
+	comboio.set_physics_process(false)
+	var z := 12 * WorldGen.TAM + 32.0
+	var d0 := mundo.direcao(z)
+	var pc := mundo.ponto_estrada(z, WorldGen.LARG_ESTRADA * 0.5 + 3.5)
+	pc.y = mundo.altura(pc.x, pc.z)
+	# comboio parado um pouco antes, para a cena da caçamba
+	comboio.posicionar(z - 30.0, -0.5, 0.0)
+	jogador.position = mundo.ponto_estrada(z - 12.0, 0.0)
+	mundo.atualizar(pc)
+	await get_tree().process_frame
+	_limpar_zumbis_perto(pc, 60.0)
+	jogador.visible = false
+	hud.visible = false
+	# 1) o evento: cachorro amarrado ao lado de um carro, com a placa
+	var de := mundo.ponto_estrada(z - 4.5, WorldGen.LARG_ESTRADA * 0.5 - 0.5) + Vector3(0, 1.7, 0)
+	_abrir_vista(de, pc)
+	cam.fov = 50.0
+	cam.look_at_from_position(de, pc + Vector3(0, 0.45, 0), Vector3.UP)
+	cam.current = true
+	await _salvar("cachorro_evento")
+	# 2) adotado, seguindo o jogador
+	var e: Dictionary = mundo.eventos_ativos.get(12, {})
+	eventos._atual = e
+	eventos._adotar()
+	await get_tree().process_frame
+	_fechar_janela()
+	hud.relatorio_t = 0.0
+	var lado_e := Vector3(-d0.z, 0, d0.x)
+	var pj := mundo.ponto_estrada(z - 6.0, 1.5)
+	_posar_jogador(pj, pj + d0 * 10.0, -0.12, 0.0)
+	cachorro.global_position = pj + d0 * 0.4 - lado_e * 1.1
+	cachorro.global_position.y = jogador.chao(cachorro.global_position)
+	cachorro.rotation.y = atan2(d0.x, d0.z)
+	cachorro.set_process(false)
+	cachorro._tocar("Walk")
+	hud.visible = true
+	_atualizar_hud()
+	var de2 := pj - d0 * 3.8 + lado_e * 1.6 + Vector3(0, 1.9, 0)
+	cam.look_at_from_position(de2, pj + d0 * 1.5 + Vector3(0, 0.7, 0), Vector3.UP)
+	cam.current = true
+	await _salvar("cachorro_seguindo")
+	# 3) latindo para um zumbi que vem pela estrada
+	var zp := pj + d0 * 9.0 - lado_e * 2.0
+	zp.y = mundo.altura(zp.x, zp.z)
+	var zb := mundo.criar_zumbi(mundo, zp, atan2(-d0.x, -d0.z), 3, "comum")
+	zb.set_process(false)
+	cachorro.rotation.y = atan2(zp.x - cachorro.global_position.x, zp.z - cachorro.global_position.z)
+	cachorro._oneshot = false
+	cachorro._tocar("Attack", 0.0, true)
+	cachorro._ap.seek(0.35, true)
+	hud.aviso("%s está latindo para o norte. Tem coisa vindo (12 m)." % cachorro.nome)
+	_atualizar_hud()
+	var de3 := cachorro.global_position - lado_e * 4.5 - d0 * 2.0 + Vector3(0, 1.5, 0)
+	cam.look_at_from_position(de3, (cachorro.global_position + zp) * 0.5 + Vector3(0, 0.7, 0), Vector3.UP)
+	cam.current = true
+	await _salvar("cachorro_latindo")
+	zb.queue_free()
+	# 4) na caçamba
+	cachorro.set_process(true)
+	_entrar_no_carro()
+	for i in 4:
+		await get_tree().process_frame
+	cachorro.set_process(false)
+	cachorro.posicionar_cacamba()
+	cachorro._tocar("Idle")
+	var pp: Vector3 = picape.global_position
+	var de4 := pp - lado_e * 4.2 - d0 * 4.0 + Vector3(0, 2.4, 0)
+	hud.visible = false
+	cam.look_at_from_position(de4, pp - d0 * 1.8 + Vector3(0, 1.2, 0), Vector3.UP)
+	cam.current = true
+	await _salvar("cachorro_cacamba")
 	get_tree().quit()
 
 ## Prints do comércio: banca na vila, painel de troca, pedido e bloqueio de facção.

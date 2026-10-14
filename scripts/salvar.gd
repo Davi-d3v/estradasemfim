@@ -59,6 +59,8 @@ static func salvar(m: Node) -> bool:
 	d.clima = m.clima.salvar()
 	d.progresso = m.progresso.salvar()
 	d.comercio = m.comercio.salvar()
+	if m.cachorro and is_instance_valid(m.cachorro) and m.cachorro.vivo():
+		d.cachorro = m.cachorro.salvar()
 	var j: Player = m.jogador
 	d.jogador = {"pos": j.global_position, "yaw": j.yaw, "vida": j.vida, "sede": j.sede, "fome": j.fome,
 		"estamina": j.estamina, "infeccao": j.infeccao, "dentro": m.dentro == m.trailer}
@@ -149,6 +151,10 @@ static func aplicar(m: Node) -> bool:
 		m.progresso.carregar(d.progresso)
 	if d.has("comercio"):
 		m.comercio.carregar(d.comercio)
+	if d.has("cachorro"):
+		var cd: Dictionary = d.cachorro
+		m.adotar_cachorro(cd.nome, cd.raca, cd.pos, cd.vida)
+		m.cachorro.ficar = cd.get("ficar", false)
 	# mundo (antes de gerar os chunks de novo)
 	var w: WorldGen = m.mundo
 	for k in d.mundo:

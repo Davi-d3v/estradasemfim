@@ -356,4 +356,22 @@ def trovao(d=5.0):
 
 salvar('trovao_0', trovao(4.5), 0.85)
 salvar('trovao_1', trovao(6.0), 0.85)
+
+# ------------------------------------------------------------ cachorro
+def latido(f0=420, d=0.22):
+    x = voz(d, f0, [A, E], aspereza=0.4, jitter=0.06, tremor=12, sopro=0.35, curva=[0.9, 1.25, 0.8])
+    x *= env(len(x), 0.004, d * 0.35)
+    return np.tanh(x * 3.0)
+
+def latidos(n, f0):
+    pedacos = []
+    for i in range(n):
+        pedacos.append((latido(f0 * rng.uniform(0.92, 1.08), rng.uniform(0.16, 0.26)), i * rng.uniform(0.28, 0.4)))
+    return reverb(junta(*pedacos), 0.5, 0.15)
+
+salvar('latido_0', latidos(2, 430), 0.8)
+salvar('latido_1', latidos(3, 380), 0.8)
+salvar('latido_2', latidos(1, 470), 0.8)
+gan = voz(0.9, 900, [E, U], aspereza=0.1, jitter=0.03, tremor=7, sopro=0.2, curva=[1.0, 1.15, 0.7])
+salvar('ganido', gan * env(len(gan), 0.03, 0.4), 0.6)
 print('ok', len(os.listdir(OUT)))

@@ -196,7 +196,7 @@ static func arma_na_mao(mao: Node3D, id: String) -> Node3D:
 
 # ------------------------------------------------------------ animais
 const ANIMAIS := {
-	"veado": ["Deer", 0.34], "cervo": ["Stag", 0.36], "lobo": ["Wolf", 0.33], "raposa": ["Fox", 0.3],
+	"veado": ["Deer", 0.34], "cervo": ["Stag", 0.36], "lobo": ["Wolf", 0.33], "raposa": ["Fox", 0.3], "husky": ["Husky", 0.3], "shiba": ["ShibaInu", 0.27],
 }
 
 static func animal(tipo: String) -> Dictionary:

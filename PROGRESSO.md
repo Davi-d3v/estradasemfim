@@ -53,9 +53,13 @@
   (diesel ainda mais); bancas da vila (mantimentos, peças/armas, remédios), comerciante nos assentamentos e no marco; crédito por lugar;
   estoque diário; pedidos ("me traga X") com prêmio; reputação Desconhecido/Conhecido/Amigo/Aliado (descontos, itens raros, presente diário;
   defender o assentamento = aliado); 4 facções por distância (Abutres, Irmandade do Asfalto, Carniceiros da BR, Reis do Sertão) que lembram:
-  pagou 2× = passagem livre, furou/atirou 2× = pedágio em dobro. Teste: --teste-comercio; prints: --comercio  - [ ] 4. Combate com o comboio  - [ ] 5. Comércio/reputação/facções
-- [ ] 6. Cachorro  - [ ] 7-11. Recrutas, comboio, exploração, defesa, sobrevivência  - [ ] 12. v0.8
+  pagou 2× = passagem livre, furou/atirou 2× = pedágio em dobro. Teste: --teste-comercio; prints: --comercio
+- [x] 6. Cachorro (scripts/cachorro.gd; modelos Husky e Shiba da Quaternius; latidos/ganido em gerar_sons.py): evento "NÃO ME DEIXE" (cedo, km ~0,8,
+  e às vezes depois, se ainda não tiver cachorro); segue a pé, viaja na caçamba, late e avisa a direção de zumbis antes de você ver, fareja
+  vasculháveis (e às vezes acha item extra), caça bicho ferido, defende de zumbi colado, foge ganindo se apanhar, pode morrer; [E] painel
+  (ficar/seguir, dar comida); salvo no jogo. Teste: --teste-cachorro; prints: --cachorro
+- [ ] 7-11. Recrutas, comboio, exploração, defesa, sobrevivência  - [ ] 12. v0.8
 
 ## Próximos
-- seguir a rodada grande (etapa 6: cachorro)
+- seguir a rodada grande (etapa 7: recrutas)
 - ouvir o retorno do teste no PC do Davi

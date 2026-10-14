@@ -19,6 +19,10 @@ var _t_checar := 0.0
 static func construir(m: WorldGen, n: Node3D, z0: float, k: int) -> void:
 	var r := m._rng_chunk(k, 77)
 	var tipo: String = TIPOS[r.randi() % TIPOS.size()]
+	# cachorro abandonado: às vezes, só se o comboio ainda não tem cachorro
+	var mm = m.get_parent()
+	if r.randf() < 0.12 and mm and mm.get("cachorro") == null:
+		tipo = "cachorro"
 	tipo = m.eventos_tipo.get(k, tipo)
 	var z := z0 + 32.0
 	var feito: Dictionary = m.eventos_feitos.get(k, {})
@@ -39,7 +43,43 @@ static func construir(m: WorldGen, n: Node3D, z0: float, k: int) -> void:
 		"militar":
 			_militar(m, raiz, z, rot, r, k)
 			e.resolvido = true   # não tem escolha: é só um lugar perigoso para saquear
+		"cachorro":
+			if feito.is_empty() and (mm == null or mm.get("cachorro") == null):
+				_montar_cachorro(m, raiz, z, rot, r)
+				e.pos = m.ponto_estrada(z, WorldGen.LARG_ESTRADA * 0.5 + 3.0)
+			else:
+				e.resolvido = true
 	m.eventos_ativos[k] = e
+
+## Cachorro amarrado num carro abandonado, com pote vazio e casinha improvisada.
+static func _montar_cachorro(m: WorldGen, raiz: Node3D, z: float, rot: float, r: RandomNumberGenerator) -> void:
+	var p := m.ponto_estrada(z, WorldGen.LARG_ESTRADA * 0.5 + 3.5)
+	p.y = m.altura(p.x, p.z)
+	var rc := RandomNumberGenerator.new()
+	rc.seed = r.randi()
+	m.carro_abandonado(raiz, m.ponto_estrada(z + 3.0, WorldGen.LARG_ESTRADA * 0.5 + 4.5) + Vector3(0, 0.02, 0), rot + 0.3, rc)
+	var c := Node3D.new()
+	c.name = "CachorroEvento"
+	c.set_meta("area_livre", Vector2(3.5, 3.5))   # sem capim alto em volta
+	c.position = p
+	c.rotation.y = rot - PI * 0.5
+	c.set_meta("nao_mesclar", true)
+	raiz.add_child(c)
+	var raca := "husky" if r.randf() < 0.5 else "shiba"
+	c.set_meta("raca", raca)
+	var mod := Modelos.animal(raca)
+	if not mod.is_empty():
+		c.add_child(mod.raiz)
+		mod.player.play("Idle_2_HeadLow")
+	B.cyl(c, 0.14, 0.08, Vector3(0.6, 0.04, 0.5), B.mat(Color(0.6, 0.15, 0.1), 0.6), Vector3.ZERO, 12)
+	B.cyl(c, 0.01, 3.0, Vector3(0, 0.25, -1.4), B.mat(Color(0.5, 0.45, 0.35), 0.9), Vector3(90, 20, 0), 4)
+	var mad := B.mat(Color(0.4, 0.3, 0.2), 0.9)
+	B.box(c, Vector3(0.9, 0.7, 1.0), Vector3(-1.2, 0.35, 0.6), mad)
+	B.box(c, Vector3(1.0, 0.06, 1.1), Vector3(-1.2, 0.75, 0.6), B.mat(Color(0.3, 0.2, 0.15), 0.9), Vector3(0, 0, 12))
+	Lugares._placa(c, Vector3(-1.2, 0.48, 1.12), 0.0, "NÃO ME\nDEIXE", Color(0.15, 0.12, 0.1))
+	var lbl: Label3D = c.get_child(c.get_child_count() - 1)
+	lbl.pixel_size = 0.0022
+	lbl.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
 
 static func _saqueadores(m: WorldGen, raiz: Node3D, z: float, rot: float, r: RandomNumberGenerator, feito: Dictionary) -> void:
 	var lar := WorldGen.LARG_ESTRADA
@@ -283,7 +323,7 @@ func _fim(chave_resultado: String, texto: String) -> String:
 	_atual = {}
 	main.call_deferred("_fechar_janela")
 	main.hud.relatorio = texto
-	main.hud.relatorio_titulo = {"saqueadores": "Pedágio", "carona": "Carona", "acidente": "Acidente"}.get(e.tipo, "")
+	main.hud.relatorio_titulo = {"saqueadores": "Pedágio", "carona": "Carona", "acidente": "Acidente", "cachorro": "Cachorro"}.get(e.tipo, "")
 	main.hud.relatorio_t = 7.0
 	if chave_resultado in ["pagou", "furou"] and is_instance_valid(e.no):
 		var b: Node = e.no.get_node_or_null("Bloqueio")
@@ -342,6 +382,13 @@ func _painel() -> Dictionary:
 					["Dar comida e água, mas seguir", func(): return _dar_comida(), est.get("comida", 0) > 0 and est.get("agua", 0) > 0],
 					["Seguir viagem", func(): return _fim("ignorou", "Você não parou. Pelo retrovisor, a pessoa ficou cada vez menor."), true],
 				]}
+		"cachorro":
+			return {"titulo": "UM CACHORRO NA ESTRADA", "subtitulo": "Amarrado num carro abandonado. Magro, com o pote vazio. Ele abana o rabo quando te vê.",
+				"linhas": ["Alguém escreveu numa tábua: NÃO ME DEIXE.", ["Um cachorro late quando zumbis chegam, fareja saque e ajuda a caçar.", Color(0.7, 0.7, 0.68)]],
+				"botoes": [
+					["Soltar e dar comida (1 comida)", func(): return _adotar(), est.get("comida", 0) > 0 or est.get("carne_crua", 0) > 0],
+					["Só soltar a corda e seguir", func(): return _fim("soltou", "Você soltou a corda. Ele ficou olhando o comboio ir embora."), true],
+				]}
 		"acidente":
 			return {"titulo": "ÔNIBUS TOMBADO", "subtitulo": "Lá de dentro vêm batidas no vidro. Pode ser gente presa. Pode não ser.",
 				"linhas": ["Procurar sobreviventes leva tempo e faz barulho."],
@@ -353,6 +400,24 @@ func _painel() -> Dictionary:
 	return {"titulo": "", "linhas": [], "botoes": []}
 
 # ------------------------------------------------------------ resultados
+func _adotar() -> String:
+	if main.estoque.get("carne_crua", 0) > 0:
+		main.estoque.carne_crua -= 1
+	else:
+		main.estoque.comida -= 1
+	var e := _atual
+	var raca := "husky"
+	var pos: Vector3 = e.pos
+	if is_instance_valid(e.no):
+		var c: Node = e.no.get_node_or_null("CachorroEvento")
+		if c:
+			raca = c.get_meta("raca", "husky")
+			pos = (c as Node3D).global_position
+			c.queue_free()
+	var nome: String = Cachorro.NOMES[randi() % Cachorro.NOMES.size()]
+	main.adotar_cachorro(nome, raca, pos)
+	return _fim("adotou", "Ele comeu tudo e não saiu mais do seu lado. Você chamou ele de %s." % nome)
+
 func _fac_atual() -> String:
 	return _atual.no.get_meta("faccao", "Os Abutres") if is_instance_valid(_atual.get("no")) else "Os Abutres"
 
