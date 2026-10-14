@@ -313,6 +313,10 @@ func _ready() -> void:
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
 		_teste_recrutas()
+	elif "--teste-longo" in OS.get_cmdline_user_args():
+		Jogo.modo = Jogo.MODO_INFINITO
+		jogando = true
+		_teste_longo()
 	elif "--teste-saude" in OS.get_cmdline_user_args():
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
@@ -1230,6 +1234,35 @@ func _teste_defesa() -> void:
 	print("TD fim fase=%s ondas=%d defendidos=%d ameaca=%.0f morto=%s" % [e.fase, e.ondas, defesa.defendidos, mundo.nivel_ameaca, _morto])
 	print("TD relatorio=", hud.relatorio.replace("\n", " | "))
 	print("TD recrutas=%d" % base.lista.size())
+	get_tree().quit()
+
+## Teste longo: dirige 60 km de estrada (geração de trechos com tudo ligado), passa dias, salva e carrega.
+func _teste_longo() -> void:
+	await get_tree().process_frame
+	estoque.merge({"comida": 80, "agua": 80, "galoes_diesel": 10}, true)
+	_entrar_no_carro()
+	var t0 := Time.get_ticks_msec()
+	var erros_antes := 0
+	var zmax := 15000.0
+	var z := 0.0
+	var passo := 0
+	while z < zmax:
+		z += 90.0
+		comboio.diesel = 60.0
+		comboio.posicionar(z, -0.5, 0.0)
+		mundo.atualizar(comboio.pos)
+		_passar_tempo(0.15)
+		jogador.vida = 1.0
+		await get_tree().process_frame
+		passo += 1
+		if passo % 25 == 0:
+			print("TL km %d · dia %d %.0fh · trechos %d · zumbis %d · eventos %d · lugares %d · subsolos %d · %d ms" % [int(z / 1000.0), dia, hora, mundo.get_child_count(), mundo.zumbis_vivos.size(), mundo.eventos_ativos.size(), mundo.lugares_ativos.size(), mundo.subsolos.size(), Time.get_ticks_msec() - t0])
+			if _morto:
+				print("TL morreu: ", _morto)
+				break
+	_sair_do_carro()
+	print("TL fim: km %.1f, dia %d, faixa %s, reboques %d, recrutas %d" % [z / 1000.0, dia, WorldGen.FAIXAS[mundo.faixa(z)].nome, comboio.cadeia.size() - 1, base.lista.size()])
+	print("TL save=", Salvar.salvar(self))
 	get_tree().quit()
 
 ## Teste da etapa 11: sono, cochilo, gripe, intoxicação, ferida que inflama, antibiótico, cozinha e save.

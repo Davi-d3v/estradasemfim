@@ -2,7 +2,7 @@
 ::res://::1791934399
 CLAUDE.md::TextFile::-1::1792000946::0::1::::<><><>0<>0<><>::
 export_presets.cfg::TextFile::-1::1791856619::0::1::::<><><>0<>0<><>::
-PROGRESSO.md::TextFile::-1::1792001740::0::1::::<><><>0<>0<><>::
+PROGRESSO.md::TextFile::-1::1792002228::0::1::::<><><>0<>0<><>::
 ::res://assets/::1791976313
 LEIA-ME.txt::TextFile::-1::1791976644::0::1::::<><><>0<>0<><>::
 ::res://assets/animais/::1791990631
@@ -139,7 +139,7 @@ land.ogg::AudioStreamOggVorbis::4214176119275921178::1791976325::1791976556::1::
 skid.ogg::AudioStreamOggVorbis::659134722457882038::1791976332::1791976556::1::::<><><>0<>0<>e68d80f1ea8c51a3664f3fb74848bac6<>res://.godot/imported/skid.ogg-70462eb4487137b61b480166442a1173.oggvorbisstr::
 walking.ogg::AudioStreamOggVorbis::2033481838180554883::1791976325::1791976556::1::::<><><>0<>0<>ae39ebe5ead0fde70455bce562de0ad1<>res://.godot/imported/walking.ogg-cd970a412f7d8b3ca9913a0fd7c325dc.oggvorbisstr::
 weapon_change.ogg::AudioStreamOggVorbis::1418325417455749767::1791976325::1791976556::1::::<><><>0<>0<>71abab1d7386b023543978216d54f529<>res://.godot/imported/weapon_change.ogg-747af4c63ca483528e74f991ac26a21f.oggvorbisstr::
-::res://prints/::1792001874
+::res://prints/::1792002076
 119_zumbis_modelo.png::CompressedTexture2D::3994063043350873346::1791932959::1791933203::1::::<><><>0<>0<>c90f20363dbe56b15646b6dc943020a2<>res://.godot/imported/119_zumbis_modelo.png-51a0f864e2cef78f8dc899c8ec972707.ctex::
 120_combate_de_perto.png::CompressedTexture2D::4486773025121629619::1791933137::1791933203::1::::<><><>0<>0<>97a643ed87ba4695f0d100161342f15b<>res://.godot/imported/120_combate_de_perto.png-9c432cbecf67667c60b8c14f83875c20.ctex::
 121b_vila_moradores.png::CompressedTexture2D::91921045007968033::1791932829::1791932910::1::::<><><>0<>0<>41cda9640106e400d15cacc17341f6c6<>res://.godot/imported/121b_vila_moradores.png-837f27ef42c94ea16ae9ddf30122c993.ctex::
@@ -221,6 +221,10 @@ raro_hospital.png::CompressedTexture2D::5771082894320158893::1791998101::1791998
 raro_radio.png::CompressedTexture2D::8517229322151769487::1791998120::1791998774::1::::<><><>0<>0<>dd7286a56b68790246da3b06f8ba8bcc<>res://.godot/imported/raro_radio.png-8677238d44334a004192fe52aa0ccff4.ctex::
 raro_radio_painel.png::CompressedTexture2D::1784930951692579831::1791998286::1791998775::1::::<><><>0<>0<>0fb796a7743e29905d24cca2b3192c99<>res://.godot/imported/raro_radio_painel.png-b746b35fe37aa18040fb050184c4f6dc.ctex::
 raro_torreta.png::CompressedTexture2D::4998174972527347027::1791998161::1791998775::1::::<><><>0<>0<>4a3d97942869e59986088127fd05b250<>res://.godot/imported/raro_torreta.png-3643a19241dc408ccc2225459a00dca5.ctex::
+saude_cochilo.png::CompressedTexture2D::5405424976648553703::1792002197::1792002365::1::::<><><>0<>0<>f4b134fe30882948a981cd6ffa8e9988<>res://.godot/imported/saude_cochilo.png-ccea687bed73e4283428b157f11ca577.ctex::
+saude_cozinha.png::CompressedTexture2D::497153800598785251::1792002169::1792002366::1::::<><><>0<>0<>54c8c3193fef650f2e8b64f1df9dce82<>res://.godot/imported/saude_cozinha.png-90900f5ef9c0162dc5f6e756a138b604.ctex::
+saude_despensa.png::CompressedTexture2D::1650741860721288289::1792002153::1792002367::1::::<><><>0<>0<>96294a1744b0a73ce5ee18e94d52b4be<>res://.godot/imported/saude_despensa.png-a81251e992ca1be23d2bf7e947986ad5.ctex::
+saude_hud.png::CompressedTexture2D::2452960866692314981::1792002135::1792002367::1::::<><><>0<>0<>fc496de8b7aa33f9c5ca6cfed95d4c03<>res://.godot/imported/saude_hud.png-da87bcbb3a6945291ad7c10b8dc85b6a.ctex::
 teste_anims.png::CompressedTexture2D::9037805565762629205::1791929636::1791929862::1::::<><><>0<>0<>60b2809c724c182844d949d395698bef<>res://.godot/imported/teste_anims.png-896ff1909f3756d7825e8c8b80de9ed6.ctex::
 teste_bichos.png::CompressedTexture2D::8009455716832543670::1791935615::1791935706::1::::<><><>0<>0<>99f8919f98acfe3da1ff93af044c8ef0<>res://.godot/imported/teste_bichos.png-b0b52529be9a4d59a50fb9bd3152aac5.ctex::
 teste_brancas.png::CompressedTexture2D::9049541621316377681::1791931469::1791932182::1::::<><><>0<>0<>9c7a354ee99b0ee03815fec9a703da88<>res://.godot/imported/teste_brancas.png-b8fcaa0ff01eb05ca2ff6ff0e78142ea.ctex::
@@ -270,9 +274,9 @@ hud.gd::GDScript::1526720838971245082::1792001868::0::1::::Hud<>Control<><>0<>0<
 humanoid.gd::GDScript::4583134036289468853::1791935397::0::1::::Humanoid<>Node3D<><>0<>0<><>::
 jogo.gd::GDScript::2527065120667162082::1791975110::0::1::::Jogo<>RefCounted<><>0<>0<><>::
 lugares.gd::GDScript::4818060070082949917::1791998728::0::1::::Lugares<>RefCounted<><>0<>0<><>::
-main.gd::GDScript::772541204004651537::1792001975::0::1::::<>Node3D<><>0<>0<><>::
+main.gd::GDScript::772541204004651537::1792002258::0::1::::<>Node3D<><>0<>0<><>::
 marcos.gd::GDScript::4375351685686744535::1791986321::0::1::::Marcos<>RefCounted<><>0<>0<><>::
-menu.gd::GDScript::1089058145340150063::1791988560::0::1::::Menu<>Control<><>0<>0<><>::
+menu.gd::GDScript::1089058145340150063::1792002228::0::1::::Menu<>Control<><>0<>0<><>::
 modelos.gd::GDScript::2530803293180947829::1791990657::0::1::::Modelos<>RefCounted<><>0<>0<><>::
 ninho.gd::GDScript::4238917839931530196::1791984349::0::1::::Ninho<>Node3D<><>0<>0<><>::
 oficina.gd::GDScript::1616878582553503854::1791826886::0::1::::Oficina<>Control<><>0<>0<><>::
@@ -294,7 +298,7 @@ saude.gd::GDScript::1388715822107973490::1792001948::0::1::::Saude<>Node<><>0<>0
 som.gd::GDScript::8859032549930917391::1791976558::0::1::::Som<>Node<><>0<>0<><>::
 subsolo.gd::GDScript::9134064652323796947::1792000589::0::1::::Subsolo<>Node3D<><>0<>0<><>::
 texturas.gd::GDScript::2192582983303732574::1791840044::0::1::::Texturas<>RefCounted<><>0<>0<><>::
-trailer.gd::GDScript::2751865612291631430::1791998059::0::1::::Trailer<>Node3D<><>0<>0<><>::
+trailer.gd::GDScript::2751865612291631430::1792002103::0::1::::Trailer<>Node3D<><>0<>0<><>::
 tutorial.gd::GDScript::7133830235286269831::1791935731::0::1::::Tutorial<>Control<><>0<>0<><>::
 vida_recrutas.gd::GDScript::3746706238041028362::1791996159::0::1::::VidaRecrutas<>RefCounted<><>0<>0<><>::
 vila_extra.gd::GDScript::7916541138588656592::1791934173::0::1::::VilaExtra<>RefCounted<><>0<>0<><>::
