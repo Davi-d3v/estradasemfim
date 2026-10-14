@@ -38,7 +38,9 @@ func em_combate() -> bool:
 func velocidade_horda() -> float:
 	## metros por hora de jogo
 	# a horda engrossa e acelera conforme o comboio se afasta do começo
-	return (4000.0 + 900.0 * main.mundo.nivel_ameaca + 45.0 * maxf(0.0, main._foco().z / 1000.0)) / 24.0
+	var cl = main.get("clima")
+	var f: float = cl.fator_horda() if cl else 1.0
+	return (4000.0 + 900.0 * main.mundo.nivel_ameaca + 45.0 * maxf(0.0, main._foco().z / 1000.0)) / 24.0 * f
 
 func horas_ate(z: float) -> float:
 	return maxf(0.0, (z - 250.0 - z_horda) / velocidade_horda())

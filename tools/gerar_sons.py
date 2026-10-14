@@ -343,4 +343,17 @@ def horda(d=14.0):
     return loop_suave(x, 1.0)
 
 salvar('horda', horda(), 0.75, 3)
+
+# ------------------------------------------------------------ trovão
+def trovao(d=5.0):
+    n = int(SR * d)
+    estalo = hp(ruido(0.25), 1500) * env(int(SR * 0.25), 0.002, 0.05)
+    ronco = lp(ruido(d), 160) * 3.0
+    ronco *= env(n, 0.08, 1.4) * (1.0 + 0.5 * np.sin(2 * np.pi * 1.3 * t(d)) * np.exp(-t(d) / 1.5))
+    x = ronco
+    x[:len(estalo)] += estalo * 0.4
+    return reverb(lp(np.tanh(x * 1.5), 1200), 2.5, 0.5, 900)
+
+salvar('trovao_0', trovao(4.5), 0.85)
+salvar('trovao_1', trovao(6.0), 0.85)
 print('ok', len(os.listdir(OUT)))

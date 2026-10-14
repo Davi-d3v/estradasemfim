@@ -4,6 +4,7 @@ render_mode cull_disabled;
 
 uniform float vento = 1.0;
 uniform float tempo = 0.0;
+uniform float neve = 0.0;
 uniform vec3 cor_base : source_color = vec3(0.12, 0.13, 0.05);
 uniform vec3 cor_ponta : source_color = vec3(0.55, 0.47, 0.24);
 varying float altura;
@@ -22,6 +23,7 @@ void vertex() {
 
 void fragment() {
 	vec3 c = mix(cor_base, cor_ponta, altura) * tinta;
+	c = mix(c, vec3(0.84, 0.86, 0.9), neve * 0.7);
 	ALBEDO = c;
 	ROUGHNESS = 0.9;
 	SPECULAR = 0.15;

@@ -3,6 +3,8 @@ shader_type spatial;
 // UV.x = 0..1 através da pista; UV.y = metros ao longo da estrada.
 
 uniform float largura = 8.0;
+uniform float molhado = 0.0;   // chuva: asfalto escuro e brilhante, poças
+uniform float neve = 0.0;      // neve acumulando nas bordas e no meio
 
 float hash(vec2 p) {
 	p = fract(p * vec2(123.34, 456.21));
@@ -57,7 +59,20 @@ void fragment() {
 	vec3 terra = vec3(0.28, 0.23, 0.17) * (0.8 + grao * 0.3);
 	vec3 cor = mix(terra, asfalto, esf);
 
+	float rough = mix(1.0, 0.92, esf) - remendo * 0.05;
+	float spec = 0.18;
+	// molhado: escurece, poças nos remendos e nas depressões
+	float poca = smoothstep(0.55, 0.62, fbm(p * 0.22 + 31.0)) * esf;
+	cor *= 1.0 - molhado * 0.38;
+	rough = mix(rough, 0.28, molhado * esf);
+	rough = mix(rough, 0.05, molhado * poca);
+	spec = mix(spec, 0.6, molhado * esf);
+	// neve: cobre as bordas primeiro, deixa os trilhos dos pneus escuros
+	float trilho = 1.0 - smoothstep(0.35, 0.7, abs(abs(p.x - largura * 0.5) - largura * 0.25));
+	float cobre = clamp(neve * 1.4 - trilho * 0.6 + (fbm(p * 0.6) - 0.5) * 0.5, 0.0, 1.0);
+	cor = mix(cor, vec3(0.86, 0.88, 0.92), cobre);
+	rough = mix(rough, 0.8, cobre);
 	ALBEDO = cor;
-	ROUGHNESS = mix(1.0, 0.92, esf) - remendo * 0.05;
-	SPECULAR = 0.18;
+	ROUGHNESS = rough;
+	SPECULAR = spec;
 }

@@ -5,6 +5,7 @@ shader_type spatial;
 // rocha nas encostas. Detalhe fino some com a distância (sem listras de aliasing).
 
 uniform vec2 origem = vec2(0.0);
+uniform float neve = 0.0;
 varying vec3 wpos;
 varying vec3 wnorm;
 varying vec3 cor_seco;
@@ -154,6 +155,7 @@ void fragment() {
 	vec3 nw = normalize(wnorm + vec3(-(hx - h0) / e, 0.0, -(hz - h0) / e) * forca);
 	NORMAL = normalize((VIEW_MATRIX * vec4(nw, 0.0)).xyz);
 
+	c = mix(c, vec3(0.88, 0.9, 0.94), clamp(neve * smoothstep(0.55, 0.85, nw.y), 0.0, 0.92));
 	ALBEDO = c;
 	ROUGHNESS = 0.95;
 	SPECULAR = 0.15;

@@ -121,6 +121,16 @@ func nome_exibicao() -> String:
 	return "Picape"
 
 # ---------------------------------------------------------------- visual
+var farol := false
+var _farois: Node3D
+
+func ligar_farol(v: bool) -> void:
+	if v == farol:
+		return
+	farol = v
+	if is_instance_valid(_farois):
+		_farois.visible = v
+
 func reconstruir() -> void:
 	for c in get_children():
 		c.queue_free()
@@ -186,6 +196,23 @@ func reconstruir() -> void:
 		B.box(b, Vector3(0.02, 0.32, 0.06), Vector3(k * 0.13, 0.98, 2.69), aco)
 	for s in [-1.0, 1.0]:
 		B.box(b, Vector3(0.24, 0.12, 0.05), Vector3(s * 0.8, 1.05, 2.66), B.mat(Color(0.75, 0.75, 0.7), 0.15, 0.5))
+	# faróis (acendem sozinhos à noite, na neblina e na chuva forte)
+	_farois = Node3D.new()
+	_farois.name = "Farois"
+	b.add_child(_farois)
+	for s in [-1.0, 1.0]:
+		B.box(_farois, Vector3(0.22, 0.1, 0.02), Vector3(s * 0.8, 1.05, 2.69), B.emissive(Color(1.0, 0.95, 0.8), 3.0))
+		var sp := SpotLight3D.new()
+		sp.position = Vector3(s * 0.8, 1.05, 2.75)
+		sp.rotation_degrees = Vector3(-6, 180, 0)
+		sp.light_color = Color(1.0, 0.94, 0.8)
+		sp.light_energy = 16.0
+		sp.spot_range = 55.0
+		sp.spot_angle = 26.0
+		sp.spot_attenuation = 0.5
+		sp.shadow_enabled = false
+		_farois.add_child(sp)
+	_farois.visible = farol
 	_parachoque(b, aco, plastico)
 	B.box(b, Vector3(LARGURA, 0.16, 0.15), Vector3(0, 0.6, -2.78), aco)
 	B.box(b, Vector3(0.08, 0.08, 0.2), Vector3(0, 0.55, -2.85), aco)

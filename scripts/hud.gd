@@ -38,6 +38,7 @@ var lugares: Array = []
 var infeccao := 0.0
 var defesa := {}          # painel da defesa do assentamento (ver Defesa.info_hud)
 var horda_txt := ""
+var clima_txt := ""
 var arma_txt := ""
 var recarga := -1.0
 var mirando := false
@@ -217,10 +218,16 @@ func _relogio(s: Vector2, e: float) -> void:
 			var a := PI + PI * i / 6.0
 			draw_line(c + Vector2(cos(a), sin(a)) * 10 * e + Vector2(0, 2) * e, c + Vector2(cos(a), sin(a)) * 14 * e + Vector2(0, 2) * e, DOURADO, 1.6 * e)
 		draw_line(c + Vector2(-13, 3) * e, c + Vector2(13, 3) * e, DOURADO, 1.6 * e)
-	if horda_txt != "":
-		var rh := Rect2(Vector2(s.x - w - 20 * e, 66 * e), Vector2(w, 26 * e))
+	var y := 66.0
+	for item in [[horda_txt, "☠ ", Color(0.95, 0.5, 0.35)], [clima_txt, "", Color(0.78, 0.84, 0.92)]]:
+		if item[0] == "":
+			continue
+		var txt: String = item[1] + item[0]
+		var lw: float = maxf(w, _fonte().get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, int(13 * e)).x + 22 * e)
+		var rh := Rect2(Vector2(s.x - lw - 20 * e, y * e), Vector2(lw, 26 * e))
 		_painel(rh)
-		_texto("☠ " + horda_txt, rh.position + Vector2(10, 18) * e, int(13 * e), Color(0.95, 0.5, 0.35))
+		_texto(txt, rh.position + Vector2(10, 18) * e, int(13 * e), item[2])
+		y += 30.0
 
 func _painel_defesa(s: Vector2, e: float) -> void:
 	var w := 420.0 * e

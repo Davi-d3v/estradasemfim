@@ -89,6 +89,7 @@ var cinzas: CPUParticles3D
 var equip: Equipamento
 var tutorial: Tutorial
 var eventos: Eventos
+var clima: Clima
 var horda_visivel: HordaVisivel
 var retrovisor: Retrovisor
 var _t_autosave := 0.0
@@ -187,6 +188,9 @@ func _ready() -> void:
 	eventos = Eventos.new()
 	eventos.main = self
 	add_child(eventos)
+	clima = Clima.new()
+	clima.main = self
+	add_child(clima)
 	horda_visivel = HordaVisivel.new()
 	horda_visivel.main = self
 	add_child(horda_visivel)
@@ -211,6 +215,8 @@ func _ready() -> void:
 			_capturar_trailer()
 		elif "--eventos" in OS.get_cmdline_user_args():
 			_capturar_eventos()
+		elif "--clima" in OS.get_cmdline_user_args():
+			_capturar_clima()
 		elif "--perigo" in OS.get_cmdline_user_args():
 			_capturar_perigo()
 		elif "--horda" in OS.get_cmdline_user_args():
@@ -237,6 +243,10 @@ func _ready() -> void:
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
 		_teste_recrutas()
+	elif "--teste-clima" in OS.get_cmdline_user_args():
+		Jogo.modo = Jogo.MODO_INFINITO
+		jogando = true
+		_teste_clima()
 	elif "--teste-perigo" in OS.get_cmdline_user_args():
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
@@ -309,6 +319,35 @@ func _teste_salvar() -> void:
 	defesa.z_horda = -3333.0
 	var ok := Salvar.salvar(self)
 	print("TS salvo=", ok, " resumo=", Salvar.resumo())
+	get_tree().quit()
+
+## Teste do clima: estados por estação e frenagem no seco, molhado e neve.
+func _teste_clima() -> void:
+	await get_tree().process_frame
+	for d in [1, 11, 21, 31]:
+		dia = d
+		var cont := {}
+		for i in 400:
+			clima._t_troca = 0.0
+			clima.passar(0.1)
+			cont[clima.estado] = cont.get(clima.estado, 0) + 1
+		print("TC2 estacao=%s %s" % [clima.estacao(), str(cont)])
+	dia = 3
+	for e in ["limpo", "chuva", "tempestade", "neve"]:
+		clima.forcar(e)
+		comboio.aderencia_clima = clima.aderencia()
+		comboio.posicionar(1000.0, -0.5, 0.0)
+		comboio.velocidade = 20.0
+		comboio.dirigindo = true
+		Input.action_press("freio")
+		var z0 := comboio.pos.z
+		var t := 0.0
+		while comboio.velocidade > 0.3 and t < 10.0:
+			await get_tree().physics_frame
+			t += get_physics_process_delta_time()
+		Input.action_release("freio")
+		comboio.dirigindo = false
+		print("TC2 %s aderencia=%.2f frenagem de 72 km/h: %.1f m em %.1f s | horda x%.2f visao x%.2f audicao x%.2f" % [e, clima.aderencia(), comboio.pos.z - z0, t, clima.fator_horda(), clima.fator_visao(), clima.fator_audicao()])
 	get_tree().quit()
 
 ## Teste do perigo pela distância: tipos de zumbi, ninhos, diesel e avisos.
@@ -799,6 +838,19 @@ func _atualizar_ceu() -> void:
 	var topo := Color(0.17, 0.12, 0.3).lerp(Color(0.22, 0.42, 0.75), dia_f).lerp(Color(0.02, 0.025, 0.05), noite_f)
 	var meio := Color(0.52, 0.26, 0.4).lerp(Color(0.45, 0.62, 0.85), dia_f).lerp(Color(0.06, 0.08, 0.14), noite_f)
 	var horiz := Color(1.0, 0.42, 0.15).lerp(Color(0.75, 0.82, 0.88), dia_f).lerp(Color(0.1, 0.11, 0.17), noite_f)
+	# tempo fechado: céu cinza, sol fraco, relâmpago clareia tudo
+	if clima:
+		var k := clima.nuvens * 0.75
+		var cinza := Color(0.36, 0.38, 0.42).lerp(Color(0.03, 0.035, 0.05), noite_f)
+		topo = topo.lerp(cinza * 0.8, k)
+		meio = meio.lerp(cinza, k)
+		horiz = horiz.lerp(cinza * 1.1, k)
+		sol.light_energy *= 1.0 - clima.nuvens * 0.55
+		if clima.flash > 0.0:
+			sol.light_energy += clima.flash * 2.5
+			topo = topo.lerp(Color(0.7, 0.72, 0.85), clima.flash * 0.7)
+			meio = meio.lerp(Color(0.8, 0.82, 0.92), clima.flash * 0.7)
+		ceu.set_shader_parameter("cobertura", 0.45 + clima.nuvens * 0.55)
 	ceu.set_shader_parameter("cor_topo", topo)
 	ceu.set_shader_parameter("cor_meio", meio)
 	ceu.set_shader_parameter("cor_horizonte", horiz)
@@ -812,6 +864,9 @@ func _atualizar_ceu() -> void:
 	ambiente.fog_light_color = Color(0.55, 0.33, 0.35).lerp(cor_bioma, 0.6).lerp(Color(0.7, 0.75, 0.82), dia_f * 0.8).lerp(Color(0.03, 0.035, 0.06), noite_f)
 	if mundo:
 		ambiente.fog_density = mundo.reg.param(zf, "nevoa")
+		if clima:
+			ambiente.fog_density += clima.neblina * 0.03 + clima.chuva * 0.006 + clima.neve * 0.01
+			ambiente.fog_light_color = ambiente.fog_light_color.lerp(Color(0.52, 0.54, 0.58).lerp(Color(0.04, 0.045, 0.06), noite_f), maxf(clima.neblina, clima.nuvens) * 0.7)
 	ambiente.ambient_light_energy = lerpf(1.1, 0.9, dia_f) * lerpf(1.0, 0.6, noite_f)
 	if trailer:
 		trailer.luz_interna = alt < 0.2
@@ -832,6 +887,8 @@ func _process(dt: float) -> void:
 		return
 	_tempo += dt
 	mundo.noite = eh_noite()
+	comboio.aderencia_clima = clima.aderencia()
+	picape.ligar_farol(comboio.dirigindo and (eh_noite() or hora < 6.3 or hora > 18.6 or clima.neblina > 0.5 or clima.chuva > 0.6))
 	_avisar_faixa()
 	_sons_ambiente(dt)
 	eventos.atualizar(dt)
@@ -872,7 +929,13 @@ func _passar_tempo(h: float) -> void:
 	base.passar(h)
 	if defesa:
 		defesa.passar(h)
-	jogador.fome = maxf(0.0, jogador.fome - 0.02 * h)
+	if clima:
+		clima.passar(h)
+	# inverno: o corpo gasta mais para se aquecer (mais ainda na neve, fora do abrigo)
+	var frio := 1.0
+	if clima and clima.estacao() == "Inverno":
+		frio = 1.3 + (0.3 if clima.neve > 0.3 and dentro == null else 0.0)
+	jogador.fome = maxf(0.0, jogador.fome - 0.02 * h * frio)
 	jogador.sede = maxf(0.0, jogador.sede - 0.035 * h)
 	if jogador.fome <= 0.0 or jogador.sede <= 0.0:
 		jogador.vida = maxf(0.05, jogador.vida - 0.02 * h)
@@ -951,6 +1014,8 @@ func _txt_itens(itens: Dictionary) -> String:
 
 # ------------------------------------------------------------ combate
 func ruido(pos: Vector3, raio: float, _tipo := "") -> void:
+	if clima and _tipo != "grito":
+		raio *= clima.fator_audicao()
 	mundo.ruidos.append({"pos": pos, "raio": raio, "t": 2.5})
 
 func _golpe(origem: Vector3, frente: Vector3) -> void:
@@ -1526,6 +1591,7 @@ func _atualizar_hud() -> void:
 	hud.defesa_armadura = equip.defesa()
 	hud.defesa = defesa.info_hud()
 	hud.horda_txt = defesa.texto_horda()
+	hud.clima_txt = "%s · %s" % [clima.nome(), clima.estacao()]
 	hud.mira = dentro != null or (jogador.visible and not comboio.dirigindo)
 	if comboio.dirigindo:
 		hud.objetivo = "Siga pela estrada"
@@ -2887,6 +2953,56 @@ func _capturar_trailer() -> void:
 			_abrir_painel(_painel_compartimento.bind(id))
 			await _salvar("trailer_painel_%s" % id)
 			_fechar_janela()
+	get_tree().quit()
+
+## Prints do clima: chuva, tempestade (com relâmpago), neblina, neve e farol à noite.
+func _capturar_clima() -> void:
+	var cam := Camera3D.new()
+	cam.far = 900.0
+	add_child(cam)
+	var z0 := 2600.0
+	var p0 := mundo.ponto_estrada(z0, -0.5)
+	var d0 := mundo.direcao(z0)
+	comboio.posicionar_livre(p0, atan2(d0.x, d0.z), 0.0)
+	comboio.set_physics_process(false)
+	jogador.position = p0 + Vector3(3, 0, 0)
+	jogador.visible = false
+	mundo.atualizar(p0)
+	await get_tree().process_frame
+	_limpar_zumbis_perto(p0, 60.0)
+	var tr: Node3D = trailer
+	var de := tr.global_position - d0 * 9.0 + Vector3(d0.z, 0, -d0.x) * 4.5 + Vector3(0, 2.6, 0)
+	var alvo := picape.global_position + d0 * 6.0 + Vector3(0, 1.0, 0)
+	cam.fov = 60.0
+	cam.look_at_from_position(de, alvo, Vector3.UP)
+	cam.current = true
+	hud.visible = true
+	for v in [["limpo", 15.0], ["chuva", 15.0], ["tempestade", 15.5], ["neblina", 9.0], ["neve", 13.0]]:
+		dia = 21 if v[0] == "neve" else 3
+		hora = v[1]
+		clima.forcar(v[0])
+		await get_tree().process_frame
+		if v[0] == "tempestade":
+			clima.flash = 0.0
+		_atualizar_ceu()
+		_atualizar_hud()
+		await _salvar("clima_%s" % v[0])
+		if v[0] == "tempestade":
+			clima.flash = 0.8
+			_atualizar_ceu()
+			await _salvar("clima_relampago")
+			clima.flash = 0.0
+	# noite com farol, dirigindo debaixo de chuva
+	dia = 3
+	hora = 22.0
+	clima.forcar("chuva")
+	picape.ligar_farol(true)
+	var fr := d0
+	var de2 := picape.global_position - fr * 7.0 + Vector3(fr.z, 0, -fr.x) * 2.5 + Vector3(0, 3.2, 0)
+	cam.look_at_from_position(de2, picape.global_position + fr * 25.0, Vector3.UP)
+	_atualizar_ceu()
+	_atualizar_hud()
+	await _salvar("clima_noite_farol")
 	get_tree().quit()
 
 ## Prints da etapa de perigo: zumbis novos, ninho (inteiro e queimando) e aviso de faixa.

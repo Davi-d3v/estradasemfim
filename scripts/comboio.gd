@@ -26,6 +26,7 @@ var na_terra := false        # numa estrada de terra
 var na_agua := false
 var agua_no_motor := false
 var bloqueado := false       # bateu numa barreira
+var aderencia_clima := 1.0   # chuva/neve deixam a pista lisa (Clima)
 var temperatura := 0.3     # 0 frio .. 1 limite .. acima = superaquecido
 var superaquecido := false
 var primeira_pessoa := true
@@ -193,9 +194,9 @@ func _physics_process(dt: float) -> void:
 	_temperatura(dt, absf(acel))
 	if acel > 0.0:
 		if velocidade < -0.2:
-			velocidade = move_toward(velocidade, 0.0, 12.0 * dt)
+			velocidade = move_toward(velocidade, 0.0, 12.0 * dt * aderencia_clima)
 		else:
-			velocidade += acel * forca * dt
+			velocidade += acel * forca * dt * lerpf(0.65, 1.0, aderencia_clima)
 	elif acel < 0.0:
 		if velocidade > 0.2:
 			velocidade = move_toward(velocidade, 0.0, 12.0 * dt)
@@ -205,11 +206,16 @@ func _physics_process(dt: float) -> void:
 		var arrasto := 0.6 + (2.0 / picape.aderencia_fora() if fora_da_estrada else 0.0)
 		velocidade = move_toward(velocidade, 0.0, arrasto * dt)
 	if freio:
-		velocidade = move_toward(velocidade, 0.0, 16.0 * dt)
+		velocidade = move_toward(velocidade, 0.0, (3.0 + 13.0 * pow(aderencia_clima, 1.8)) * dt)
 	velocidade = clampf(velocidade, -6.0, velocidade_maxima())
 	# em alta velocidade o volante responde menos
 	var giro := esterco * lerpf(0.55, 0.16, clampf(absf(velocidade) / 30.0, 0.0, 1.0))
+	giro *= lerpf(0.6, 1.0, aderencia_clima)
 	yaw += velocidade * tan(giro) / ENTRE_EIXOS * dt
+	# pista lisa: em curva rápida a traseira escorrega (o comboio "abre")
+	if aderencia_clima < 0.95 and absf(velocidade) > 11.0 and absf(esterco) > 0.25:
+		yaw += esterco * (1.0 - aderencia_clima) * clampf((absf(velocidade) - 11.0) / 14.0, 0.0, 1.0) * 0.5 * dt
+		velocidade *= 1.0 - (1.0 - aderencia_clima) * 0.25 * dt
 	var frente := Vector3(sin(yaw), 0, cos(yaw))
 	var antes := pos
 	pos += frente * velocidade * dt

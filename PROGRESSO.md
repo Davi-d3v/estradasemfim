@@ -37,9 +37,13 @@
   tipos de zumbi liberados por faixa (gritador 5 km, brutamonte 15 km, blindado 30 km), mais corredores à noite, mais zumbis por trecho e cidades tomadas;
   zumbi blindado (capacete + colete, segura tiro fraco); ninhos (scripts/ninho.gd) que soltam zumbis até serem queimados (molotov ou galão);
   diesel raro longe (fartura_diesel: postos e galões); horda acelera com a distância. Teste: --teste-perigo; prints: --perigo
-- [ ] 2. Clima e noite  - [ ] 3. Rádio/Zona Segura/marcos  - [ ] 4. Combate com o comboio  - [ ] 5. Comércio/reputação/facções
+- [x] 2. Clima e noite (scripts/clima.gd): estados limpo/nublado/chuva/tempestade/neblina/neve, estações de 10 dias (neve só no inverno);
+  partículas, céu fechado, névoa, relâmpago + trovão, asfalto molhado com poças e neve no chão (shaders road/terrain/grass), vento forte na tempestade;
+  pista lisa (Comboio.aderencia_clima: curva, freio e derrapagem), zumbis enxergam/escutam menos, horda +45% na tempestade, fome maior no inverno;
+  faróis da picape (acendem sozinhos) que atraem zumbis à frente à noite; tempo/estação no HUD; salvo no jogo. Teste: --teste-clima; prints: --clima
+- [ ] 3. Rádio/Zona Segura/marcos  - [ ] 4. Combate com o comboio  - [ ] 5. Comércio/reputação/facções
 - [ ] 6. Cachorro  - [ ] 7-11. Recrutas, comboio, exploração, defesa, sobrevivência  - [ ] 12. v0.8
 
 ## Próximos
-- seguir a rodada grande (etapa 2: clima e noite)
+- seguir a rodada grande (etapa 3: rádio, Zona Segura e marcos)
 - ouvir o retorno do teste no PC do Davi

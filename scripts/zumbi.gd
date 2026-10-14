@@ -315,6 +315,15 @@ func _perceber(main: Node) -> void:
 	var alvo_p: Vector3 = j.global_position if j.visible else main.comboio.pos
 	var d := global_position.distance_to(alvo_p)
 	var visao := 9.0 if noite else 20.0
+	var cl = main.get("clima")
+	if cl:
+		visao *= cl.fator_visao()
+	# farol aceso no escuro: quem está na frente do comboio vê de longe e vem
+	if noite and main.comboio.dirigindo and main.picape.farol:
+		var fr := Vector3(sin(main.comboio.yaw), 0, cos(main.comboio.yaw))
+		var rel: Vector3 = global_position - main.comboio.pos
+		if rel.length() < 48.0 and fr.dot(rel.normalized()) > 0.75:
+			visao = maxf(visao, 48.0)
 	if tipo == "rastejante":
 		visao *= 0.6
 	if j.visible and j.get("agachado"):
@@ -342,8 +351,9 @@ func _perceber(main: Node) -> void:
 	if estado == Estado.PERSEGUINDO and d > visao * 1.8:
 		estado = Estado.INVESTIGANDO
 		alvo_pos = alvo_p
+	var ouvido: float = 1.0 if cl == null else cl.fator_audicao()
 	for r in mundo.ruidos:
-		if global_position.distance_to(r.pos) < r.raio and estado == Estado.VAGANDO:
+		if global_position.distance_to(r.pos) < r.raio * ouvido and estado == Estado.VAGANDO:
 			estado = Estado.INVESTIGANDO
 			alvo_pos = r.pos + Vector3(_rng.randf_range(-3, 3), 0, _rng.randf_range(-3, 3))
 
