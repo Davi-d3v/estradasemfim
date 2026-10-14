@@ -18,8 +18,23 @@ CONTROLES
   G .............. engatar reboque              L .......... luz do trailer
   F1 ............. tutorial       Esc ........ soltar o mouse
   F5 ............. salvar (também salva sozinho ao dormir, a cada 10 min e ao fechar)
+  Z .............. binóculo       J .......... diário (cartas e fitas)
 
 O tutorial aparece no primeiro jogo. Enter pula um passo; Backspace encerra.
+
+NOVIDADES v0.8
+  - A estrada fica mais difícil quanto mais longe: zumbis novos por distância (gritador, brutamonte,
+    blindado), ninhos para queimar, diesel cada vez mais raro.
+  - Clima e estações: chuva, tempestade, neblina, neve; pista lisa, faróis, noite perigosa.
+  - Rádio, Zona Segura (km 40) e marcos infinitos com prêmios; missões do rádio; o mistério da horda.
+  - Combate com o comboio: zumbis agarrados, espinhos, couraça, atirador na caçamba.
+  - Comércio por lugar, pedidos, reputação e facções de saqueadores que lembram de você.
+  - Cachorro companheiro (aparece na estrada: NÃO ME DEIXE).
+  - Recrutas com jeito próprio, níveis, amizades, brigas, casais, luto; idosos e crianças.
+  - Reboques raros: hospital, torre de rádio, destilaria, blindado com torreta. Pneu fura, motor gasta.
+  - Base militar, presídio e shopping com portas trancadas; porões e bunkers no escuro (lanterna).
+  - Defesa por setor: fosso, arame farpado; ondas noturnas; o Colosso a cada 3 ondas; aliados.
+  - Sono, gripe, intoxicação, ferida que inflama; café, sopa e ensopado na fogueira.
 
 NOVIDADES v0.7
   - Salvar e carregar: "Continuar" no menu inicial.
