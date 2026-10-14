@@ -1,8 +1,8 @@
 63f7b34db8d8cdea90c76aacccf841ec
 ::res://::1791934399
-CLAUDE.md::TextFile::-1::1791980212::0::1::::<><><>0<>0<><>::
+CLAUDE.md::TextFile::-1::1791982968::0::1::::<><><>0<>0<><>::
 export_presets.cfg::TextFile::-1::1791856619::0::1::::<><><>0<>0<><>::
-PROGRESSO.md::TextFile::-1::1791980212::0::1::::<><><>0<>0<><>::
+PROGRESSO.md::TextFile::-1::1791982968::0::1::::<><><>0<>0<><>::
 ::res://assets/::1791976313
 LEIA-ME.txt::TextFile::-1::1791976644::0::1::::<><><>0<>0<><>::
 ::res://assets/animais/::1791935445
@@ -131,7 +131,7 @@ land.ogg::AudioStreamOggVorbis::4214176119275921178::1791976325::1791976556::1::
 skid.ogg::AudioStreamOggVorbis::659134722457882038::1791976332::1791976556::1::::<><><>0<>0<>e68d80f1ea8c51a3664f3fb74848bac6<>res://.godot/imported/skid.ogg-70462eb4487137b61b480166442a1173.oggvorbisstr::
 walking.ogg::AudioStreamOggVorbis::2033481838180554883::1791976325::1791976556::1::::<><><>0<>0<>ae39ebe5ead0fde70455bce562de0ad1<>res://.godot/imported/walking.ogg-cd970a412f7d8b3ca9913a0fd7c325dc.oggvorbisstr::
 weapon_change.ogg::AudioStreamOggVorbis::1418325417455749767::1791976325::1791976556::1::::<><><>0<>0<>71abab1d7386b023543978216d54f529<>res://.godot/imported/weapon_change.ogg-747af4c63ca483528e74f991ac26a21f.oggvorbisstr::
-::res://prints/::1791982042
+::res://prints/::1791982966
 119_zumbis_modelo.png::CompressedTexture2D::3994063043350873346::1791932959::1791933203::1::::<><><>0<>0<>c90f20363dbe56b15646b6dc943020a2<>res://.godot/imported/119_zumbis_modelo.png-51a0f864e2cef78f8dc899c8ec972707.ctex::
 120_combate_de_perto.png::CompressedTexture2D::4486773025121629619::1791933137::1791933203::1::::<><><>0<>0<>97a643ed87ba4695f0d100161342f15b<>res://.godot/imported/120_combate_de_perto.png-9c432cbecf67667c60b8c14f83875c20.ctex::
 121b_vila_moradores.png::CompressedTexture2D::91921045007968033::1791932829::1791932910::1::::<><><>0<>0<>41cda9640106e400d15cacc17341f6c6<>res://.godot/imported/121b_vila_moradores.png-837f27ef42c94ea16ae9ddf30122c993.ctex::
