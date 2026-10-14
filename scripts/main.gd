@@ -166,6 +166,11 @@ func _ready() -> void:
 	_rng_eventos.seed = 12345
 	_ambiente()
 	mundo = WorldGen.new()
+	# testes e prints precisam do mundo inteiro na hora; jogando, os trechos longe nascem aos poucos
+	mundo.gradual = not capturando
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--teste") or arg == "--perfil" or arg == "--gradual-teste":
+			mundo.gradual = arg == "--gradual-teste"
 	if not capturando:
 		mundo.definir_semente(Jogo.semente)
 	mundo.pois_fixos = {0: "posto", 1: "placa"}
@@ -313,6 +318,14 @@ func _ready() -> void:
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
 		_teste_recrutas()
+	elif "--fluidez" in OS.get_cmdline_user_args():
+		Jogo.modo = Jogo.MODO_INFINITO
+		jogando = true
+		_teste_fluidez()
+	elif "--perfil" in OS.get_cmdline_user_args():
+		Jogo.modo = Jogo.MODO_INFINITO
+		jogando = true
+		_perfil_chunks()
 	elif "--teste-longo" in OS.get_cmdline_user_args():
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
@@ -1236,6 +1249,75 @@ func _teste_defesa() -> void:
 	print("TD recrutas=%d" % base.lista.size())
 	get_tree().quit()
 
+## Dirige a 90 km/h por 1,5 km medindo o tempo de cada quadro (engasgos).
+func _teste_fluidez() -> void:
+	mundo.gradual = "--sem-gradual" not in OS.get_cmdline_user_args()
+	await get_tree().process_frame
+	_entrar_no_carro()
+	var z := 100.0
+	var tempos: Array[float] = []
+	var ultimo := Time.get_ticks_usec()
+	while z < 1600.0:
+		z += 25.0 / 60.0
+		comboio.diesel = 60.0
+		comboio.posicionar(z, -0.5, 0.0)
+		await get_tree().process_frame
+		var agora := Time.get_ticks_usec()
+		tempos.append((agora - ultimo) / 1000.0)
+		ultimo = agora
+	tempos.sort()
+	var n := tempos.size()
+	var acima := tempos.filter(func(t): return t > 100.0).size()
+	print("FL gradual=%s quadros=%d mediana=%.1f ms p95=%.1f p99=%.1f max=%.1f quadros>100ms=%d" % [str(mundo.gradual), n, tempos[n / 2], tempos[int(n * 0.95)], tempos[int(n * 0.99)], tempos[n - 1], acima])
+	get_tree().quit()
+
+## Mede o custo de gerar trechos (cada etapa) para achar o que engasga.
+func _perfil_chunks() -> void:
+	await get_tree().process_frame
+	mundo.perfil.clear()
+	var piores: Array = []
+	for k in range(20, 80):
+		var t := Time.get_ticks_usec()
+		var n := mundo._gerar_chunk(k)
+		var dt := (Time.get_ticks_usec() - t) / 1000.0
+		piores.append([dt, k, mundo.bioma_em(k * 64.0)])
+		n.queue_free()
+		await get_tree().process_frame
+	# confere a grade contra o cálculo exato
+	var g := mundo.grade(40)
+	var maxd := 0.0
+	var soma := 0.0
+	var rr := RandomNumberGenerator.new()
+	for i in 2000:
+		var z := 40 * 64.0 + rr.randf() * 64.0
+		var x := mundo.centro_x(z) + rr.randf_range(-280.0, 280.0)
+		var dd := absf(mundo.altura(x, z) - mundo.altura_exata(x, z))
+		maxd = maxf(maxd, dd)
+		soma += dd
+	var nos := 0.0
+	for iz in 17:
+		for ix in range(0, 150, 7):
+			var x2: float = float(g.cx0) + ix * 4.0
+			var z2: float = 40 * 64.0 + iz * 4.0
+			nos = maxf(nos, absf(g.h[iz * 151 + ix] - mundo.altura_exata(x2, z2)))
+	print("PF grade: erro nos nós %.4f m; entre nós média %.3f m, máx %.3f m" % [nos, soma / 2000.0, maxd])
+	mundo.perfil.clear()
+	var t37 := Time.get_ticks_usec()
+	mundo._grades.erase(37)
+	var n37 := mundo._gerar_chunk(37)
+	print("PF trecho 37: %.0f ms · %s" % [(Time.get_ticks_usec() - t37) / 1000.0, str(mundo.perfil.keys().map(func(kk): return "%s %.0f" % [kk, mundo.perfil[kk] / 1000.0]))])
+	n37.queue_free()
+	piores.sort_custom(func(a, b): return a[0] > b[0])
+	var tot := 0.0
+	for p in piores:
+		tot += p[0]
+	print("PF média %.1f ms por trecho; piores: %s" % [tot / piores.size(), str(piores.slice(0, 6))])
+	var et: Array = mundo.perfil.keys()
+	et.sort_custom(func(a, b): return mundo.perfil[a] > mundo.perfil[b])
+	for e in et:
+		print("PF   %-22s %.1f ms/trecho" % [e, mundo.perfil[e] / 1000.0 / piores.size()])
+	get_tree().quit()
+
 ## Teste longo: dirige 60 km de estrada (geração de trechos com tudo ligado), passa dias, salva e carrega.
 func _teste_longo() -> void:
 	await get_tree().process_frame
@@ -1637,6 +1719,7 @@ func _process(dt: float) -> void:
 	if comboio.dirigindo:
 		jogador.position = comboio.porta_motorista()
 	mundo.atualizar(foco)
+	mundo.processar_fila()
 	mundo.mat_capim.set_shader_parameter("tempo", _tempo)
 	mundo.ajustar_origem(foco)
 	mundo.mat_agua.set_shader_parameter("tempo", _tempo)

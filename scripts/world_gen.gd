@@ -7,6 +7,7 @@ const TAM := 64.0          # comprimento de cada pedaço
 const LARG_ESTRADA := 8.0
 const ALCANCE_X := 300.0
 const PASSO_TERRENO := 4.0
+const GRADE_NZ := 16           # linhas da grade por trecho (TAM / PASSO_TERRENO)
 const ATRAS := 3
 ## Trechos extras mantidos atrás (a horda visível pede mais para não andar no vazio).
 var atras_extra := 0
@@ -59,6 +60,9 @@ var ruidos: Array = []
 var nivel_ameaca := 0.0
 ## Lugares (vilas, fazendas, ferro-velhos) já gerados como cena, por id.
 var lugares_ativos := {}
+## Grades de altura por trecho (ver grade()).
+var _grades := {}
+var _k_ultimo := -999999
 ## Ninhos de zumbis carregados (Ninho).
 var ninhos: Array = []
 ## Eventos na estrada (Eventos): ativos por chunk e já resolvidos (salvo).
@@ -161,7 +165,114 @@ func altura_base(x: float, z: float) -> float:
 			h = lerpf(h, rio.margem - prof, cava)
 	return h
 
+## Altura do terreno. Usa a grade do trecho (a mesma da malha que aparece na tela)
+## quando ela existe: muito mais rápido e os objetos ficam rente ao chão visível.
 func altura(x: float, z: float) -> float:
+	var g: Dictionary = _grades.get(int(floor(z / TAM)), {})
+	if not g.is_empty():
+		var fx: float = (x - float(g.cx0)) / PASSO_TERRENO
+		var fz: float = (z - float(g.z0)) / PASSO_TERRENO
+		var nx: int = g.nx
+		if fx >= 0.0 and fx < nx and fz >= 0.0 and fz <= GRADE_NZ:
+			return _bilinear(g.h, nx, fx, fz)
+	return altura_exata(x, z)
+
+## Quanto o ponto é floresta, pela grade do trecho quando existe.
+func floresta_rapida(x: float, z: float) -> float:
+	var g: Dictionary = _grades.get(int(floor(z / TAM)), {})
+	if not g.is_empty():
+		var fx: float = (x - float(g.cx0)) / PASSO_TERRENO
+		var fz: float = (z - float(g.z0)) / PASSO_TERRENO
+		var nx: int = g.nx
+		if fx >= 0.0 and fx < nx and fz >= 0.0 and fz <= GRADE_NZ:
+			return _bilinear(g.f, nx, fx, fz)
+	return floresta(x, z)
+
+func _bilinear(arr: PackedFloat32Array, nx: int, fx: float, fz: float) -> float:
+	var ix := mini(int(fx), nx - 1)
+	var iz := mini(int(fz), GRADE_NZ - 1)
+	var tx := fx - ix
+	var tz := fz - iz
+	var w := nx + 1
+	var a := arr[iz * w + ix]
+	var b := arr[iz * w + ix + 1]
+	var c := arr[(iz + 1) * w + ix]
+	var d := arr[(iz + 1) * w + ix + 1]
+	return lerpf(lerpf(a, b, tx), lerpf(c, d, tx), tz)
+
+## Grade de alturas e mata do trecho k (calculada uma vez; a malha do terreno usa a mesma).
+func grade(k: int) -> Dictionary:
+	if _grades.has(k):
+		return _grades[k]
+	var z0 := k * TAM
+	var nx := int(ALCANCE_X * 2.0 / PASSO_TERRENO)
+	var cx0 := roundf(centro_x(z0 + TAM * 0.5) / PASSO_TERRENO) * PASSO_TERRENO - ALCANCE_X
+	var h := PackedFloat32Array()
+	var f := PackedFloat32Array()
+	h.resize((nx + 1) * (GRADE_NZ + 1))
+	f.resize((nx + 1) * (GRADE_NZ + 1))
+	var lim := LARG_ESTRADA * 0.5
+	for iz in GRADE_NZ + 1:
+		var z := z0 + iz * PASSO_TERRENO
+		# tudo o que só depende de z, uma vez por linha
+		var cz := centro_x(z)
+		var base := elevacao(z)
+		var amp := reg.param(z, "morro")
+		var baixa := reg.param(z, "baixa")
+		var amp_k := 3.0 * minf(amp / 14.0, 1.0)
+		var rio := _rio_em(z)
+		var mx := reg.mistura(z)
+		var vies := lerpf(VIES_FLORESTA[mx[0]], VIES_FLORESTA[mx[1]], mx[2])
+		var feats: Array = []
+		for ft in _features(reg.indice(z)):
+			var bb: Rect2 = ft.bb
+			if z >= bb.position.y and z <= bb.end.y:
+				feats.append(ft)
+		var dz_rio := absf(z - float(rio.get("z", 0.0)))
+		var no_rio: bool = not rio.is_empty() and dz_rio < rio.largura * 0.5 + 10.0
+		var cava := 0.0
+		if no_rio:
+			cava = 1.0 - smoothstep(rio.largura * 0.5 - 2.0, rio.largura * 0.5 + 8.0, dz_rio)
+		for ix in nx + 1:
+			var x := cx0 + ix * PASSO_TERRENO
+			var d := absf(x - cz)
+			# altura_base
+			var morro := (_ruido.get_noise_2d(x, z) * 0.5 + 0.5) * amp - amp_k
+			var t := smoothstep(lim + 3.0, 45.0, d)
+			var vala := -0.45 * (smoothstep(7.0, 8.0, d) * (1.0 - smoothstep(9.0, 11.0, d)))
+			var hh := base - 0.05 + (morro + baixa) * t + vala + _ruido2.get_noise_2d(x, z) * 0.25 * t
+			if no_rio:
+				var prof: float = rio.prof
+				if absf(x - rio.vau_x) < 7.0:
+					prof = rio.prof_vau
+				hh = lerpf(hh, rio.margem - prof, cava)
+			# estradas de terra e platôs
+			for ft in feats:
+				var bb2: Rect2 = ft.bb
+				if x < bb2.position.x or x > bb2.end.x:
+					continue
+				if ft.tipo == "estrada":
+					var res := _dist_caminho(ft.pts, x, z)
+					var w := 1.0 - smoothstep(ft.get("aplaina", 2.6), ft.get("aplaina", 2.6) * 3.4, res.x)
+					if w > 0.0:
+						hh = lerpf(hh, res.y - 0.04, w)
+				elif ft.tipo == "plato":
+					var dd := Vector2(x - ft.c.x, z - ft.c.z).length()
+					var w2 := 1.0 - smoothstep(ft.raio, ft.raio + 16.0, dd)
+					if w2 > 0.0:
+						hh = lerpf(hh, ft.c.y, w2)
+			h[iz * (nx + 1) + ix] = hh
+			# floresta
+			var fl := 0.0
+			if vies >= -0.5:
+				var nn := _ruido3.get_noise_2d(x, z) * 0.5 + 0.5
+				fl = smoothstep(0.5 - vies, 0.62 - vies, nn) * smoothstep(13.0, 28.0, d)
+			f[iz * (nx + 1) + ix] = fl
+	var g := {"cx0": cx0, "z0": z0, "nx": nx, "h": h, "f": f}
+	_grades[k] = g
+	return g
+
+func altura_exata(x: float, z: float) -> float:
 	var h := altura_base(x, z)
 	for f in _features(reg.indice(z)):
 		var bb: Rect2 = f.bb
@@ -471,11 +582,28 @@ func lugar_em(p: Vector3) -> Dictionary:
 # ------------------------------------------------------------ atualização
 func atualizar(pos: Vector3) -> void:
 	var k := int(floor(pos.z / TAM))
+	_k_foco = k
 	var desejados := {}
+	var salto: bool = absi(k - _k_ultimo) > 2      # teletransporte / carregou o jogo: gera tudo já
+	_k_ultimo = k
 	for i in range(k - ATRAS - atras_extra, k + FRENTE + 1):
 		desejados[i] = true
-		if not _chunks.has(i):
+		var perto := absi(i - k) <= 1
+		var em_obra: bool = not _em_obra.is_empty() and _em_obra.ctx.k == i
+		if em_obra and (perto or not gradual or salto):
+			# ficou perto antes de terminar: termina agora
+			while _etapa_chunk(_em_obra.ctx, _em_obra.etapa):
+				_em_obra.etapa += 1
+			_em_obra = {}
+			continue
+		if _chunks.has(i):
+			continue
+		if perto or not gradual or salto:
+			_fila.erase(i)
 			_chunks[i] = _gerar_chunk(i)
+		elif not _fila.has(i):
+			_fila.append(i)
+	_fila = _fila.filter(func(i): return desejados.has(i))
 	for i in _chunks.keys():
 		if not desejados.has(i):
 			for r in reboques_soltos:
@@ -486,9 +614,12 @@ func atualizar(pos: Vector3) -> void:
 						estado_reboques[m] = r.salvar()
 						if not (m is int):
 							r.queue_free()   # reboque de lugar: filho do mundo, não do chunk
+			if not _em_obra.is_empty() and _em_obra.ctx.k == i:
+				_em_obra = {}
 			_chunks[i].queue_free()
 			_chunks.erase(i)
 			eventos_ativos.erase(i)
+			_grades.erase(i)
 	reboques_soltos = reboques_soltos.filter(func(r): return is_instance_valid(r) and not r.is_queued_for_deletion() and not _na_fila(r))
 	estruturas = estruturas.filter(func(v): return is_instance_valid(v) and not v.is_queued_for_deletion() and not _na_fila(v))
 	vasculhaveis = vasculhaveis.filter(func(v): return is_instance_valid(v) and not v.is_queued_for_deletion() and not _na_fila(v))
@@ -584,68 +715,136 @@ func bioma_em(z: float) -> String:
 	var mx := reg.mistura(z)
 	return mx[0] if mx[2] < 0.5 else mx[1]
 
+var perfil := {}
+func _perf(nome: String, t0: int) -> int:
+	var t := Time.get_ticks_usec()
+	perfil[nome] = perfil.get(nome, 0) + (t - t0)
+	return t
+
+## Gera o trecho k inteiro de uma vez (perto do jogador, ou em testes/prints).
 func _gerar_chunk(k: int) -> Node3D:
+	var ctx := _iniciar_chunk(k)
+	var i := 0
+	while _etapa_chunk(ctx, i):
+		i += 1
+	return ctx.n
+
+const N_ETAPAS := 8
+
+func _iniciar_chunk(k: int) -> Dictionary:
 	var n := Node3D.new()
 	n.name = "Chunk_%d" % k
 	add_child(n)
 	var z0 := k * TAM
 	var zm := z0 + TAM * 0.5
-	var bio := bioma_em(zm)
 	var ri := reg.indice(zm)
 	var marco := reg.marco(ri)
-	var perto_marco := absf(zm - marco.z) < 320.0
-	_estrada(n, z0)
-	_terreno(n, z0)
-	_capim(n, z0, k)
-	_arvores(n, z0, k)
-	if bio != "cidade" or k % 2 == 0:
-		_postes(n, z0, k)
-	# marcos e missões do rádio precisam de espaço livre (nada de prédio por cima)
-	var livre := perto_de_marco(k) or missoes_k.has(k) or missoes_k.has(k - 1) or missoes_k.has(k + 1)
-	if not perto_marco and not livre:
-		_carros(n, z0, k)
-	if not livre:
-		match bio:
-			"cidade":
-				_predios(n, z0, k)
-			"industrial":
-				_galpoes(n, z0, k)
-			"alagado":
-				_agua_varzea(n, z0)
-	_estradas_terra(n, z0, k)
-	if not perto_marco and not livre:
-		_beira_estrada(n, z0, k, bio)
-	if not perto_marco and not livre and k > 1:
-		Apocalipse.chunk(n, z0, k, self, bio)
-	_placas_juncao(n, z0)
-	_lugares_no_chunk(n, z0)
-	if marco.z >= z0 and marco.z < z0 + TAM:
-		if marco.tipo == "barreira":
-			_marco_barreira(n, ri, marco)
-		else:
-			_marco_ponte(n, ri, marco)
-	for zp in [marco.z - 420.0, marco.z - 190.0]:
-		if zp >= z0 and zp < z0 + TAM:
-			_placa_texto(n, zp, LARG_ESTRADA * 0.5 + 2.4, ("PONTE CAÍDA\nDESVIO " if marco.tipo == "ponte" else "BLOQUEIO MILITAR\nDESVIO ") + ("→" if marco.lado > 0 else "←"), Color(0.85, 0.55, 0.1))
-	var tipo := tipo_poi(k)
-	if tipo != "":
-		for t in tipo.split(","):
-			var partes := t.split(":")
-			if partes[0] == "reboque":
-				_poi_reboque(n, z0, k, partes[1] if partes.size() > 1 else "")
-			else:
-				call("_poi_" + t, n, z0, k)
-	if gerar_zumbis and k != 0 and eventos_ativos.get(k, {}).get("tipo", "") not in ["saqueadores", "carona"] and not perto_de_marco(k):
-		_zumbis(n, z0, k)
-	if k > 0:
-		_animais(n, z0, k, bio)
-	var areas := _areas_construidas(n)
-	_limpar_vegetacao(n, areas)
-	_mata(n, z0, k, areas)
-	for tm in tumulos.get(k, []):
-		construir_tumulo(tm.pos, tm.nome, tm.dia, n)
-	B.mesclar(n)
-	return n
+	return {"k": k, "n": n, "z0": z0, "zm": zm, "bio": bioma_em(zm), "ri": ri, "marco": marco,
+		"perto_marco": absf(zm - marco.z) < 320.0,
+		"livre": perto_de_marco(k) or missoes_k.has(k) or missoes_k.has(k - 1) or missoes_k.has(k + 1), "areas": []}
+
+## Uma etapa da geração do trecho (cada uma leva poucos ms). Devolve false quando acabou.
+func _etapa_chunk(ctx: Dictionary, etapa: int) -> bool:
+	var n: Node3D = ctx.n
+	if not is_instance_valid(n) or n.is_queued_for_deletion():
+		return false
+	var k: int = ctx.k
+	var z0: float = ctx.z0
+	var bio: String = ctx.bio
+	var marco: Dictionary = ctx.marco
+	var perto_marco: bool = ctx.perto_marco
+	var livre: bool = ctx.livre
+	var t0 := Time.get_ticks_usec()
+	match etapa:
+		0:
+			_estrada(n, z0)
+			_terreno(n, z0)
+		1:
+			_capim(n, z0, k)
+		2:
+			_arvores(n, z0, k)
+			if bio != "cidade" or k % 2 == 0:
+				_postes(n, z0, k)
+			# marcos e missões do rádio precisam de espaço livre (nada de prédio por cima)
+			if not perto_marco and not livre:
+				_carros(n, z0, k)
+			if not livre:
+				match bio:
+					"cidade":
+						_predios(n, z0, k)
+					"industrial":
+						_galpoes(n, z0, k)
+					"alagado":
+						_agua_varzea(n, z0)
+			_estradas_terra(n, z0, k)
+		3:
+			if not perto_marco and not livre:
+				_beira_estrada(n, z0, k, bio)
+			if not perto_marco and not livre and k > 1:
+				Apocalipse.chunk(n, z0, k, self, bio)
+			_placas_juncao(n, z0)
+		4:
+			_lugares_no_chunk(n, z0)
+		5:
+			if marco.z >= z0 and marco.z < z0 + TAM:
+				if marco.tipo == "barreira":
+					_marco_barreira(n, ctx.ri, marco)
+				else:
+					_marco_ponte(n, ctx.ri, marco)
+			for zp in [marco.z - 420.0, marco.z - 190.0]:
+				if zp >= z0 and zp < z0 + TAM:
+					_placa_texto(n, zp, LARG_ESTRADA * 0.5 + 2.4, ("PONTE CAÍDA\nDESVIO " if marco.tipo == "ponte" else "BLOQUEIO MILITAR\nDESVIO ") + ("→" if marco.lado > 0 else "←"), Color(0.85, 0.55, 0.1))
+			var tipo := tipo_poi(k)
+			if tipo != "":
+				for t in tipo.split(","):
+					var partes := t.split(":")
+					if partes[0] == "reboque":
+						_poi_reboque(n, z0, k, partes[1] if partes.size() > 1 else "")
+					else:
+						call("_poi_" + t, n, z0, k)
+			if gerar_zumbis and k != 0 and eventos_ativos.get(k, {}).get("tipo", "") not in ["saqueadores", "carona"] and not perto_de_marco(k):
+				_zumbis(n, z0, k)
+			if k > 0:
+				_animais(n, z0, k, bio)
+		6:
+			ctx.areas = _areas_construidas(n)
+			_limpar_vegetacao(n, ctx.areas)
+			_mata(n, z0, k, ctx.areas)
+		7:
+			for tm in tumulos.get(k, []):
+				construir_tumulo(tm.pos, tm.nome, tm.dia, n)
+			B.mesclar(n)
+	perfil["etapa_%d" % etapa] = perfil.get("etapa_%d" % etapa, 0) + (Time.get_ticks_usec() - t0)
+	return etapa + 1 < N_ETAPAS
+
+# ------------------------------------------------------------ geração aos poucos
+## Trechos longe do jogador são gerados em etapas, um pouco a cada quadro, para não engasgar.
+## Desligado nos testes e prints (lá tudo precisa existir na hora).
+var gradual := true
+var _fila: Array[int] = []        # trechos esperando para começar
+var _em_obra := {}                 # trecho sendo gerado: {ctx, etapa}
+var _k_foco := 0
+
+## Chamado a cada quadro: avança a geração em até ~6 ms.
+func processar_fila() -> void:
+	var inicio := Time.get_ticks_usec()
+	while Time.get_ticks_usec() - inicio < 6000:
+		if _em_obra.is_empty():
+			if _fila.is_empty():
+				return
+			# começa pelo mais perto de onde o jogador está
+			_fila.sort_custom(func(a, b): return absi(a - _k_foco) < absi(b - _k_foco))
+			var k: int = _fila.pop_front()
+			if _chunks.has(k):
+				continue
+			var ctx := _iniciar_chunk(k)
+			_chunks[k] = ctx.n
+			_em_obra = {"ctx": ctx, "etapa": 0}
+		var mais := _etapa_chunk(_em_obra.ctx, _em_obra.etapa)
+		_em_obra.etapa += 1
+		if not mais:
+			_em_obra = {}
+		# uma etapa pesada já gasta o quadro: só continua se sobrou tempo
 
 # ------------------------------------------------------------ estrada e terreno
 func _estrada(n: Node3D, z0: float) -> void:
@@ -698,9 +897,11 @@ func _terreno(n: Node3D, z0: float) -> void:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	st.set_custom_format(0, SurfaceTool.CUSTOM_RGBA_FLOAT)
-	var nx := int(ALCANCE_X * 2.0 / PASSO_TERRENO)
-	var nz := int(TAM / PASSO_TERRENO)
-	var cx0 := roundf(centro_x(z0 + TAM * 0.5) / PASSO_TERRENO) * PASSO_TERRENO
+	var gr := grade(int(round(z0 / TAM)))
+	var nx: int = gr.nx
+	var nz := GRADE_NZ
+	var hs: PackedFloat32Array = gr.h
+	var fs: PackedFloat32Array = gr.f
 	for iz in nz + 1:
 		var z := z0 + iz * PASSO_TERRENO
 		var seco := reg.cor(z, "seco")
@@ -708,14 +909,15 @@ func _terreno(n: Node3D, z0: float) -> void:
 		var cz := centro_x(z)
 		var rio := _rio_em(z)
 		var no_rio: bool = not rio.is_empty() and absf(z - rio.z) < rio.largura * 0.5 + 10.0
+		var elev := elevacao(z)
 		for ix in nx + 1:
-			var x := cx0 - ALCANCE_X + ix * PASSO_TERRENO
+			var x: float = float(gr.cx0) + ix * PASSO_TERRENO
 			var d := absf(x - cz)
-			var h := altura(x, z)
+			var h: float = hs[iz * (nx + 1) + ix]
 			if d < LARG_ESTRADA * 0.5 + 0.5 and not no_rio:
-				h = elevacao(z) - 0.3
+				h = elev - 0.3
 			var terra := 1.0 - smoothstep(5.0, 9.0, d)
-			var fl := floresta(x, z)
+			var fl: float = fs[iz * (nx + 1) + ix]
 			var cs := seco.lerp(Color(0.2, 0.15, 0.09), fl * 0.4)
 			var cv := verde.lerp(Color(0.1, 0.12, 0.06), fl * 0.4)
 			st.set_color(Color(cs.r, cs.g, cs.b, terra))
@@ -792,6 +994,12 @@ func _capim(n: Node3D, z0: float, k: int) -> void:
 	var alvo := int(densidade_capim * reg.param(zm, "capim"))
 	var tint := reg.cor(zm, "capim_cor")
 	var tentativas := alvo * 2
+	var mx0 := reg.mistura(z0)
+	var mx1 := reg.mistura(z0 + TAM)
+	var tem_agua: bool = not _rio_em(z0).is_empty() or not _rio_em(z0 + TAM).is_empty() or not _rio_em(zm).is_empty() or "alagado" in [mx0[0], mx0[1], mx1[0], mx1[1]]
+	var c0 := centro_x(z0)
+	var c1 := centro_x(z0 + TAM * 0.5)
+	var c2 := centro_x(z0 + TAM)
 	for i in tentativas:
 		if pts.size() >= alvo:
 			break
@@ -799,13 +1007,15 @@ func _capim(n: Node3D, z0: float, k: int) -> void:
 		# mais denso perto da estrada
 		var lado := 1.0 if r.randf() > 0.5 else -1.0
 		var dist := LARG_ESTRADA * 0.5 + 1.6 + pow(r.randf(), 2.2) * 70.0
-		var x := centro_x(z) + lado * dist
+		var u := (z - z0) / TAM
+		var cxz := lerpf(c0, c1, u * 2.0) if u < 0.5 else lerpf(c1, c2, u * 2.0 - 1.0)
+		var x := cxz + lado * dist
 		if _ruido2.get_noise_2d(x * 2.0, z * 2.0) < -0.35 and dist > 12.0:
 			continue
-		if floresta(x, z) > 0.55 and r.randf() < 0.8:
+		if floresta_rapida(x, z) > 0.55 and r.randf() < 0.8:
 			continue
 		var y := altura(x, z)
-		if y < agua_em(x, z) - 0.25:
+		if tem_agua and y < agua_em(x, z) - 0.25:
 			continue
 		var t := Transform3D(Basis(Vector3.UP, r.randf() * TAU).scaled(Vector3.ONE * r.randf_range(0.7, 1.5)), Vector3(x, y - 0.05, z))
 		pts.append(t)
@@ -1127,7 +1337,7 @@ func _mata(n: Node3D, z0: float, k: int, areas: Array = []) -> void:
 		while z < z0 + TAM:
 			var px := x + r.randf_range(0.0, passo)
 			var pz := z + r.randf_range(0.0, passo)
-			var fl := floresta(px, pz)
+			var fl := floresta_rapida(px, pz)
 			for ca in aneis:
 				var dd := Vector2(px - ca.x, pz - ca.z).length()
 				if dd > Assentamento.R + 9.0 and dd < Assentamento.R + 55.0 and absf(px - cz) > 16.0:

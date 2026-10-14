@@ -70,7 +70,7 @@ func _ready() -> void:
 func _unhandled_input(e: InputEvent) -> void:
 	if e is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		yaw -= e.relative.x * sensibilidade
-		pitch = clampf(pitch - e.relative.y * sensibilidade, -1.0, 0.6)
+		pitch = clampf(pitch + e.relative.y * sensibilidade, -1.0, 0.6)
 	if e is InputEventMouseButton and e.pressed:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	if e.is_action_pressed("ui_cancel"):

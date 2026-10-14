@@ -139,7 +139,7 @@ land.ogg::AudioStreamOggVorbis::4214176119275921178::1791976325::1791976556::1::
 skid.ogg::AudioStreamOggVorbis::659134722457882038::1791976332::1791976556::1::::<><><>0<>0<>e68d80f1ea8c51a3664f3fb74848bac6<>res://.godot/imported/skid.ogg-70462eb4487137b61b480166442a1173.oggvorbisstr::
 walking.ogg::AudioStreamOggVorbis::2033481838180554883::1791976325::1791976556::1::::<><><>0<>0<>ae39ebe5ead0fde70455bce562de0ad1<>res://.godot/imported/walking.ogg-cd970a412f7d8b3ca9913a0fd7c325dc.oggvorbisstr::
 weapon_change.ogg::AudioStreamOggVorbis::1418325417455749767::1791976325::1791976556::1::::<><><>0<>0<>71abab1d7386b023543978216d54f529<>res://.godot/imported/weapon_change.ogg-747af4c63ca483528e74f991ac26a21f.oggvorbisstr::
-::res://prints/::1792002076
+::res://prints/::1792002367
 119_zumbis_modelo.png::CompressedTexture2D::3994063043350873346::1791932959::1791933203::1::::<><><>0<>0<>c90f20363dbe56b15646b6dc943020a2<>res://.godot/imported/119_zumbis_modelo.png-51a0f864e2cef78f8dc899c8ec972707.ctex::
 120_combate_de_perto.png::CompressedTexture2D::4486773025121629619::1791933137::1791933203::1::::<><><>0<>0<>97a643ed87ba4695f0d100161342f15b<>res://.godot/imported/120_combate_de_perto.png-9c432cbecf67667c60b8c14f83875c20.ctex::
 121b_vila_moradores.png::CompressedTexture2D::91921045007968033::1791932829::1791932910::1::::<><><>0<>0<>41cda9640106e400d15cacc17341f6c6<>res://.godot/imported/121b_vila_moradores.png-837f27ef42c94ea16ae9ddf30122c993.ctex::
@@ -249,7 +249,7 @@ vida_quadro.png::CompressedTexture2D::5604956061521477715::1791996766::179199722
 vida_tumulo.png::CompressedTexture2D::8109693026686505783::1791996784::1791997225::1::::<><><>0<>0<>421b783846af9ec6881f3c9542ef44e6<>res://.godot/imported/vida_tumulo.png-7fd61422a25267f6495e5ab3d1f8426f.ctex::
 ::res://scenes/::1791842836
 main.tscn::PackedScene::-1::1791823304::0::1::::<><><>0<>0<><>::res://scripts/main.gd
-::res://scripts/::1792001872
+::res://scripts/::1792011174
 animal.gd::GDScript::1691719281063188070::1791976551::0::1::::Animal<>Node3D<><>0<>0<><>::
 apocalipse.gd::GDScript::1354270410514729523::1791998728::0::1::::Apocalipse<>RefCounted<><>0<>0<><>::
 armas.gd::GDScript::8445563669593955703::1792001868::0::1::::Armas<>RefCounted<><>0<>0<><>::
@@ -274,7 +274,7 @@ hud.gd::GDScript::1526720838971245082::1792001868::0::1::::Hud<>Control<><>0<>0<
 humanoid.gd::GDScript::4583134036289468853::1791935397::0::1::::Humanoid<>Node3D<><>0<>0<><>::
 jogo.gd::GDScript::2527065120667162082::1791975110::0::1::::Jogo<>RefCounted<><>0<>0<><>::
 lugares.gd::GDScript::4818060070082949917::1791998728::0::1::::Lugares<>RefCounted<><>0<>0<><>::
-main.gd::GDScript::772541204004651537::1792002258::0::1::::<>Node3D<><>0<>0<><>::
+main.gd::GDScript::772541204004651537::1792011519::0::1::::<>Node3D<><>0<>0<><>::
 marcos.gd::GDScript::4375351685686744535::1791986321::0::1::::Marcos<>RefCounted<><>0<>0<><>::
 menu.gd::GDScript::1089058145340150063::1792002228::0::1::::Menu<>Control<><>0<>0<><>::
 modelos.gd::GDScript::2530803293180947829::1791990657::0::1::::Modelos<>RefCounted<><>0<>0<><>::
@@ -283,7 +283,7 @@ oficina.gd::GDScript::1616878582553503854::1791826886::0::1::::Oficina<>Control<
 painel.gd::GDScript::8970349414843245971::1791826702::0::1::::Painel<>Control<><>0<>0<><>::
 personagem_u.gd::GDScript::5083355967410368049::1791932543::0::1::::PersonagemU<>RefCounted<><>0<>0<><>::
 pickup.gd::GDScript::3993441045969869425::1791997218::0::1::::Pickup<>Node3D<><>0<>0<><>::
-player.gd::GDScript::6216641937152151830::1792000381::0::1::::Player<>Node3D<><>0<>0<><>::
+player.gd::GDScript::6216641937152151830::1792011174::0::1::::Player<>Node3D<><>0<>0<><>::
 predio.gd::GDScript::1527078118754371646::1791856232::0::1::::Predio<>Node3D<><>0<>0<><>::
 primeira_pessoa.gd::GDScript::2555932582544592735::1791827623::0::1::::PrimeiraPessoa<>Node3D<><>0<>0<><>::
 progresso.gd::GDScript::8362426870744369989::1791997189::0::1::::Progresso<>Node<><>0<>0<><>::
@@ -302,7 +302,7 @@ trailer.gd::GDScript::2751865612291631430::1792002103::0::1::::Trailer<>Node3D<>
 tutorial.gd::GDScript::7133830235286269831::1791935731::0::1::::Tutorial<>Control<><>0<>0<><>::
 vida_recrutas.gd::GDScript::3746706238041028362::1791996159::0::1::::VidaRecrutas<>RefCounted<><>0<>0<><>::
 vila_extra.gd::GDScript::7916541138588656592::1791934173::0::1::::VilaExtra<>RefCounted<><>0<>0<><>::
-world_gen.gd::GDScript::6388570040669247267::1791998728::0::1::::WorldGen<>Node3D<><>0<>0<><>::
+world_gen.gd::GDScript::6388570040669247267::1792011475::0::1::::WorldGen<>Node3D<><>0<>0<><>::
 zumbi.gd::GDScript::2609124479473413665::1792001199::0::1::::Zumbi<>Humanoid<><>0<>0<><>::
 ::res://shaders/::1791984664
 agua.gdshader::Shader::1359358924043737043::1791829220::0::1::::<><><>0<>0<><>::
