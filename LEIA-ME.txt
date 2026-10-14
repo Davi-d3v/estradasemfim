@@ -22,6 +22,16 @@ CONTROLES
 
 O tutorial aparece no primeiro jogo. Enter pula um passo; Backspace encerra.
 
+NOVIDADES v0.9 (pedidos do Davi)
+  - Sem engasgo ao carregar o mapa: a estrada é gerada aos poucos enquanto você dirige.
+  - Mouse: olhar para cima/baixo não está mais invertido.
+  - Picape, trailer e reboques têm física: zumbis e você não atravessam; os zumbis contornam.
+  - Acampamento [C]: cerca grande que os zumbis não atravessam, com portão (você, recrutas e
+    cachorro passam); fogueira de verdade e cadeiras em roda com os recrutas sentados conversando.
+  - Interações levam segundos (barra de progresso), o relógio continua correndo:
+    vasculhar 2-3 s, esfolar 4 s, desmontar carro 11 s, criar/consertar 2-12 s.
+    Andar cancela vasculhar/esfolar/desmontar. Dormir continua passando a noite.
+
 NOVIDADES v0.8
   - A estrada fica mais difícil quanto mais longe: zumbis novos por distância (gritador, brutamonte,
     blindado), ninhos para queimar, diesel cada vez mais raro.
