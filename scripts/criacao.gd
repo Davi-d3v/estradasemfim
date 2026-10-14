@@ -10,6 +10,9 @@ var aba := "sobrevivencia"
 ## receita: nome, entra (itens), sai (itens), horas, local (qualquer/fogueira/oficina), extra (diesel em litros)
 const RECEITAS := {
 	"assar": {"nome": "Assar carne", "entra": {"carne_crua": 1}, "sai": {"carne_assada": 1}, "horas": 0.25, "local": "fogueira", "aba": "sobrevivencia"},
+	"cafe": {"nome": "Passar café", "entra": {"po_cafe": 1, "agua": 1}, "sai": {"cafe": 2}, "horas": 0.15, "local": "fogueira", "aba": "sobrevivencia"},
+	"sopa": {"nome": "Sopa", "entra": {"comida": 1, "agua": 2}, "sai": {"sopa": 2}, "horas": 0.5, "local": "fogueira", "aba": "sobrevivencia"},
+	"ensopado": {"nome": "Ensopado de caça", "entra": {"carne_crua": 2, "comida": 1, "agua": 1}, "sai": {"ensopado": 2}, "horas": 1.0, "local": "fogueira", "aba": "sobrevivencia"},
 	"bandagem": {"nome": "Bandagem", "entra": {"tecido": 2}, "sai": {"bandagem": 1}, "horas": 0.2, "local": "qualquer", "aba": "sobrevivencia"},
 	"corda": {"nome": "Trançar corda", "entra": {"tecido": 3}, "sai": {"cordame": 1}, "horas": 0.5, "local": "qualquer", "aba": "sobrevivencia"},
 	"molotov": {"nome": "Coquetéis molotov", "entra": {"garrafa": 2, "tecido": 2, "galoes_diesel": 1}, "sai": {"molotov": 2}, "horas": 0.3, "local": "qualquer", "aba": "sobrevivencia"},

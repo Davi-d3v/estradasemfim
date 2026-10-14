@@ -383,6 +383,9 @@ func _terminar_uso() -> void:
 	if c.get("efeito", "") == "analgesico":
 		analgesico_t = 90.0
 	var txt: String = c.texto
+	if main.get("saude"):
+		main.saude.comeu(id)
+		txt += main.saude.tratar(id)
 	if c.has("enjoo") and randf() < c.enjoo:
 		enjoo_t = 60.0
 		txt += " Seu estômago revirou."

@@ -159,6 +159,13 @@ func passar(h: float) -> void:
 				rc.vida = minf(1.0, rc.vida + f * 1.5)
 		if main.cachorro and is_instance_valid(main.cachorro) and main.cachorro.vivo():
 			main.cachorro.vida = minf(1.0, main.cachorro.vida + f * 1.5)
+		var sd: Node = main.get("saude")
+		if sd:
+			sd.curar("ferida")
+			if sd.tem("gripe"):
+				sd.doencas.gripe -= h * 1.5
+			if sd.tem("intoxicacao"):
+				sd.doencas.intoxicacao -= h
 		hosp.set_meta("t_bandagem", float(hosp.get_meta("t_bandagem", 0.0)) + h)
 		while float(hosp.get_meta("t_bandagem")) >= 8.0:
 			hosp.set_meta("t_bandagem", float(hosp.get_meta("t_bandagem")) - 8.0)

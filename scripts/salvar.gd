@@ -62,6 +62,7 @@ static func salvar(m: Node) -> bool:
 	if m.cachorro and is_instance_valid(m.cachorro) and m.cachorro.vivo():
 		d.cachorro = m.cachorro.salvar()
 	d.comboio_extra = m.comboio_extra.salvar()
+	d.saude = m.saude.salvar()
 	var j: Player = m.jogador
 	d.jogador = {"pos": j.global_position, "yaw": j.yaw, "vida": j.vida, "sede": j.sede, "fome": j.fome,
 		"estamina": j.estamina, "infeccao": j.infeccao, "dentro": m.dentro == m.trailer}
@@ -152,6 +153,8 @@ static func aplicar(m: Node) -> bool:
 		m.progresso.carregar(d.progresso)
 	if d.has("comercio"):
 		m.comercio.carregar(d.comercio)
+	if d.has("saude"):
+		m.saude.carregar(d.saude)
 	if d.has("comboio_extra"):
 		m.comboio_extra.carregar(d.comboio_extra)
 	if d.has("cachorro"):

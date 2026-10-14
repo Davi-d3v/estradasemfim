@@ -24,10 +24,14 @@ const CONSUMIVEIS := {
 	"agua": {"sede": 0.35, "tempo": 1.0, "texto": "Você bebeu água."},
 	"carne_assada": {"fome": 0.45, "vida": 0.04, "tempo": 2.0, "texto": "Carne assada. Quentinha."},
 	"carne_crua": {"fome": 0.18, "tempo": 2.0, "enjoo": 0.35, "texto": "Carne crua..."},
+	"cafe": {"sede": 0.1, "tempo": 1.0, "texto": "Café quente e forte."},
+	"sopa": {"fome": 0.35, "sede": 0.2, "vida": 0.05, "tempo": 1.8, "texto": "Sopa quente."},
+	"ensopado": {"fome": 0.7, "vida": 0.12, "tempo": 2.5, "texto": "Ensopado de caça. Comida de verdade."},
+	"antibiotico": {"vida": 0.05, "tempo": 0.6, "texto": "Antibiótico tomado."},
 	"molotov": {"arremesso": true},
 	"sinalizador": {"arremesso": true},
 }
-const ORDEM_CONSUMIVEIS := ["bandagem", "analgesico", "remedio", "molotov", "sinalizador", "carne_assada", "comida", "agua", "carne_crua"]
+const ORDEM_CONSUMIVEIS := ["bandagem", "analgesico", "remedio", "antibiotico", "molotov", "sinalizador", "ensopado", "sopa", "cafe", "carne_assada", "comida", "agua", "carne_crua"]
 
 ## Peças de armadura: defesa base (fração do dano bloqueada) e proteção contra mordida.
 ## Reforço com chapas de metal: até 3 níveis, cada um soma defesa (e peso: estamina).

@@ -49,6 +49,12 @@ const ITENS := {
 	"bracadeiras": {"nome": "Braçadeiras de couro", "um": "par de braçadeiras", "vol": 1.0},
 	# exploração
 	"binoculo": {"nome": "Binóculos", "um": "binóculo", "vol": 1.0},
+	# saúde e cozinha
+	"antibiotico": {"nome": "Antibióticos", "um": "antibiótico", "vol": 0.2},
+	"po_cafe": {"nome": "Pó de café", "um": "pacote de café", "vol": 0.4},
+	"cafe": {"nome": "Café quente", "um": "copo de café", "vol": 0.5},
+	"sopa": {"nome": "Sopa", "um": "pote de sopa", "vol": 1.0},
+	"ensopado": {"nome": "Ensopado de caça", "um": "pote de ensopado", "vol": 1.0},
 	"lanterna": {"nome": "Lanternas", "um": "lanterna", "vol": 0.5},
 	"cartao_militar": {"nome": "Cartões de acesso militar", "um": "cartão de acesso militar", "vol": 0.05},
 	"chaves_presidio": {"nome": "Molhos de chaves do presídio", "um": "molho de chaves do presídio", "vol": 0.2},
@@ -103,6 +109,8 @@ var comercio: Comercio
 var cachorro: Cachorro = null
 var comboio_extra: ComboioExtra
 var exploracao: Exploracao
+var saude: Saude
+var _dormindo := false
 var horda_visivel: HordaVisivel
 var retrovisor: Retrovisor
 var _t_autosave := 0.0
@@ -119,19 +127,19 @@ var recrutas_nos: Array:
 		return base.nos
 ## O que se acha ao vasculhar cada tipo de lugar: item -> [mín, máx, chance]
 const TABELAS := {
-	"casa": {"comida": [1, 4, 0.9], "agua": [1, 3, 0.8], "pecas": [0, 2, 0.5], "galoes_diesel": [1, 1, 0.2], "municao_pistola": [3, 8, 0.15], "bandagem": [1, 2, 0.3], "tecido": [1, 3, 0.4], "garrafa": [1, 2, 0.3]},
+	"casa": {"po_cafe": [1, 1, 0.25], "comida": [1, 4, 0.9], "agua": [1, 3, 0.8], "pecas": [0, 2, 0.5], "galoes_diesel": [1, 1, 0.2], "municao_pistola": [3, 8, 0.15], "bandagem": [1, 2, 0.3], "tecido": [1, 3, 0.4], "garrafa": [1, 2, 0.3]},
 	"celeiro": {"comida": [3, 7, 1.0], "sucata": [2, 6, 0.7], "pecas": [0, 1, 0.3]},
 	"galpao": {"pecas": [2, 5, 1.0], "sucata": [6, 14, 1.0], "pneu": [1, 2, 0.4], "eixo": [1, 1, 0.3], "pe_de_cabra": [1, 1, 0.2], "machado": [1, 1, 0.1], "cordame": [1, 2, 0.4], "garrafa": [1, 3, 0.3]},
 	"container": {"sucata": [4, 10, 1.0], "pecas": [1, 3, 0.7], "galoes_diesel": [1, 2, 0.3], "chapa": [1, 2, 0.25], "cordame": [1, 2, 0.3]},
 	"poco": {"agua": [4, 8, 1.0]},
-	"loja": {"comida": [3, 8, 1.0], "agua": [2, 6, 0.9], "remedio": [0, 1, 0.2], "garrafa": [1, 3, 0.5], "bandagem": [0, 1, 0.2]},
-	"farmacia": {"remedio": [2, 5, 1.0], "comida": [0, 2, 0.4], "agua": [1, 2, 0.5], "bandagem": [2, 5, 1.0], "analgesico": [1, 3, 0.8]},
+	"loja": {"po_cafe": [1, 3, 0.4], "comida": [3, 8, 1.0], "agua": [2, 6, 0.9], "remedio": [0, 1, 0.2], "garrafa": [1, 3, 0.5], "bandagem": [0, 1, 0.2]},
+	"farmacia": {"antibiotico": [1, 2, 0.45], "remedio": [2, 5, 1.0], "comida": [0, 2, 0.4], "agua": [1, 2, 0.5], "bandagem": [2, 5, 1.0], "analgesico": [1, 3, 0.8]},
 	"estante": {"pecas": [0, 1, 0.3], "remedio": [0, 1, 0.15], "sucata": [0, 2, 0.4], "municao_pistola": [2, 6, 0.08], "sinalizador": [1, 1, 0.06]},
-	"armario": {"comida": [1, 4, 0.85], "agua": [0, 2, 0.5]},
+	"armario": {"po_cafe": [1, 1, 0.3], "comida": [1, 4, 0.85], "agua": [0, 2, 0.5]},
 	"geladeira": {"comida": [0, 2, 0.4], "agua": [1, 3, 0.7]},
 	"gaveta": {"pecas": [0, 1, 0.35], "remedio": [0, 1, 0.25], "sucata": [1, 2, 0.4], "municao_pistola": [2, 6, 0.12], "pistola": [1, 1, 0.025], "analgesico": [1, 1, 0.15], "lanterna": [1, 1, 0.08], "chave_cofre": [1, 1, 0.025]},
 	"guarda_roupa": {"sucata": [1, 3, 0.5], "remedio": [0, 1, 0.12], "galoes_diesel": [1, 1, 0.05], "tecido": [1, 4, 0.6], "cartucho": [2, 4, 0.06], "espingarda": [1, 1, 0.02]},
-	"banheiro": {"remedio": [1, 2, 0.6], "agua": [0, 1, 0.3], "bandagem": [1, 2, 0.4], "analgesico": [1, 1, 0.3]},
+	"banheiro": {"antibiotico": [1, 1, 0.12], "remedio": [1, 2, 0.6], "agua": [0, 1, 0.3], "bandagem": [1, 2, 0.4], "analgesico": [1, 1, 0.3]},
 	"prateleira": {"comida": [1, 4, 0.8], "agua": [1, 3, 0.6], "remedio": [0, 1, 0.15]},
 	"caixa": {"comida": [1, 5, 0.6], "sucata": [2, 6, 0.7], "pecas": [0, 2, 0.4], "pneu": [1, 1, 0.12], "sinalizador": [1, 1, 0.1], "garrafa": [1, 2, 0.3], "taco": [1, 1, 0.06]},
 	"cacador": {"binoculo": [1, 1, 0.15], "lanterna": [1, 1, 0.15], "comida": [2, 5, 0.9], "remedio": [0, 1, 0.3], "galoes_diesel": [1, 1, 0.25], "pecas": [0, 2, 0.4], "espingarda": [1, 1, 0.3], "cartucho": [3, 8, 0.8], "besta": [1, 1, 0.12], "virote": [3, 6, 0.4], "pele": [1, 2, 0.4]},
@@ -142,7 +150,7 @@ const TABELAS := {
 	"deposito_diesel": {"galoes_diesel": [3, 6, 1.0], "pecas": [1, 3, 0.6], "sucata": [3, 8, 0.8], "molotov": [1, 3, 0.5]},
 	"hospital_campanha": {"remedio": [3, 6, 1.0], "bandagem": [3, 8, 1.0], "analgesico": [2, 5, 0.9], "agua": [2, 5, 0.7], "comida": [1, 4, 0.5]},
 	"arsenal": {"rifle": [1, 2, 0.9], "municao_rifle": [20, 45, 1.0], "espingarda": [1, 1, 0.5], "cartucho": [10, 24, 0.9], "pistola": [1, 2, 0.6], "municao_pistola": [20, 40, 0.9], "sinalizador": [2, 4, 0.7], "molotov": [2, 4, 0.4], "binoculo": [1, 1, 0.5], "lanterna": [1, 1, 0.6]},
-	"almoxarifado": {"comida": [8, 16, 1.0], "agua": [6, 12, 1.0], "remedio": [2, 5, 0.9], "bandagem": [3, 8, 1.0], "tecido": [4, 10, 0.8], "lanterna": [1, 1, 0.5], "analgesico": [2, 4, 0.7]},
+	"almoxarifado": {"antibiotico": [1, 3, 0.6], "po_cafe": [2, 5, 0.8], "comida": [8, 16, 1.0], "agua": [6, 12, 1.0], "remedio": [2, 5, 0.9], "bandagem": [3, 8, 1.0], "tecido": [4, 10, 0.8], "lanterna": [1, 1, 0.5], "analgesico": [2, 4, 0.7]},
 	"armaria": {"espingarda": [1, 2, 0.9], "cartucho": [12, 30, 1.0], "pistola": [1, 2, 0.8], "municao_pistola": [20, 40, 1.0], "colete_couro": [1, 1, 0.3]},
 	"cofre": {"remedio": [3, 6, 0.9], "municao_rifle": [10, 25, 0.7], "galoes_diesel": [2, 3, 0.7], "binoculo": [1, 1, 0.4], "chaves_presidio": [1, 1, 0.3], "cartao_militar": [1, 1, 0.3]},
 	"esconderijo": {"comida": [2, 6, 0.9], "agua": [2, 5, 0.8], "remedio": [1, 2, 0.4], "municao_pistola": [4, 12, 0.4], "galoes_diesel": [1, 1, 0.3], "lanterna": [1, 1, 0.2], "bandagem": [1, 3, 0.5]},
@@ -232,6 +240,9 @@ func _ready() -> void:
 	exploracao = Exploracao.new()
 	exploracao.main = self
 	add_child(exploracao)
+	saude = Saude.new()
+	saude.main = self
+	add_child(saude)
 	horda_visivel = HordaVisivel.new()
 	horda_visivel.main = self
 	add_child(horda_visivel)
@@ -256,6 +267,8 @@ func _ready() -> void:
 			_capturar_trailer()
 		elif "--eventos" in OS.get_cmdline_user_args():
 			_capturar_eventos()
+		elif "--saude" in OS.get_cmdline_user_args():
+			_capturar_saude()
 		elif "--defesa2" in OS.get_cmdline_user_args():
 			_capturar_defesa2()
 		elif "--exploracao" in OS.get_cmdline_user_args():
@@ -300,6 +313,10 @@ func _ready() -> void:
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
 		_teste_recrutas()
+	elif "--teste-saude" in OS.get_cmdline_user_args():
+		Jogo.modo = Jogo.MODO_INFINITO
+		jogando = true
+		_teste_saude()
 	elif "--teste-defesa2" in OS.get_cmdline_user_args():
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
@@ -1215,6 +1232,74 @@ func _teste_defesa() -> void:
 	print("TD recrutas=%d" % base.lista.size())
 	get_tree().quit()
 
+## Teste da etapa 11: sono, cochilo, gripe, intoxicação, ferida que inflama, antibiótico, cozinha e save.
+func _teste_saude() -> void:
+	await get_tree().process_frame
+	saude.cansaco = 0.1
+	_passar_tempo(16.0)
+	print("TH 16 h acordado: cansaço %.2f" % saude.cansaco)
+	_passar_tempo(4.0)
+	print("TH 20 h acordado: cansaço %.2f" % saude.cansaco)
+	# cochilo ao volante
+	_entrar_no_carro()
+	comboio.velocidade = 15.0
+	saude.cansaco = 0.95
+	saude._t_cochilo = 0.0
+	var cochilos := 0
+	for i in 300:
+		comboio.velocidade = 15.0
+		saude.atualizar(0.1)
+		if saude._cochilando > 0.0:
+			cochilos += 1
+	print("TH dirigindo exausto: quadros cochilando=%d esterco=%.2f" % [cochilos, comboio.esterco])
+	_sair_do_carro()
+	# dormir resolve
+	hora = 22.0
+	dormir()
+	print("TH dormiu: cansaço %.2f" % saude.cansaco)
+	# gripe dormindo sem abrigo (forçado)
+	var g := 0
+	for i in 50:
+		saude.doencas.erase("gripe")
+		if saude.dormiu(8.0, false) != "":
+			g += 1
+	print("TH gripe dormindo ao relento: %d/50" % g)
+	saude.pegar("gripe", 40.0)
+	jogador.estamina = 1.0
+	saude.atualizar(0.1)
+	print("TH com gripe: estamina limitada a %.2f" % jogador.estamina)
+	# intoxicação com carne crua
+	var it := 0
+	for i in 100:
+		saude.doencas.erase("intoxicacao")
+		saude.comeu("carne_crua")
+		if saude.tem("intoxicacao"):
+			it += 1
+	print("TH carne crua intoxica: %d/100" % it)
+	# ferida que inflama e antibiótico
+	saude.doencas.clear()
+	saude.pegar("ferida", 6.0)
+	_passar_tempo(7.0)
+	print("TH ferida sem curativo depois de 7 h: %s" % str(saude.doencas.keys()))
+	var v0 := jogador.vida
+	_passar_tempo(5.0)
+	print("TH inflamada 5 h: vida %.2f -> %.2f" % [v0, jogador.vida])
+	print("TH antibiótico: ", saude.tratar("antibiotico"), " -> ", saude.doencas.keys())
+	saude.pegar("ferida", 6.0)
+	print("TH curativo a tempo: ", saude.tratar("bandagem"), " -> ", saude.doencas.keys())
+	# cozinha
+	estoque.merge({"po_cafe": 2, "agua": 10, "comida": 10, "carne_crua": 4}, true)
+	_alternar_acampamento()
+	for rid in ["cafe", "sopa", "ensopado"]:
+		print("TH receita %s: pode=%s · %s" % [rid, str(criacao.pode(rid)), criacao.fazer(rid)])
+	print("TH cozinha: café %d sopa %d ensopado %d" % [estoque.get("cafe", 0), estoque.get("sopa", 0), estoque.get("ensopado", 0)])
+	saude.cansaco = 0.8
+	print("TH café: ", saude.tratar("cafe"), " cansaço %.2f" % saude.cansaco)
+	saude.pegar("gripe", 20.0)
+	print("TH sopa na gripe: ", saude.tratar("sopa"), " gripe %.0f h" % saude.doencas.get("gripe", 0.0))
+	print("TH save: ", saude.salvar(), " ok=", Salvar.salvar(self))
+	get_tree().quit()
+
 ## Teste da etapa 10: obras por setor (fosso, arame), onda noturna com chefe, aliados e consequências.
 func _teste_defesa2() -> void:
 	await get_tree().process_frame
@@ -1503,6 +1588,7 @@ func _process(dt: float) -> void:
 	eventos.atualizar(dt)
 	comboio_extra.atualizar(dt)
 	exploracao.atualizar(dt)
+	saude.atualizar(dt)
 	_t_autosave += dt
 	if _t_autosave > 600.0 and not comboio.dirigindo and defesa.onda.is_empty():
 		salvar_jogo(true)
@@ -1546,6 +1632,8 @@ func _passar_tempo(h: float) -> void:
 		clima.passar(h)
 	if progresso:
 		progresso.passar(h)
+	if saude:
+		saude.passar(h)
 	# inverno: o corpo gasta mais para se aquecer (mais ainda na neve, fora do abrigo)
 	var frio := 1.0
 	if clima and clima.estacao() == "Inverno":
@@ -1664,6 +1752,9 @@ func zumbi_atacou(z: Zumbi, alvo: Dictionary) -> void:
 		if randf() < chance:
 			jogador.infeccao = maxf(jogador.infeccao, 0.05)
 			hud.aviso("Você foi mordido! Tome um remédio [H] antes que a infecção avance.")
+			saude.ferido_por_zumbi()
+		elif randf() < 0.12:
+			saude.ferido_por_zumbi()
 		return
 	if alvo.tipo == "recruta":
 		var rc: Recruta = alvo.no
@@ -1775,7 +1866,7 @@ func _usar_remedio() -> String:
 	var tinha := jogador.infeccao > 0.0
 	jogador.infeccao = maxf(0.0, jogador.infeccao - 0.6)
 	jogador.vida = minf(1.0, jogador.vida + 0.15)
-	return "Remédio tomado." + (" A infecção recuou." if tinha else "")
+	return "Remédio tomado." + (" A infecção recuou." if tinha else "") + saude.tratar("remedio")
 
 # ------------------------------------------------------------ morte e modos
 func _morrer(causa: String) -> void:
@@ -2734,10 +2825,26 @@ func _painel_compartimento(id: String) -> Dictionary:
 	match id:
 		"despensa":
 			linhas.append(["Fome: %d%%     Sede: %d%%     Vida: %d%%" % [int(jogador.fome * 100.0), int(jogador.sede * 100.0), int(jogador.vida * 100.0)], Color(0.75, 0.75, 0.72)])
+			linhas.append([saude.texto(), Color(0.95, 0.6, 0.35) if not saude.doencas.is_empty() else Color(0.75, 0.75, 0.72)])
 			botoes.append(["Comer uma lata", func():
 				estoque.comida -= 1
 				jogador.fome = minf(1.0, jogador.fome + 0.25)
+				saude.comeu("comida")
 				return "Você comeu.", estoque.get("comida", 0) > 0 and jogador.fome < 0.99])
+			for quente in [["ensopado", "Comer ensopado de caça", 0.7], ["sopa", "Tomar sopa", 0.35]]:
+				var qid: String = quente[0]
+				var qf: float = quente[2]
+				botoes.append([quente[1], func():
+					estoque[qid] -= 1
+					jogador.fome = minf(1.0, jogador.fome + qf)
+					jogador.vida = minf(1.0, jogador.vida + 0.08)
+					return "Comida quente." + saude.tratar(qid), estoque.get(qid, 0) > 0])
+			botoes.append(["Tomar café", func():
+				estoque.cafe -= 1
+				return "Café passado na hora." + saude.tratar("cafe"), estoque.get("cafe", 0) > 0])
+			botoes.append(["Tomar antibiótico", func():
+				estoque.antibiotico -= 1
+				return "Antibiótico tomado." + saude.tratar("antibiotico"), estoque.get("antibiotico", 0) > 0])
 			botoes.append(["Comer carne assada", func():
 				estoque.carne_assada -= 1
 				jogador.fome = minf(1.0, jogador.fome + 0.45)
@@ -2749,7 +2856,7 @@ func _painel_compartimento(id: String) -> Dictionary:
 			botoes.append(["Fazer curativo", func():
 				estoque.bandagem -= 1
 				jogador.vida = minf(1.0, jogador.vida + 0.22)
-				return "Curativo feito.", estoque.get("bandagem", 0) > 0 and jogador.vida < 0.99])
+				return "Curativo feito." + saude.tratar("bandagem"), estoque.get("bandagem", 0) > 0 and (jogador.vida < 0.99 or saude.tem("ferida"))])
 			botoes.append(["Tomar remédio", func(): return _usar_remedio(), estoque.get("remedio", 0) > 0])
 		"ferramentas":
 			botoes.append(["Abastecer a picape com um galão (20 L)", func():
@@ -3047,7 +3154,13 @@ func dormir() -> String:
 	for el in comboio.cadeia:
 		if el is Reboque and not el.trabalho.is_empty():
 			tinha_trabalho = true
+	_dormindo = true
 	_passar_tempo(horas)
+	_dormindo = false
+	var abrigado: bool = trailer.condicao_carroceria > 0.3 and float(trailer.config.janelas.condicao) > 0.25
+	var gr := saude.dormiu(horas, abrigado)
+	if gr != "":
+		linhas.append(gr)
 	if tinha_trabalho:
 		linhas.append("A oficina trabalhou durante a noite.")
 	linhas.append_array(base.relatorio())
@@ -4946,6 +5059,50 @@ func _capturar_r5() -> void:
 	get_tree().quit()
 
 ## Prints da etapa 4: assentamento, líder, preparação, ondas, brecha e vitória.
+## Prints da etapa 11: HUD com sono e doenças, despensa com comida quente, criação (cozinha) e cochilo ao volante.
+func _capturar_saude() -> void:
+	comboio.set_physics_process(false)
+	hora = 17.0
+	_atualizar_ceu()
+	var pc := mundo.ponto_estrada(620.0, -11.0)
+	pc.y = mundo.altura(pc.x, pc.z)
+	var dz := mundo.direcao(620.0)
+	comboio.posicionar_livre(pc, atan2(dz.x, dz.z), 0.0)
+	mundo.atualizar(pc)
+	await get_tree().process_frame
+	_limpar_zumbis_perto(pc, 60.0)
+	estoque.merge({"po_cafe": 2, "agua": 8, "comida": 9, "carne_crua": 4, "sopa": 2, "ensopado": 1, "cafe": 1, "antibiotico": 1, "bandagem": 2}, true)
+	saude.cansaco = 0.72
+	saude.pegar("gripe", 30.0, false)
+	saude.pegar("ferida", 4.0, false)
+	jogador.vida = 0.62
+	_alternar_acampamento()
+	var pj := trailer.global_transform * Vector3(-3.2, 0, 0.8)
+	_posar_jogador(pj, trailer.global_transform * Vector3(-1.0, 1.0, 0.0), -0.15, 0.2)
+	jogador.camera.current = true
+	hud.visible = true
+	saude.atualizar(0.01)
+	_atualizar_hud()
+	await _salvar("saude_hud")
+	_compartimento_preso = true
+	_abrir_painel(_painel_compartimento.bind("despensa"))
+	await _salvar("saude_despensa")
+	_fechar_janela()
+	_compartimento_preso = false
+	criacao.aba = "sobrevivencia"
+	_abrir_painel(criacao.painel)
+	await _salvar("saude_cozinha")
+	_fechar_janela()
+	# cochilo ao volante
+	_entrar_no_carro()
+	saude.cansaco = 0.95
+	saude.atualizar(0.0)
+	_atualizar_hud()
+	hud.cochilo = 0.5
+	hud.aviso("Você cochilou ao volante!")
+	await _salvar("saude_cochilo")
+	get_tree().quit()
+
 ## Prints da etapa 10: setor com fosso, arame e estacas; painel do setor; o chefe chegando à noite.
 func _capturar_defesa2() -> void:
 	comboio.set_physics_process(false)

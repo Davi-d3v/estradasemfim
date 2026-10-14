@@ -33,7 +33,7 @@ var compartimentos_abertos := {"despensa": false, "ferramentas": false, "bagagei
 ## Compartimentos de carga do trailer: nome, o que guardam, capacidade por nível e onde ficam.
 const COMPARTIMENTOS := {
 	"despensa": {"nome": "Despensa externa", "slot": "lateral_direita", "cap": [6, 10, 16, 22],
-		"itens": ["comida", "agua", "carne_crua", "carne_assada", "remedio", "bandagem", "analgesico"]},
+		"itens": ["comida", "agua", "carne_crua", "carne_assada", "remedio", "bandagem", "analgesico", "antibiotico", "po_cafe", "cafe", "sopa", "ensopado"]},
 	"ferramentas": {"nome": "Caixa de ferramentas", "slot": "", "cap": [12, 12, 12, 12],
 		"itens": ["pecas", "sucata", "chapa", "cordame", "pneu", "eixo", "galoes_diesel"]},
 	"bagageiro": {"nome": "Bagageiro lateral", "slot": "", "cap": [14, 14, 14, 14],

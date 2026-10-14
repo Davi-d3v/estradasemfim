@@ -113,7 +113,7 @@ func mostrar_inicio() -> void:
 	esp2.custom_minimum_size = Vector2(0, 8)
 	_caixa.add_child(esp2)
 	_label("CONTROLES", 15, DOURADO)
-	_label("WASD andar · Shift correr · Ctrl agachar · Mouse olhar · Botão esq. atacar/usar · Botão dir. mirar · R recarregar\n1-9 / rodinha trocar item · E interagir/vasculhar · F entrar/dirigir · Tab oficina · B criação · C acampar · H remédio\nNo carro: WASD dirigir · Espaço freio · G engatar · L luz · V câmera · R abastecer com galão · Esc solta o mouse · F5 salvar · J diário", 13, Color(0.8, 0.78, 0.74))
+	_label("WASD andar · Shift correr · Ctrl agachar · Mouse olhar · Botão esq. atacar/usar · Botão dir. mirar · R recarregar\n1-9 / rodinha trocar item · E interagir/vasculhar · F entrar/dirigir · Tab oficina · B criação · C acampar · H remédio · Z binóculo · J diário\nNo carro: WASD dirigir · Espaço freio · G engatar · L luz · V câmera · R abastecer com galão · Esc solta o mouse · F5 salvar · J diário", 13, Color(0.8, 0.78, 0.74))
 
 func _escolher(m: String) -> void:
 	visible = false

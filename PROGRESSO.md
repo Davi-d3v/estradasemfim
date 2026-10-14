@@ -84,8 +84,14 @@
   (zumbi gigante, 800 de vida, derruba muro 5× mais rápido) com barra no HUD e aviso do líder antes; vencer o chefe rende munição e chapas;
   consequências: aliados mandam caravanas com mantimentos e às vezes um morador como recruta; quando a horda volta a passar, o aliado
   resiste conforme o nível do que você construiu — ou cai, e você ouve pelo rádio. Teste: --teste-defesa2; prints: --defesa2
-- [ ] 11. Recrutas, comboio, exploração, defesa, sobrevivência  - [ ] 12. v0.8
+- [x] 11. Sobrevivência (scripts/saude.gd): sono (barra roxa; ~22 h acordado até exausto; exausto a estamina cai e, dirigindo, você cochila —
+  a tela escurece e a picape sai da pista); doenças: gripe (dormir sem abrigo/na chuva, tomar chuva; estamina até 60% e tosse que os zumbis
+  ouvem), intoxicação (lata vencida às vezes, carne crua 1 em 3), ferida aberta (mordida/arranhão: curativo em 6 h ou inflama e só antibiótico
+  resolve); cozinha na fogueira: café (tira o sono), sopa (ajuda na gripe e intoxicação), ensopado de caça (comida forte); itens novos:
+  antibiótico (farmácias, banheiros, almoxarifado), pó de café; hospital de campanha trata tudo; doenças no HUD; salvo no jogo.
+  Teste: --teste-saude; prints: --saude
+- [ ] 12. Versão v0.8 para Windows Recrutas, comboio, exploração, defesa, sobrevivência  - [ ] 12. v0.8
 
 ## Próximos
-- seguir a rodada grande (etapa 11: sobrevivência)
+- gerar a v0.8 e ouvir o retorno do Davi
 - ouvir o retorno do teste no PC do Davi

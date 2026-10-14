@@ -22,6 +22,9 @@ var re := false
 var estoque := {}
 var marcadores: Array[Vector3] = []
 var binoculo := false
+var sono := 1.0
+var cochilo := 0.0
+var doencas: Array = []
 var binoculo_txt := ""
 var radar: Array = []          # torre de rádio: [{pos, cor, letra}]
 var mira := false
@@ -145,6 +148,8 @@ func _draw() -> void:
 	var e := s.y / 900.0  # escala
 	if binoculo:
 		_binoculo(s, e)
+	if cochilo > 0.0:
+		draw_rect(Rect2(Vector2.ZERO, s), Color(0, 0, 0, clampf(cochilo * 1.4, 0.0, 0.96)))
 	_objetivo(e)
 	_relogio(s, e)
 	if not defesa.is_empty():
@@ -290,11 +295,14 @@ func _painel_defesa(s: Vector2, e: float) -> void:
 			draw_rect(Rect2(bar.position, Vector2(bar.size.x * v, bar.size.y)), barras[k][2] if v > 0.3 else Color(0.9, 0.25, 0.2))
 
 func _barras(s: Vector2, e: float) -> void:
-	var vals := [jogador.vida if jogador else 1.0, jogador.sede if jogador else 1.0, jogador.fome if jogador else 1.0, jogador.estamina if jogador else 1.0]
-	var cores := [Color(0.82, 0.16, 0.14), Color(0.2, 0.5, 0.9), Color(0.92, 0.62, 0.15), Color(0.25, 0.72, 0.28)]
-	var r := Rect2(Vector2(20 * e, s.y - 168 * e), Vector2(200, 148) * e)
+	var vals := [jogador.vida if jogador else 1.0, jogador.sede if jogador else 1.0, jogador.fome if jogador else 1.0, jogador.estamina if jogador else 1.0, sono]
+	var cores := [Color(0.82, 0.16, 0.14), Color(0.2, 0.5, 0.9), Color(0.92, 0.62, 0.15), Color(0.25, 0.72, 0.28), Color(0.55, 0.45, 0.85)]
+	var r := Rect2(Vector2(20 * e, s.y - 201 * e), Vector2(200, 181) * e)
 	_painel(r)
-	for i in 4:
+	# doenças acima das barras
+	for i in doencas.size():
+		_texto("✚ " + String(doencas[i]), Vector2(r.position.x + 6 * e, r.position.y - (10 + i * 20) * e), int(14 * e), Color(0.95, 0.55, 0.35))
+	for i in 5:
 		var y := r.position.y + (20 + i * 33) * e
 		var ic := Vector2(r.position.x + 22 * e, y + 6 * e)
 		_icone_status(i, ic, e)
@@ -318,6 +326,9 @@ func _icone_status(i: int, c: Vector2, e: float) -> void:
 				draw_line(c + Vector2(dx, -8) * e, c + Vector2(dx, -2) * e, b, 1.4 * e)
 			draw_line(c + Vector2(5, -8) * e, c + Vector2(5, 9) * e, b, 2.4 * e)
 			draw_circle(c + Vector2(5, -4) * e, 2.8 * e, b)
+		4:
+			_texto("z", c + Vector2(-6, 5) * e, int(15 * e), b)
+			_texto("z", c + Vector2(1, -1) * e, int(11 * e), b)
 		3:
 			draw_circle(c + Vector2(3, -8) * e, 2.6 * e, b)
 			draw_polyline(PackedVector2Array([c + Vector2(-7, -3) * e, c + Vector2(-1, -5) * e, c + Vector2(2, 1) * e, c + Vector2(7, 2) * e]), b, 2 * e)
