@@ -17,5 +17,14 @@ CONTROLES
   B .............. criação        H .......... curar       C ........ acampar
   G .............. engatar reboque              L .......... luz do trailer
   F1 ............. tutorial       Esc ........ soltar o mouse
+  F5 ............. salvar (também salva sozinho ao dormir, a cada 10 min e ao fechar)
 
 O tutorial aparece no primeiro jogo. Enter pula um passo; Backspace encerra.
+
+NOVIDADES v0.7
+  - Salvar e carregar: "Continuar" no menu inicial.
+  - Som: tiros, golpes, zumbis, passos, motor, vento, grilos, rádio, lobos.
+  - Eventos na estrada: bloqueio de saqueadores com pedágio, gente pedindo carona,
+    ônibus tombado e comboio militar abandonado. Cada um com escolhas.
+  - Horda visível: a massa de zumbis aparece atrás do comboio com poeira e gemidos;
+    retrovisor no alto da tela enquanto dirige.
