@@ -18,7 +18,16 @@ const FUNCOES := {
 	"batedor": {"nome": "Batedor", "fem": "Batedora", "posto": "apartamentos",
 		"auto": "Sai em expedições de saque e volta com recursos (ou não volta)",
 		"defesa": "Caça zumbis especiais"},
+	"idoso": {"nome": "Seu", "fem": "Dona", "posto": "fogueira",
+		"auto": "Ensina os outros (aprendem 25% mais rápido), ajuda na horta e na oficina e conta histórias à noite",
+		"defesa": "Fica no trailer recarregando armas"},
+	"crianca": {"nome": "Criança", "fem": "Criança", "posto": "apartamentos",
+		"auto": "Anima todo mundo e, com o comboio por perto, acha coisas pequenas onde ninguém olha",
+		"defesa": "Se esconde no trailer"},
 }
+
+const NOMES_CRIANCA := ["Juninho", "Bia", "Tatá", "Pedrinho", "Lili", "Duda", "Caio", "Nina"]
+const NOMES_IDOSO := ["Seu Zé", "Dona Benta", "Seu Lauro", "Dona Zica", "Seu Antônio", "Dona Filó"]
 
 const FEMININOS := ["Dona Cida", "Marta", "Joana", "Neide", "Lurdes", "Ana", "Sônia", "Irene"]
 
@@ -34,10 +43,14 @@ const PEDIDOS := [
 
 static func titulo(rc: Dictionary) -> String:
 	var f: Dictionary = FUNCOES[rc.funcao]
-	return f.fem if rc.nome in FEMININOS else f.nome
+	if rc.funcao == "idoso":
+		return "idosa" if String(rc.nome).begins_with("Dona") else "idoso"
+	return f.fem if VidaRecrutas.fem(rc) else f.nome
 
 ## Funcão de recruta para um morador de vila (morador vira batedor).
-static func funcao_de_npc(funcao_npc: String) -> String:
+static func funcao_de_npc(funcao_npc: String, h: Node3D = null) -> String:
+	if funcao_npc == "morador" and h is Humanoid and (h as Humanoid).visual == "idoso":
+		return "idoso"
 	return "batedor" if funcao_npc == "morador" else funcao_npc
 
 static func pode_recrutar(h: Node3D) -> bool:
@@ -51,7 +64,7 @@ static func de_npc(h: Humanoid) -> Dictionary:
 	return {
 		"id": h.get_meta("chave"),
 		"nome": h.get_meta("nome"),
-		"funcao": funcao_de_npc(h.get_meta("funcao")),
+		"funcao": funcao_de_npc(h.get_meta("funcao"), h),
 		"vida": 1.0,
 		"moral": 0.7,
 		"semente": h.semente,

@@ -512,6 +512,14 @@ func _carona() -> String:
 		return _fim("isca", "Era isca. Enquanto %s distraía você, dois comparsas limparam a caçamba:\n−%d sucata, −%d peças, −%d comida." % [nome, leva.sucata, leva.pecas, leva.comida])
 	var funcao: String = ["batedor", "agricultor", "mecanico", "medico", "vigia"][randi() % 5]
 	main.base.lista.append(Recrutas.novo(nome, funcao, randi()))
+	if randf() < 0.3:
+		# não estava sozinho: tem uma criança escondida no mato
+		var cn: String = Recrutas.NOMES_CRIANCA[randi() % Recrutas.NOMES_CRIANCA.size()]
+		var crianca := Recrutas.novo(cn, "crianca", randi())
+		crianca.traco = "otimista"
+		main.base.lista.append(crianca)
+		main.base.distribuir_camas()
+		return _fim("recruta", "%s subiu na caçamba e chamou alguém do mato: %s, uma criança, magrinha e assustada.\n\"É tudo que eu tenho. Cuida dela com a gente.\"" % [nome, cn])
 	main.base.distribuir_camas()
 	return _fim("recruta", "%s subiu na caçamba. Diz que é %s.\n\"Não vou te decepcionar.\"" % [nome, {"batedor": "batedor", "agricultor": "agricultor", "mecanico": "mecânico", "medico": "médico", "vigia": "atirador"}[funcao]])
 
@@ -526,7 +534,12 @@ func _socorrer() -> String:
 	main.ruido(main.comboio.pos, 45.0)
 	if randf() < 0.55:
 		var nome: String = NOMES[randi() % NOMES.size()]
-		main.base.lista.append(Recrutas.novo(nome, ["medico", "mecanico", "agricultor"][randi() % 3], randi()))
+		if randf() < 0.3:
+			# um senhor ou senhora de idade, que sobreviveu escondido entre as poltronas
+			nome = Recrutas.NOMES_IDOSO[randi() % Recrutas.NOMES_IDOSO.size()]
+			main.base.lista.append(Recrutas.novo(nome, "idoso", randi()))
+		else:
+			main.base.lista.append(Recrutas.novo(nome, ["medico", "mecanico", "agricultor"][randi() % 3], randi()))
 		main.base.lista[-1].vida = 0.5
 		main.base.distribuir_camas()
 		main.adicionar("remedio", randi_range(1, 2))

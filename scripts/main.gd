@@ -235,6 +235,8 @@ func _ready() -> void:
 			_capturar_trailer()
 		elif "--eventos" in OS.get_cmdline_user_args():
 			_capturar_eventos()
+		elif "--vida" in OS.get_cmdline_user_args():
+			_capturar_vida()
 		elif "--cachorro" in OS.get_cmdline_user_args():
 			_capturar_cachorro()
 		elif "--comercio" in OS.get_cmdline_user_args():
@@ -271,6 +273,10 @@ func _ready() -> void:
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
 		_teste_recrutas()
+	elif "--teste-vida" in OS.get_cmdline_user_args():
+		Jogo.modo = Jogo.MODO_INFINITO
+		jogando = true
+		_teste_vida()
 	elif "--teste-cachorro" in OS.get_cmdline_user_args():
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
@@ -363,6 +369,60 @@ func _teste_salvar() -> void:
 	defesa.z_horda = -3333.0
 	var ok := Salvar.salvar(self)
 	print("TS salvo=", ok, " resumo=", Salvar.resumo())
+	get_tree().quit()
+
+## Teste da vida dos recrutas: traços, níveis, amizades, brigas, casais, quem vai embora, luto e túmulo.
+func _teste_vida() -> void:
+	await get_tree().process_frame
+	comboio.engatar(_novo_reboque("apartamentos", 3, 1.0), true)
+	comboio.engatar(_novo_reboque("estufa", 2, 1.0), true)
+	var nomes := [["Tião", "vigia"], ["Marta", "medico"], ["Beto", "mecanico"], ["Rita", "agricultor"], ["Zeca", "batedor"], ["Seu Zé", "idoso"], ["Bia", "crianca"]]
+	for i in nomes.size():
+		var rc := Recrutas.novo(nomes[i][0], nomes[i][1], 100 + i)
+		VidaRecrutas.garantir(rc)
+		base.lista.append(rc)
+	base.lista[0].traco = "rabugento"
+	base.lista[4].traco = "ganancioso"
+	base.distribuir_camas()
+	estoque.merge({"comida": 200, "agua": 200, "sucata": 80, "pistola": 1}, true)
+	trailer.condicao_carroceria = 0.5
+	for rc in base.lista:
+		print("TV %s: %s, %s, traço %s" % [rc.nome, Recrutas.titulo(rc), VidaRecrutas.txt_nivel(rc), VidaRecrutas.txt_traco(rc)])
+	var eventos_txt: Array = []
+	for d in 30:
+		_passar_tempo(24.0)
+		eventos_txt.append_array(base.relatorio())
+	print("TV --- 30 dias, %d linhas no relatório; amostra:" % eventos_txt.size())
+	var vistos := {}
+	for l in eventos_txt:
+		for pal in ["brigaram", "juntos", "agora é", "foi embora", "calad", "histórias", "machucad", "não abandona", "não estão mais"]:
+			if pal in l and not vistos.has(pal):
+				vistos[pal] = true
+				print("TV   ", l)
+	for rc in base.lista:
+		var par := VidaRecrutas.par_de(base.lista, rc)
+		print("TV %s: %s, moral %.2f, xp %.0f%s" % [rc.nome, VidaRecrutas.txt_nivel(rc), rc.moral, rc.xp, (", junto com " + par.nome) if not par.is_empty() else ""])
+	# moral no chão: leal fica, ganancioso vai embora levando coisa
+	for rc in base.lista:
+		rc.moral = 0.05
+	base.lista[1].traco = "leal"
+	var antes := base.lista.size()
+	var pist0: int = estoque.get("pistola", 0)
+	var r := RandomNumberGenerator.new()
+	r.seed = 5
+	VidaRecrutas.dia(base, r)
+	print("TV moral zero: %d -> %d recrutas; ficaram: %s; pistola %d -> %d" % [antes, base.lista.size(), ", ".join(base.lista.map(func(x): return x.nome)), pist0, estoque.get("pistola", 0)])
+	print("TV relatorio: ", " | ".join(base.relatorio()))
+	# morte e luto
+	if base.lista.size() >= 1:
+		var morto: Dictionary = base.lista[0]
+		for rc in base.lista:
+			rc.moral = 0.8
+		base.lista.erase(morto)
+		VidaRecrutas.luto(base, morto, trailer.global_position)
+		print("TV luto: túmulos=", mundo.tumulos, " moral dos outros=", base.lista.map(func(x): return snappedf(x.moral, 0.01)))
+	var ok := Salvar.salvar(self)
+	print("TV save=", ok)
 	get_tree().quit()
 
 ## Teste do cachorro: adoção, seguir, latir, farejar, caçar, defender, caçamba e save.
@@ -1616,6 +1676,11 @@ func _vasculhar(v: Node3D) -> void:
 		var ne := adicionar(extra, 1 if extra == "remedio" else r.randi_range(1, 3))
 		if ne > 0:
 			ganhos.append("%d %s (o %s achou)" % [ne, ITENS[extra].nome.to_lower(), cachorro.nome])
+	if base.n("crianca") > 0 and v.global_position.distance_to(trailer.global_position) < 150.0 and r.randf() < 0.3:
+		var miudo: String = ["municao_pistola", "bandagem", "pecas", "remedio", "comida"][r.randi() % 5]
+		var nm := adicionar(miudo, 1)
+		if nm > 0:
+			ganhos.append("1 %s (%s achou num cantinho)" % [ITENS[miudo].nome.to_lower(), base.presentes("crianca")[0].nome])
 	var carta := progresso.talvez_carta(chave)
 	if carta != "":
 		ganhos.append(carta.to_lower())
@@ -1642,10 +1707,11 @@ func _painel_npc(h: Node3D) -> Dictionary:
 		if pres != "":
 			linhas.append([pres, Color(0.6, 0.85, 0.6)])
 	if Recrutas.pode_recrutar(h):
-		var fr: String = Recrutas.funcao_de_npc(funcao)
+		var fr: String = Recrutas.funcao_de_npc(funcao, h)
 		var info: Dictionary = Recrutas.FUNCOES[fr]
 		var ped := Recrutas.pedido_de(h)
-		linhas.append(["Pode entrar para o comboio como %s." % (info.fem if h.get_meta("nome") in Recrutas.FEMININOS else info.nome).to_lower(), Hud.DOURADO])
+		var ttl := Recrutas.titulo({"funcao": fr, "nome": h.get_meta("nome")})
+		linhas.append(["Pode entrar para o comboio como %s." % ttl.to_lower(), Hud.DOURADO])
 		linhas.append("Na base: %s." % info.auto)
 		linhas.append("Na defesa: %s." % info.defesa.to_lower())
 		linhas.append("Pede para vir: %s." % _txt_itens(ped))
@@ -2211,7 +2277,8 @@ func _painel_recrutas() -> Dictionary:
 		var cor := Color(0.9, 0.88, 0.82)
 		if rc.vida < 0.4 or rc.moral < 0.3:
 			cor = Color(0.95, 0.45, 0.3)
-		linhas.append(["%s — %s · %s · %d abate%s" % [rc.nome, Recrutas.titulo(rc), st, rc.abates, "" if rc.abates == 1 else "s"], cor])
+		VidaRecrutas.garantir(rc)
+		linhas.append(["%s — %s %s · %s · %s · %d abate%s" % [rc.nome, Recrutas.titulo(rc), VidaRecrutas.txt_nivel(rc), VidaRecrutas.txt_traco(rc).to_lower(), st, rc.abates, "" if rc.abates == 1 else "s"], cor])
 		linhas.append(["      " + Recrutas.FUNCOES[rc.funcao].auto, Color(0.62, 0.62, 0.6)])
 		botoes.append(["%s: conversar" % rc.nome, func(): _abrir_painel(_painel_recruta.bind(rc)); return "", true])
 	if base.lista.size() > c:
@@ -2225,7 +2292,21 @@ func _painel_recruta(rc: Dictionary) -> Dictionary:
 	var botoes: Array = []
 	if not base.lista.has(rc):
 		return {"titulo": rc.nome, "linhas": ["Não faz mais parte do comboio."], "botoes": []}
-	linhas.append(["%s · %s · moral: %s" % [Recrutas.titulo(rc), Recrutas.txt_vida(rc.vida), Recrutas.txt_moral(rc.moral)], Hud.DOURADO])
+	VidaRecrutas.garantir(rc)
+	var cab: Array[String] = [Recrutas.titulo(rc), VidaRecrutas.txt_nivel(rc), Recrutas.txt_vida(rc.vida), "moral: " + Recrutas.txt_moral(rc.moral)]
+	linhas.append([" · ".join(cab.filter(func(x): return x != "")), Hud.DOURADO])
+	linhas.append(["Jeito: %s — %s" % [VidaRecrutas.txt_traco(rc), VidaRecrutas.TRACOS[rc.traco].desc], Color(0.85, 0.8, 0.65)])
+	if rc.nivel < 5 and not rc.funcao in ["crianca", "idoso"]:
+		linhas.append(["Experiência: %d / %d para o próximo nível" % [int(rc.xp), int(VidaRecrutas.XP_NIVEL[rc.nivel])], Color(0.62, 0.62, 0.6)])
+	var par := VidaRecrutas.par_de(base.lista, rc)
+	if not par.is_empty():
+		linhas.append(["Está junto com %s." % par.nome, Color(0.95, 0.6, 0.65)])
+	var rels: Array[String] = []
+	for o in base.lista:
+		if o != rc and absf(VidaRecrutas.relacao(rc, o)) > 0.25:
+			rels.append("%s (%s)" % [o.nome, VidaRecrutas.txt_relacao(VidaRecrutas.relacao(rc, o))])
+	if not rels.is_empty():
+		linhas.append(["Com os outros: " + ", ".join(rels), Color(0.75, 0.75, 0.72)])
 	linhas.append("Na base: %s." % info.auto)
 	linhas.append("Na defesa: %s." % info.defesa.to_lower())
 	linhas.append("Zumbis abatidos: %d" % rc.abates)
@@ -2235,6 +2316,8 @@ func _painel_recruta(rc: Dictionary) -> Dictionary:
 		"vigia": "\"Durmo de dia. De noite, ninguém chega perto sem eu ver.\"",
 		"medico": "\"Mordida? Me mostra agora. Não espera piorar.\"",
 		"batedor": "\"Me dá umas horas e eu volto com alguma coisa. Quase sempre.\"",
+		"idoso": "\"Já vi seca, enchente e governo ruim. Isso aqui também passa. Senta que eu te ensino.\"",
+		"crianca": "\"Achei uma moeda e um parafuso! Pode ficar com o parafuso.\"",
 	}
 	if rc.fome > 0.0:
 		linhas.append(["\"A gente tá passando fome aqui...\"", Color(0.95, 0.45, 0.3)])
@@ -3274,6 +3357,110 @@ func _capturar_trailer() -> void:
 			_abrir_painel(_painel_compartimento.bind(id))
 			await _salvar("trailer_painel_%s" % id)
 			_fechar_janela()
+	get_tree().quit()
+
+## Prints da vida dos recrutas: acampamento com criança e idoso, painel e túmulo.
+func _capturar_vida() -> void:
+	comboio.set_physics_process(false)
+	var cam := Camera3D.new()
+	cam.far = 2500.0
+	cam.near = 0.05
+	add_child(cam)
+	hud.visible = false
+	for t in [["apartamentos", 3, 0.85], ["estufa", 2, 0.85]]:
+		comboio.engatar(_novo_reboque(t[0], t[1], t[2]), true)
+	estoque.merge({"comida": 400, "agua": 400, "sucata": 30}, true)
+	var nomes := [["Tião", "vigia", "rabugento"], ["Marta", "medico", "trabalhador"], ["Pedrão", "mecanico", "leal"], ["Neide", "agricultor", "otimista"], ["Seu Lauro", "idoso", "corajoso"], ["Bia", "crianca", "medroso"]]
+	for i in nomes.size():
+		var rc := Recrutas.novo(nomes[i][0], nomes[i][1], 7100 + i * 17)
+		VidaRecrutas.garantir(rc)
+		rc.traco = nomes[i][2]
+		base.lista.append(rc)
+	base.distribuir_camas()
+	var por_nome := {}
+	for rc in base.lista:
+		por_nome[rc.nome] = rc
+	for d in 25:
+		_passar_tempo(24.0)
+		base.relatorio()
+	for rc in por_nome.values():
+		rc.moral = maxf(rc.moral, 0.6)
+		if not base.lista.has(rc):
+			base.lista.append(rc)
+	base.distribuir_camas()
+	estoque.merge({"comida": 30, "agua": 25}, true)
+	var marta: Dictionary = por_nome["Marta"]
+	marta.xp = 31.0
+	marta.nivel = 3
+	var pedrao: Dictionary = por_nome["Pedrão"]
+	if pedrao.par == "" and marta.par == "":
+		marta.par = pedrao.id
+		pedrao.par = marta.id
+		VidaRecrutas._mudar_relacao(marta, pedrao, 0.8)
+	var zc := 620.0
+	var dz := mundo.direcao(zc)
+	var pc := mundo.ponto_estrada(zc, -11.0)
+	pc.y = mundo.altura(pc.x, pc.z)
+	comboio.posicionar_livre(pc, atan2(dz.x, dz.z), 0.03)
+	mundo.atualizar(pc)
+	await get_tree().process_frame
+	_limpar_zumbis_perto(pc, 60.0)
+	# acampamento ao entardecer
+	hora = 17.6
+	_atualizar_ceu()
+	jogador.position = trailer.global_position + trailer.global_transform.basis.x * 6.0
+	_alternar_acampamento()
+	base._t_cena = 0.0
+	base.atualizar_cena(1.0)
+	for r in base.nos:
+		r.set_meta("animar_captura", true)
+	for f in 40:
+		await get_tree().process_frame
+	for r in base.nos:
+		r.set_meta("animar_captura", false)
+	var ct := trailer.global_position
+	var bt := trailer.global_transform.basis
+	var crianca: Recruta = null
+	var idoso: Recruta = null
+	for r in base.nos:
+		if r.dados.funcao == "crianca":
+			crianca = r
+		if r.dados.funcao == "idoso":
+			idoso = r
+	var foco := ct
+	if crianca and idoso:
+		foco = (crianca.global_position + idoso.global_position) * 0.5
+	var de := foco - bt.x * 6.5 + bt.z * 3.5 + Vector3(0, 2.8, 0)
+	_abrir_vista(de, foco)
+	cam.fov = 55.0
+	cam.current = true
+	cam.look_at_from_position(de, foco + Vector3(0, 0.7, 0), Vector3.UP)
+	jogador.visible = false
+	await _salvar("vida_acampamento")
+	# painel da Marta
+	hud.visible = true
+	_atualizar_hud()
+	_abrir_painel(_painel_recruta.bind(marta))
+	await _salvar("vida_painel")
+	_fechar_janela()
+	_abrir_painel(_painel_recrutas)
+	await _salvar("vida_quadro")
+	_fechar_janela()
+	hud.visible = false
+	# túmulo do Tião na beira da estrada, de manhã cedo
+	var tiao: Dictionary = por_nome["Tião"]
+	base.lista.erase(tiao)
+	VidaRecrutas.luto(base, tiao, mundo.ponto_estrada(zc + 25.0, 0.0))
+	hora = 7.2
+	_atualizar_ceu()
+	await get_tree().process_frame
+	var tm: Dictionary = mundo.tumulos.values()[0][0]
+	var tp: Vector3 = tm.pos
+	tp.y = mundo.altura(tp.x, tp.z)
+	var de3 := mundo.ponto_estrada(zc + 21.5, 0.0) + Vector3(0, 1.6, 0)
+	_abrir_vista(de3, tp)
+	cam.look_at_from_position(de3, tp + Vector3(0, 0.6, 0), Vector3.UP)
+	await _salvar("vida_tumulo")
 	get_tree().quit()
 
 ## Prints do cachorro: o evento de adoção, seguindo você, latindo, e na caçamba.

@@ -20,6 +20,7 @@ var _t_flash := 0.0
 var _patrulha := 0.0
 var _anim_golpe := 0.0
 var _t_dano := 0.0
+var _t_panico := 0.0
 # defesa de assentamento
 var fixo := false                # em cima de uma torre: não sai do lugar
 var papel := ""                  # torre, portao, muro, reparos, socorro, centro
@@ -38,7 +39,7 @@ static func criar(d: Dictionary) -> Recruta:
 	r.camisa = d.camisa
 	r.calca = d.calca
 	r.com_bone = d.bone
-	r.feminino = String(d.get("nome", "")).ends_with("a") and not String(d.get("nome", "")).ends_with("ça")
+	r.feminino = VidaRecrutas.eh_nome_feminino(String(d.get("nome", "")))
 	r.cores = {"Skin": d.pele, "Shirt": d.camisa, "Pants": d.calca}
 	match d.funcao:
 		"vigia":
@@ -54,6 +55,13 @@ static func criar(d: Dictionary) -> Recruta:
 			r.anim_parado = "Idle_FoldArms"
 		"batedor":
 			r.visual = "civil"
+		"idoso":
+			r.visual = "idoso"
+			r.anim_parado = "Idle_Tired"
+		"crianca":
+			r.visual = "civil"
+			r.anim_parado = "Idle_LookAround"
+			r.scale = Vector3.ONE * 0.64
 	match d.funcao:
 		"vigia":
 			r.arma = "rifle"
@@ -111,6 +119,7 @@ func _process(dt: float) -> void:
 	_t += dt
 	_t_ataque = maxf(0.0, _t_ataque - dt)
 	_t_busca -= dt
+	_t_panico = maxf(0.0, _t_panico - dt)
 	_t_flash = maxf(0.0, _t_flash - dt)
 	_anim_golpe = maxf(0.0, _anim_golpe - dt * 3.0)
 	_t_dano = maxf(0.0, _t_dano - dt)
@@ -124,9 +133,19 @@ func _process(dt: float) -> void:
 	if _t_busca <= 0.0:
 		_t_busca = 0.35
 		alvo = _zumbi_mais_perto()
-		var ferido: bool = dados.vida < 0.3
-		if ferido and not fixo:
+		var traco: String = dados.get("traco", "")
+		var limite := 0.15 if traco == "corajoso" else 0.3
+		var ferido: bool = dados.vida < limite
+		if dados.funcao in ["crianca", "idoso"] and _ameaca(14.0):
+			estado = Estado.RECUANDO      # se esconde no trailer
+		elif _t_panico > 0.0:
 			estado = Estado.RECUANDO
+		elif ferido and not fixo:
+			estado = Estado.RECUANDO
+		elif alvo and traco == "medroso" and not fixo and estado != Estado.LUTANDO and randf() < 0.3:
+			_t_panico = randf_range(4.0, 8.0)
+			estado = Estado.RECUANDO
+			main.hud.aviso("%s entrou em pânico e correu para o trailer!" % dados.nome)
 		elif alvo:
 			estado = Estado.LUTANDO
 		elif estado == Estado.LUTANDO or estado == Estado.RECUANDO:
@@ -150,6 +169,8 @@ func _process(dt: float) -> void:
 		tronco.rotation.x = -0.25 * _t_dano / 0.4
 
 func _zumbi_mais_perto() -> Zumbi:
+	if dados.funcao in ["crianca", "idoso"]:
+		return null
 	var alcance := ALCANCE_TIRO if dados.funcao == "vigia" else ALCANCE_VISTA
 	if fixo:
 		alcance = 36.0
@@ -169,6 +190,12 @@ func _zumbi_mais_perto() -> Zumbi:
 			melhor = z
 	return melhor
 
+func _ameaca(raio: float) -> bool:
+	for z in main.mundo.zumbis_vivos:
+		if is_instance_valid(z) and z.vivo() and z.global_position.distance_to(global_position) < raio:
+			return true
+	return false
+
 func _no_posto(dt: float) -> void:
 	match dados.funcao:
 		"vigia":
@@ -187,6 +214,16 @@ func _no_posto(dt: float) -> void:
 			rotation.y = lerp_angle(rotation.y, olhar_posto, dt * 4.0)
 			_fase += dt
 			pose_trabalhar(_fase)
+		"idoso":
+			rotation.y = lerp_angle(rotation.y, olhar_posto, dt * 4.0)
+			pose_sentar()
+		"crianca":
+			# corre em volta, brincando
+			_patrulha += dt * 0.5
+			var pc := posto + Vector3(cos(_patrulha), 0, sin(_patrulha * 1.3)) * 1.6
+			if _andar_ate(pc, 0.3, dt, 1.8):
+				rotation.y = lerp_angle(rotation.y, olhar_posto, dt * 3.0)
+				pose_caminhada(0.0, 0.0)
 		"medico", "batedor":
 			rotation.y = lerp_angle(rotation.y, olhar_posto, dt * 4.0)
 			pose_sentar() if dados.funcao == "batedor" else pose_caminhada(0.0, 0.0)
@@ -238,7 +275,7 @@ func _lutar(dt: float) -> void:
 				tocar("Pistol_Shoot", 1.4, 0.04)
 			main.ruido(global_position, 38.0, "tiro")
 			Som.em("tiro_rifle", global_position + Vector3(0, 1.4, 0), -2.0, 0.05, 3.0)
-			var acerto := 0.8 - clampf((d - 10.0) / 40.0, 0.0, 0.4)
+			var acerto := 0.8 - clampf((d - 10.0) / 40.0, 0.0, 0.4) + 0.04 * (int(dados.get("nivel", 1)) - 1)
 			if assent and main.eh_noite() and not _iluminado(alvo.global_position):
 				acerto *= 0.45
 			if randf() < acerto:
@@ -258,7 +295,7 @@ func _lutar(dt: float) -> void:
 			_anim_golpe = 1.0
 			if modelo:
 				tocar(["Sword_Regular_A", "Sword_Regular_B", "Sword_Light_A"][randi() % 3] if arma != "" else "Punch_Cross", 1.15)
-			var dano := 28.0 if dados.funcao != "batedor" else 40.0
+			var dano := (28.0 if dados.funcao != "batedor" else 40.0) * VidaRecrutas.mult(dados)
 			if dados.funcao == "medico":
 				dano = 15.0
 			if assent and alvo.cerco:

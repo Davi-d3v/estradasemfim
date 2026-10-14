@@ -36,6 +36,13 @@ func presentes(funcao := "") -> Array:
 func n(funcao: String) -> int:
 	return presentes(funcao).size()
 
+## Força de uma função somando o nível de cada um (nível 1 = 1,0; nível 5 = 1,6).
+func forca(funcao: String) -> float:
+	var f := 0.0
+	for rc in presentes(funcao):
+		f += VidaRecrutas.mult(rc)
+	return f
+
 func reboque(tipo: String) -> Reboque:
 	for el in main.comboio.cadeia:
 		if el is Reboque and el.tipo == tipo:
@@ -117,18 +124,15 @@ func _refeicao_do_dia() -> void:
 			rc.moral = clampf(rc.moral - 0.2, 0.0, 1.0)
 			rc.vida = maxf(0.05, rc.vida - 0.15)
 			registro.append("%s passou o dia sem comer." % rc.nome)
-		if rc.moral < 0.15:
-			lista.erase(rc)
-			_remover_no(rc)
-			var levou: int = mini(2, main.estoque.get("comida", 0))
-			main.estoque.comida = main.estoque.get("comida", 0) - levou
-			registro.append("%s foi embora durante a noite%s." % [rc.nome, (" levando %d comida" % levou) if levou > 0 else ""])
+	var r := RandomNumberGenerator.new()
+	r.seed = hash([main.dia, lista.size(), main.mundo.semente])
+	VidaRecrutas.dia(self, r)
 	distribuir_camas()
 
 func _medico(h: float) -> void:
-	var med := n("medico")
-	if med == 0:
+	if n("medico") == 0:
 		return
+	var med := forca("medico")
 	var j: Player = main.jogador
 	var antes := j.infeccao
 	j.vida = minf(1.0, j.vida + 0.02 * h * med)
@@ -136,13 +140,18 @@ func _medico(h: float) -> void:
 		j.infeccao = maxf(0.0, j.infeccao - 0.04 * h * med)
 		if antes > 0.0 and j.infeccao <= 0.0:
 			registro.append("A médica conteve a sua infecção." if _fem("medico") else "O médico conteve a sua infecção.")
+	var cuidou := j.vida < 1.0 or j.infeccao > 0.0
 	for rc in lista:
 		if rc.vida < 1.0 and rc.expedicao.is_empty():
 			rc.vida = minf(1.0, rc.vida + 0.03 * h * med)
+			cuidou = true
+	if cuidou:
+		for m in presentes("medico"):
+			VidaRecrutas.ganhar_xp(self, m, 0.4 * h)
 
 func _mecanico(h: float) -> void:
-	var mec := n("mecanico")
-	if mec == 0:
+	var mec := forca("mecanico") + 0.5 * n("idoso")
+	if mec <= 0.0:
 		return
 	# conserta aos poucos o reboque (ou trailer) mais estragado, gastando sucata
 	_reparos += h * 0.015 * mec
@@ -159,15 +168,23 @@ func _mecanico(h: float) -> void:
 			break
 		pior.condicao = minf(1.0, pior.condicao + 0.05)
 		main.estoque.sucata -= 1
+		for m in presentes("mecanico"):
+			VidaRecrutas.ganhar_xp(self, m, 0.6)
 	# oficina parada: começa a fabricar peças sozinha (guarda 10 de sucata de reserva)
 	var of := reboque("oficina")
 	if of and of.funcional() and of.trabalho.is_empty() and main.estoque.get("sucata", 0) >= 18:
 		main.estoque.sucata -= 8
-		of.trabalho = {"tipo": "pecas", "qtd": 2, "restante": 2.0 / float(of.nivel) / (1.0 + 0.25 * (mec - 1)), "auto": true}
+		of.trabalho = {"tipo": "pecas", "qtd": 2, "restante": 2.0 / float(of.nivel) / (1.0 + 0.25 * maxf(0.0, mec - 1.0)), "auto": true}
+		for m in presentes("mecanico"):
+			VidaRecrutas.ganhar_xp(self, m, 1.0)
 
 ## Estufa: o agricultor aumenta a produção e colhe sozinho.
 func bonus_estufa() -> float:
-	return 1.0 + 0.5 * mini(n("agricultor"), 2)
+	var ag := presentes("agricultor")
+	var b := 0.0
+	for i in mini(ag.size(), 2):
+		b += 0.5 * VidaRecrutas.mult(ag[i])
+	return 1.0 + b + 0.2 * mini(n("idoso"), 1)
 
 func colher_estufa(r: Reboque) -> void:
 	if n("agricultor") == 0:
@@ -177,6 +194,8 @@ func colher_estufa(r: Reboque) -> void:
 		var ent: int = main.adicionar("comida", c)
 		r.comida -= ent
 		_colhido += ent
+		for a in presentes("agricultor"):
+			VidaRecrutas.ganhar_xp(self, a, 0.3 * ent)
 	var a := int(r.agua)
 	if a > 0:
 		r.agua -= main.adicionar("agua", a)
@@ -186,7 +205,7 @@ func pecas_feitas(qtd: int) -> void:
 
 func _fem(funcao: String) -> bool:
 	for rc in presentes(funcao):
-		return rc.nome in Recrutas.FEMININOS
+		return VidaRecrutas.fem(rc)
 	return false
 
 # ------------------------------------------------------------ batedor
@@ -212,18 +231,19 @@ func _expedicoes(h: float) -> void:
 		rc.expedicao = {}
 		var r := RandomNumberGenerator.new()
 		r.seed = hash(rc.id) + main.dia * 97 + int(main.hora * 10.0)
-		var risco := horas / 6.0
+		var risco := horas / 6.0 * (1.0 - 0.1 * (int(rc.get("nivel", 1)) - 1))
 		if r.randf() < 0.03 * risco * (1.0 + ameaca * 0.3):
 			lista.erase(rc)
 			registro.append("%s saiu em expedição e não voltou." % rc.nome)
-			_moral_todos(-0.15)
+			VidaRecrutas.luto(self, rc, Vector3.ZERO, false)
 			continue
 		if r.randf() < 0.18 * risco:
 			rc.vida = maxf(0.15, rc.vida - r.randf_range(0.25, 0.5))
 			registro.append("%s voltou ferido da expedição." % rc.nome)
 		var tabela := {"sucata": r.randi_range(3, 8), "comida": r.randi_range(1, 3), "agua": r.randi_range(0, 2), "pecas": r.randi_range(0, 2)}
 		var ganhos: Array[String] = []
-		var mult := horas / 6.0
+		var mult := horas / 6.0 * VidaRecrutas.mult(rc)
+		VidaRecrutas.ganhar_xp(self, rc, horas * 0.5)
 		for k in tabela:
 			var q := int(round(tabela[k] * mult))
 			if q > 0:
@@ -264,6 +284,8 @@ func relatorio() -> Array[String]:
 
 func abate(r: Recruta) -> void:
 	main.abates += 1
+	if r.dados.funcao in ["vigia", "batedor"]:
+		VidaRecrutas.ganhar_xp(self, r.dados, 1.5)
 	_abates_noite[r.dados.nome] = _abates_noite.get(r.dados.nome, 0) + 1
 
 func morreu(r: Recruta) -> void:
@@ -271,7 +293,7 @@ func morreu(r: Recruta) -> void:
 	lista.erase(rc)
 	nos.erase(r)
 	distribuir_camas()
-	_moral_todos(-0.2)
+	VidaRecrutas.luto(self, rc, r.global_position)
 	main.hud.aviso("%s morreu defendendo o comboio." % rc.nome)
 	registro.append("%s morreu defendendo o comboio." % rc.nome)
 	# corpo cai e some depois
@@ -284,7 +306,7 @@ func morreu(r: Recruta) -> void:
 func penalidade(r: RandomNumberGenerator) -> String:
 	var mortos: Array[String] = []
 	for rc in lista.duplicate():
-		if r.randf() < 0.4:
+		if r.randf() < 0.4 and rc.funcao != "crianca":
 			lista.erase(rc)
 			mortos.append(rc.nome)
 		else:
@@ -408,6 +430,12 @@ func _postos() -> Dictionary:
 	var apto := reboque("apartamentos")
 	var base_b: Vector3 = apto.global_transform * Vector3(-1.9, 0, -0.8) if apto else fog + Vector3(1.5, 0, 0)
 	ps["batedor"] = [[_chao(base_b), ang.call(base_b, fog)], [_chao(base_b + Vector3(0.9, 0, 0.6)), ang.call(base_b, fog)]]
+	# idoso: sentado do outro lado da fogueira; criança: brincando entre a fogueira e os apartamentos
+	var tb: Basis = tr.global_transform.basis
+	var lado_i := fog + tb * Vector3(-1.2, 0, 0.2)
+	ps["idoso"] = [[_chao(lado_i), ang.call(lado_i, fog)], [_chao(fog + tb * Vector3(0.2, 0, -1.3)), ang.call(fog + tb * Vector3(0.2, 0, -1.3), fog)]]
+	var brinca := (fog + base_b) * 0.5 + tb * Vector3(-1.4, 0, 0.0)
+	ps["crianca"] = [[_chao(brinca), ang.call(brinca, fog)], [_chao(brinca + tb * Vector3(0.0, 0, 1.2)), ang.call(brinca, fog)]]
 	# vigias: na frente da picape e atrás do último reboque, olhando para fora
 	var ult: Node3D = main.comboio.cadeia[main.comboio.cadeia.size() - 1]
 	var frente := _chao(pk.global_transform * Vector3(-2.5, 0, 6.5))

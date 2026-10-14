@@ -58,8 +58,14 @@
   e às vezes depois, se ainda não tiver cachorro); segue a pé, viaja na caçamba, late e avisa a direção de zumbis antes de você ver, fareja
   vasculháveis (e às vezes acha item extra), caça bicho ferido, defende de zumbi colado, foge ganindo se apanhar, pode morrer; [E] painel
   (ficar/seguir, dar comida); salvo no jogo. Teste: --teste-cachorro; prints: --cachorro
-- [ ] 7-11. Recrutas, comboio, exploração, defesa, sobrevivência  - [ ] 12. v0.8
+- [x] 7. Recrutas com vida (scripts/vida_recrutas.gd): 8 traços (corajoso, medroso, otimista, rabugento, trabalhador, preguiçoso, leal, ganancioso)
+  que mudam a luta, a moral e o aprendizado; experiência e nível 1-5 na função (+15% por nível: cura, conserto, colheita, saque, dano, pontaria);
+  relações (amizades, brigas por comida, briga feia que machuca), casais, quem tem moral no chão vai embora levando coisas (ganancioso leva arma;
+  leal e criança ficam; o par às vezes vai junto); luto (par sofre muito) e túmulo com nome e dia na beira da estrada (salvo);
+  funções novas: idoso (ensina, +25% de aprendizado, ajuda na horta e oficina) e criança (anima, acha coisas pequenas ao vasculhar, se esconde)
+  — chegam pela carona e pelo ônibus tombado. Teste: --teste-vida; prints: --vida
+- [ ] 8-11. Recrutas, comboio, exploração, defesa, sobrevivência  - [ ] 12. v0.8
 
 ## Próximos
-- seguir a rodada grande (etapa 7: recrutas)
+- seguir a rodada grande (etapa 8: comboio)
 - ouvir o retorno do teste no PC do Davi

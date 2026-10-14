@@ -65,6 +65,8 @@ var ninhos: Array = []
 var eventos_ativos := {}
 var eventos_feitos := {}
 var eventos_tipo := {}     # força o tipo (testes/prints)
+## Túmulos de recrutas na beira da estrada: chunk -> [{pos, nome, dia}] (salvo).
+var tumulos := {}
 ## Marcos e missões do rádio (Progresso): chunk -> índice/id.
 var marcos_k := {}
 var missoes_k := {}
@@ -532,6 +534,44 @@ func faixa(z: float) -> int:
 func fartura_diesel(z: float) -> float:
 	return clampf(1.0 - z / 1000.0 / 90.0, 0.25, 1.0)
 
+## Cruz de madeira com nome, monte de terra e flores. Sem n: põe no trecho carregado.
+func construir_tumulo(pos: Vector3, nome: String, dia: int, n: Node3D = null) -> void:
+	if n == null:
+		var k := int(floor(pos.z / TAM))
+		if not _chunks.has(k):
+			return
+		n = _chunks[k]
+	var t := Node3D.new()
+	t.name = "Tumulo"
+	t.set_meta("nao_mesclar", true)
+	t.set_meta("area_livre", Vector2(1.6, 1.8))
+	t.position = Vector3(pos.x, altura(pos.x, pos.z), pos.z)
+	var d := direcao(pos.z)
+	t.rotation.y = atan2(d.x, d.z) + PI * 0.5
+	n.add_child(t)
+	var mad := B.mat(Color(0.36, 0.26, 0.17), 0.95, 0.0, "tumulo_madeira")
+	var terra := B.mat(Color(0.3, 0.22, 0.15), 1.0, 0.0, "tumulo_terra")
+	B.box(t, Vector3(0.11, 1.6, 0.09), Vector3(0, 0.8, -0.9), mad)
+	B.box(t, Vector3(0.8, 0.1, 0.09), Vector3(0, 1.22, -0.9), mad)
+	B.sphere(t, 0.5, Vector3(0, 0.0, 0.0), terra, Vector3(1.1, 0.45, 2.0), 10)
+	var pedra := B.mat(Color(0.5, 0.5, 0.48), 0.95, 0.0, "tumulo_pedra")
+	for i in 12:
+		var a := TAU * i / 12.0
+		B.sphere(t, 0.11, Vector3(cos(a) * 0.62, 0.05, sin(a) * 1.08), pedra, Vector3(1.2, 0.7, 1.0), 6)
+	var flor := B.mat(Color(0.85, 0.75, 0.2), 0.8, 0.0, "tumulo_flor")
+	for i in 5:
+		B.sphere(t, 0.05, Vector3(-0.25 + i * 0.12, 0.18, 0.3 + (i % 2) * 0.15), flor)
+	var l := Label3D.new()
+	l.text = "%s\ndia %d" % [nome.to_upper(), dia]
+	l.font_size = 64
+	l.pixel_size = 0.0028
+	l.outline_size = 6
+	l.modulate = Color(0.95, 0.92, 0.85)
+	l.outline_modulate = Color(0.1, 0.07, 0.05)
+	l.position = Vector3(0, 1.78, -0.9)
+	l.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
+	t.add_child(l)
+
 func _rng_chunk(k: int, salt := 0) -> RandomNumberGenerator:
 	var r := RandomNumberGenerator.new()
 	r.seed = hash([semente, k, salt])
@@ -612,6 +652,8 @@ func _gerar_chunk(k: int) -> Node3D:
 	var areas := _areas_construidas(n)
 	_limpar_vegetacao(n, areas)
 	_mata(n, z0, k, areas)
+	for tm in tumulos.get(k, []):
+		construir_tumulo(tm.pos, tm.nome, tm.dia, n)
 	B.mesclar(n)
 	return n
 

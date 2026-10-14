@@ -289,6 +289,8 @@ func esperar(id: String) -> String:
 # ------------------------------------------------------------ postos
 func posto_padrao(rc: Dictionary) -> String:
 	match rc.funcao:
+		"crianca", "idoso":
+			return "centro"
 		"vigia":
 			return "torre"
 		"mecanico":
@@ -299,6 +301,10 @@ func posto_padrao(rc: Dictionary) -> String:
 
 func opcoes_posto(rc: Dictionary) -> Array:
 	match rc.funcao:
+		"crianca":
+			return ["centro"]
+		"idoso":
+			return ["centro", "socorro"]
 		"vigia":
 			return ["torre", "portao", "muro"]
 		"mecanico":
@@ -444,7 +450,7 @@ func morreu(r: Recruta) -> void:
 	else:
 		main.base.lista.erase(rc)
 		main.base.distribuir_camas()
-		main.base._moral_todos(-0.2)
+		VidaRecrutas.luto(main.base, rc, r.global_position)
 		onda.perdas.append(rc.nome)
 		main.registrar("%s morreu defendendo %s." % [rc.nome, e.get("nome", "o assentamento")])
 		main.hud.aviso("%s morreu defendendo o assentamento." % rc.nome)
