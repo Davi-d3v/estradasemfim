@@ -153,11 +153,20 @@ static func aplicar(m: Node) -> bool:
 		alvo.clear()
 		alvo.merge(d.mundo[k], true)
 	# picape e trailer
-	m.picape.config = d.picape.config
+	# saves antigos não têm os módulos novos: completa com os padrões
+	var pc: Dictionary = d.picape.config
+	for k in m.picape.config:
+		if not pc.has(k):
+			pc[k] = m.picape.config[k].duplicate()
+	m.picape.config = pc
 	m.picape.cor = d.picape.cor
 	m.picape.condicao = d.picape.condicao
 	m.picape.reconstruir()
-	m.trailer.config = d.trailer.config
+	var tc: Dictionary = d.trailer.config
+	for k in m.trailer.config:
+		if not tc.has(k):
+			tc[k] = m.trailer.config[k].duplicate()
+	m.trailer.config = tc
 	m.trailer.cor_pintura = d.trailer.cor
 	m.trailer.condicao_carroceria = d.trailer.carroceria
 	m.trailer.luz_vermelha = d.trailer.luz_vermelha

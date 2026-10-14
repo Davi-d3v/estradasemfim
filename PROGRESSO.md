@@ -45,9 +45,12 @@
   Usina 220, Porto Seco 290, depois a cada ~72 km) com muro de contêineres, torres, acampamento e gente; ao chegar escolhe prêmio (reboque nível 3,
   recruta especial ou conserto+suprimentos) e ganha uma peça do mistério; missões do rádio (depósito de diesel, hospital de campanha, comboio militar,
   pedido de socorro com prazo e cerco, sinal estranho) com marcador; 16 cartas/fitas do mistério (saque 6%, marcos, sinais) no diário [J];
-  objetivo do HUD mostra próximo marco/missão; trechos de marco e missão sem prédios. Teste: --teste-progresso; prints: --progresso  - [ ] 4. Combate com o comboio  - [ ] 5. Comércio/reputação/facções
+  objetivo do HUD mostra próximo marco/missão; trechos de marco e missão sem prédios. Teste: --teste-progresso; prints: --progresso
+- [x] 4. Combate com o comboio (scripts/combate_comboio.gd): zumbis se agarram na picape/trailer (até 5), batem na lataria, seguram o comboio (−7% cada)
+  e alcançam o motorista pela janela; soltam com ziguezague, acima de 54 km/h ou freada brusca; módulos novos na oficina: Espinhos laterais e
+  Posto de tiro (picape), Couraça (trailer: chapas, nível 2 com espinhos); vigia atira da caçamba gastando munição. Teste: --teste-comboio; prints: --comboio-combate  - [ ] 4. Combate com o comboio  - [ ] 5. Comércio/reputação/facções
 - [ ] 6. Cachorro  - [ ] 7-11. Recrutas, comboio, exploração, defesa, sobrevivência  - [ ] 12. v0.8
 
 ## Próximos
-- seguir a rodada grande (etapa 4: combate com o comboio)
+- seguir a rodada grande (etapa 5: comércio, reputação e facções)
 - ouvir o retorno do teste no PC do Davi

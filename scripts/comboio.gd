@@ -153,6 +153,9 @@ func velocidade_maxima() -> float:
 		vmax = minf(vmax, 11.0 + picape.aderencia_fora() * 3.0)
 	if na_agua:
 		vmax = minf(vmax, 3.5)
+	var cc = mundo.get_parent().get("combate_comboio") if mundo else null
+	if cc:
+		vmax *= cc.fator_velocidade()
 	return clampf(vmax, 3.0, 32.0)
 
 func _unhandled_input(e: InputEvent) -> void:

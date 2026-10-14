@@ -20,6 +20,7 @@ const MODULOS := {
 	"farois": {"nome": "Faróis auxiliares", "slot": "iluminacao", "nivel_max": 3, "peso": 6.0},
 	"antena": {"nome": "Rádio e antena", "slot": "comunicacao", "nivel_max": 2, "peso": 4.0},
 	"botijao": {"nome": "Botijão de gás", "slot": "lanca", "nivel_max": 2, "peso": 22.0},
+	"couraca": {"nome": "Couraça (chapas e espinhos)", "slot": "couraca", "nivel_max": 2, "peso": 120.0},
 }
 
 @export var cor_pintura := Color(0.66, 0.33, 0.12)
@@ -133,6 +134,7 @@ var config := {
 	"iluminacao": {"id": "farois", "nivel": 2, "condicao": 0.9},
 	"comunicacao": {"id": "antena", "nivel": 1, "condicao": 0.9},
 	"lanca": {"id": "botijao", "nivel": 1, "condicao": 0.8},
+	"couraca": {"id": "couraca", "nivel": 0, "condicao": 1.0},
 }
 
 var _rng := RandomNumberGenerator.new()
@@ -606,6 +608,28 @@ func _mod_grades(nivel: int, cond: float) -> void:
 				B.box(r, Vector3(0.02, 0.2, lz), Vector3(s * (hw + 0.022), BASE_Y + 0.11, zc), chapa)
 				for k in 4:
 					B.sphere(r, 0.012, Vector3(s * (hw + 0.035), BASE_Y + 0.17, seg[0] + 0.08 + k * (lz - 0.16) / 3.0), rebite)
+
+## Couraça: chapas de aço nas laterais (nível 1) e espinhos por cima (nível 2).
+func _mod_couraca(nivel: int, cond: float) -> void:
+	if nivel <= 0:
+		return
+	var r := _root
+	var hw := LARGURA * 0.5
+	var chapa := _pint(Color(0.32, 0.33, 0.31), cond * 0.6, 0.5, 0.7)
+	var rebite := B.mat(Color(0.5, 0.5, 0.5), 0.4, 0.9)
+	var aco := B.mat(Color(0.2, 0.19, 0.18), 0.55, 0.7)
+	for s in [-1.0, 1.0]:
+		for seg in [[-1.75, -0.7], [-0.6, 0.15], [0.3, 1.5]]:
+			var zc: float = (seg[0] + seg[1]) * 0.5
+			var lz: float = seg[1] - seg[0]
+			B.box(r, Vector3(0.025, 0.42, lz), Vector3(s * (hw + 0.05), BASE_Y + 0.42, zc), chapa)
+			for k in 3:
+				B.sphere(r, 0.014, Vector3(s * (hw + 0.065), BASE_Y + 0.6, seg[0] + 0.1 + k * (lz - 0.2) / 2.0), rebite)
+		if nivel >= 2:
+			for i in 12:
+				var z := -1.65 + i * 0.28
+				var e := B.cyl(r, 0.022, 0.38, Vector3(s * (hw + 0.24), BASE_Y + 0.42 + (0.1 if i % 2 else -0.1), z), aco, Vector3.ZERO, 5, 0.002)
+				e.rotation_degrees = Vector3(0, 0, -90.0 * s)
 
 func _mod_farois(nivel: int, cond: float) -> void:
 	var r := _root

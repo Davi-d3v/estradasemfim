@@ -17,6 +17,8 @@ const MODULOS := {
 	"protecao": {"nome": "Proteção das janelas", "nivel_max": 2, "peso": 35.0, "desc": "Telas e chapas"},
 	"snorkel": {"nome": "Snorkel", "nivel_max": 1, "peso": 5.0, "desc": "Atravessa água funda"},
 	"cacamba": {"nome": "Carga da caçamba", "nivel_max": 3, "peso": 30.0, "desc": "Mais espaço de carga"},
+	"espinhos": {"nome": "Espinhos laterais", "nivel_max": 2, "peso": 40.0, "desc": "Zumbis não conseguem se agarrar (e se ferem tentando)"},
+	"posto_tiro": {"nome": "Posto de tiro na caçamba", "nivel_max": 2, "peso": 50.0, "desc": "Um vigia atira da caçamba enquanto você dirige"},
 }
 
 @export var cor := Color(0.42, 0.43, 0.42)
@@ -35,6 +37,8 @@ var config := {
 	"protecao": {"id": "protecao", "nivel": 0, "condicao": 1.0},
 	"snorkel": {"id": "snorkel", "nivel": 0, "condicao": 1.0},
 	"cacamba": {"id": "cacamba", "nivel": 1, "condicao": 0.8},
+	"espinhos": {"id": "espinhos", "nivel": 0, "condicao": 1.0},
+	"posto_tiro": {"id": "posto_tiro", "nivel": 0, "condicao": 1.0},
 }
 
 ## Visão de dentro da cabine: vidros transparentes e interior montado.
@@ -244,6 +248,45 @@ func reconstruir() -> void:
 		B.box(b, Vector3(0.12, 0.12, 0.2), Vector3(-hw - 0.06, 1.95, 1.25), preto)
 		B.cyl(b, 0.05, 0.25, Vector3(-hw + 0.05, 0.92, 1.2), preto, Vector3(0, 0, 90), 10)
 	_cacamba(b, nivel("cacamba"))
+	_espinhos(b, nivel("espinhos"))
+	_posto_tiro(b, nivel("posto_tiro"))
+
+## Espinhos de vergalhão soldados na lataria (portas, caixa de roda, caçamba).
+func _espinhos(b: Node3D, n: int) -> void:
+	if n <= 0:
+		return
+	var hw := LARGURA * 0.5
+	var aco := B.mat(B.worn(Color(0.2, 0.19, 0.18), config.espinhos.condicao), 0.55, 0.7)
+	var ferrugem := B.mat(Color(0.35, 0.18, 0.08), 0.9, 0.3)
+	for s in [-1.0, 1.0]:
+		# barra de apoio ao longo da lateral
+		B.box(b, Vector3(0.05, 0.06, 4.4), Vector3(s * (hw + 0.05), 0.95, -0.5), aco)
+		var qtd := 11 if n == 1 else 16
+		for i in qtd:
+			var z := -2.6 + i * (4.2 / (qtd - 1))
+			var y := 0.95 + (0.18 if i % 2 == 0 else -0.12)
+			var e := B.cyl(b, 0.025, 0.42 if n == 1 else 0.55, Vector3(s * (hw + 0.24), y, z), aco if i % 3 else ferrugem, Vector3(0, 0, 90), 5, 0.002)
+			e.rotation_degrees = Vector3(0, 0, -90.0 * s)
+		if n >= 2:
+			# lâminas nas caixas de roda e na janela
+			for z in [-1.78, 1.62]:
+				B.box(b, Vector3(0.03, 0.08, 0.9), Vector3(s * (hw + 0.12), 1.12, z), aco, Vector3(0, 0, 25 * s))
+			for k in 5:
+				B.cyl(b, 0.02, 0.3, Vector3(s * (hw + 0.14), 1.52, 0.1 + k * 0.18), aco, Vector3(0, 0, -90.0 * s), 5, 0.002)
+
+## Posto de tiro: plataforma na caçamba com apoio para o rifle (nível 2: escudo de chapa).
+func _posto_tiro(b: Node3D, n: int) -> void:
+	if n <= 0:
+		return
+	var aco := B.mat(Color(0.14, 0.14, 0.15), 0.5, 0.6)
+	var chapa := B.mat(B.worn(Color(0.3, 0.31, 0.28), config.posto_tiro.condicao), 0.6, 0.6)
+	B.box(b, Vector3(1.1, 0.06, 0.9), Vector3(0, 0.98, -1.65), aco)
+	for s in [-1.0, 1.0]:
+		B.box(b, Vector3(0.04, 0.9, 0.04), Vector3(s * 0.55, 1.45, -1.2), aco)
+	B.box(b, Vector3(1.14, 0.04, 0.04), Vector3(0, 1.9, -1.2), aco)
+	if n >= 2:
+		B.box(b, Vector3(1.4, 0.5, 0.03), Vector3(0, 2.15, -1.12), chapa, Vector3(-12, 0, 0))
+		B.box(b, Vector3(0.2, 0.12, 0.035), Vector3(0, 2.2, -1.1), B.mat(Color(0.02, 0.02, 0.02), 0.9))
 
 func _parachoque(b: Node3D, aco: Material, plastico: Material) -> void:
 	var n := nivel("parachoque")

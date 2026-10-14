@@ -91,6 +91,7 @@ var tutorial: Tutorial
 var eventos: Eventos
 var clima: Clima
 var progresso: Progresso
+var combate_comboio: CombateComboio
 var horda_visivel: HordaVisivel
 var retrovisor: Retrovisor
 var _t_autosave := 0.0
@@ -197,6 +198,9 @@ func _ready() -> void:
 	progresso = Progresso.new()
 	progresso.main = self
 	add_child(progresso)
+	combate_comboio = CombateComboio.new()
+	combate_comboio.main = self
+	add_child(combate_comboio)
 	progresso.registrar_no_mundo()
 	horda_visivel = HordaVisivel.new()
 	horda_visivel.main = self
@@ -222,6 +226,8 @@ func _ready() -> void:
 			_capturar_trailer()
 		elif "--eventos" in OS.get_cmdline_user_args():
 			_capturar_eventos()
+		elif "--comboio-combate" in OS.get_cmdline_user_args():
+			_capturar_combate_comboio()
 		elif "--progresso" in OS.get_cmdline_user_args():
 			_capturar_progresso()
 		elif "--clima" in OS.get_cmdline_user_args():
@@ -252,6 +258,10 @@ func _ready() -> void:
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
 		_teste_recrutas()
+	elif "--teste-comboio" in OS.get_cmdline_user_args():
+		Jogo.modo = Jogo.MODO_INFINITO
+		jogando = true
+		_teste_comboio()
 	elif "--teste-progresso" in OS.get_cmdline_user_args():
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
@@ -332,6 +342,55 @@ func _teste_salvar() -> void:
 	defesa.z_horda = -3333.0
 	var ok := Salvar.salvar(self)
 	print("TS salvo=", ok, " resumo=", Salvar.resumo())
+	get_tree().quit()
+
+## Teste do combate com o comboio: agarrar, soltar no ziguezague, espinhos e atirador.
+func _teste_comboio() -> void:
+	await get_tree().process_frame
+	var cc := combate_comboio
+	for caso in ["sem nada", "ziguezague", "espinhos", "atirador"]:
+		for z in mundo.zumbis_vivos.duplicate():
+			if is_instance_valid(z):
+				z.queue_free()
+		mundo.zumbis_vivos.clear()
+		cc.agarrados.clear()
+		picape.config.espinhos.nivel = 2 if caso == "espinhos" else 0
+		picape.config.posto_tiro.nivel = 2 if caso == "atirador" else 0
+		picape.reconstruir()
+		base.lista.clear()
+		if caso == "atirador":
+			base.lista.append(Recrutas.novo("Tião", "vigia", 5))
+			estoque.municao_rifle = 30
+		comboio.posicionar(3000.0, -0.5, 0.0)
+		jogador.vida = 1.0
+		mundo.atualizar(comboio.pos)
+		_entrar_no_carro()
+		await get_tree().process_frame
+		comboio.velocidade = 8.0
+		# zumbis em volta da picape correndo junto
+		for i in 6:
+			var lado := -1.0 if i % 2 == 0 else 1.0
+			var p := picape.global_transform * Vector3(lado * 1.6, 0, -1.5 + (i / 2) * 1.0)
+			p.y = mundo.altura(p.x, p.z)
+			var z := mundo.criar_zumbi(mundo, p, 0.0, 100 + i, "comum")
+			z.estado = Zumbi.Estado.PERSEGUINDO
+		var vida0 := jogador.vida
+		var max_ag := 0
+		var t := 0.0
+		while t < 8.0:
+			comboio.velocidade = 8.0
+			if caso == "ziguezague" and t > 2.0:
+				comboio.esterco = 0.8 if int(t * 3.0) % 2 == 0 else -0.8
+			else:
+				comboio.esterco = 0.0
+			await get_tree().process_frame
+			t += get_process_delta_time()
+			max_ag = maxi(max_ag, cc.agarrados.size())
+		var mortos := 0
+		for z in mundo.zumbis_vivos:
+			pass
+		print("TCC %s: max agarrados=%d agora=%d vida %.2f->%.2f municao=%d atirador=%s abates=%d vmax x%.2f" % [caso, max_ag, cc.agarrados.size(), vida0, jogador.vida, estoque.get("municao_rifle", 0), str(is_instance_valid(cc.atirador)), abates, cc.fator_velocidade()])
+		_sair_do_carro()
 	get_tree().quit()
 
 ## Teste do progresso: marco, prêmio, missões do rádio, prazo e diário.
@@ -3031,6 +3090,78 @@ func _capturar_trailer() -> void:
 			_abrir_painel(_painel_compartimento.bind(id))
 			await _salvar("trailer_painel_%s" % id)
 			_fechar_janela()
+	get_tree().quit()
+
+## Prints do combate com o comboio: agarrados, atirador na caçamba, espinhos e couraça.
+func _capturar_combate_comboio() -> void:
+	var cam := Camera3D.new()
+	cam.far = 900.0
+	add_child(cam)
+	hora = 16.0
+	_atualizar_ceu()
+	var z0 := 2200.0
+	var p0 := mundo.ponto_estrada(z0, -0.5)
+	var d0 := mundo.direcao(z0)
+	comboio.posicionar_livre(p0, atan2(d0.x, d0.z), 0.0)
+	comboio.set_physics_process(false)
+	jogador.position = p0 + Vector3(3, 0, 0)
+	mundo.atualizar(p0)
+	await get_tree().process_frame
+	_limpar_zumbis_perto(p0, 80.0)
+	hud.visible = false
+	jogador.visible = false
+	# 1) zumbis agarrados na picape sem proteção
+	var cc := combate_comboio
+	comboio.dirigindo = true
+	for i in 4:
+		var lado := -1.0 if i % 2 == 0 else 1.0
+		var veic: Node3D = picape if i < 3 else trailer
+		var zb := mundo.criar_zumbi(mundo, veic.global_position, 0.0, 300 + i, "comum")
+		await get_tree().process_frame
+		cc._agarrar(zb, veic, Vector3(lado * (Pickup.LARGURA * 0.5 + 0.28), 0, -0.8 + i * 0.9 if veic == picape else 0.3))
+	cc._segurar(comboio, 0.016, 6.0, 0.0)
+	for g in cc.agarrados:
+		g.z.fixar("Zombie_Scratch", 0.4)
+	var lado_c := Vector3(d0.z, 0, -d0.x)
+	var alvo := picape.global_position + Vector3(0, 1.0, 0) - d0 * 1.5
+	var de := alvo + lado_c * 6.5 - d0 * 5.0 + Vector3(0, 2.2, 0)
+	cam.fov = 55.0
+	cam.look_at_from_position(de, alvo, Vector3.UP)
+	cam.current = true
+	await _salvar("comboio_agarrados")
+	for g in cc.agarrados.duplicate():
+		g.z.queue_free()
+	cc.agarrados.clear()
+	await get_tree().process_frame
+	# 2) espinhos + posto de tiro + couraça, com o vigia na caçamba
+	picape.config.espinhos.nivel = 2
+	picape.config.posto_tiro.nivel = 2
+	picape.config.protecao.nivel = 2
+	picape.reconstruir()
+	trailer.config.couraca.nivel = 2
+	trailer.reconstruir()
+	base.lista.append(Recrutas.novo("Tião", "vigia", 11))
+	estoque.municao_rifle = 20
+	cc._atualizar_atirador(comboio)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var de2 := picape.global_position - lado_c * 6.0 - d0 * 6.5 + Vector3(0, 2.6, 0)
+	cam.look_at_from_position(de2, picape.global_position + Vector3(0, 1.2, 0) - d0 * 2.0, Vector3.UP)
+	await _salvar("comboio_blindado")
+	# 3) atirador mirando um zumbi
+	var zt := mundo.criar_zumbi(mundo, picape.global_position - d0 * 12.0 + lado_c * 4.0, 0.0, 77, "corredor")
+	zt.estado = Zumbi.Estado.PERSEGUINDO
+	zt.set_process(false)
+	await get_tree().process_frame
+	cc._t_tiro = 0.0
+	cc._atirar(comboio, 0.016)
+	await get_tree().process_frame
+	var de3 := picape.global_position + lado_c * 3.5 + d0 * 1.0 + Vector3(0, 2.8, 0)
+	cam.look_at_from_position(de3, picape.global_position - d0 * 5.0 + Vector3(0, 1.4, 0), Vector3.UP)
+	hud.visible = true
+	hud.aviso("2 zumbis agarrados no comboio! Balance o volante, acelere ou freie de repente.")
+	_atualizar_hud()
+	await _salvar("comboio_atirador")
 	get_tree().quit()
 
 ## Prints do progresso: Zona Segura, prêmio, missões do rádio e diário.
