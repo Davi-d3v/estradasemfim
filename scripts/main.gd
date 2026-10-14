@@ -4360,9 +4360,13 @@ func _capturar_acampamento() -> void:
 	# 3) noite: zumbis presos do lado de fora da cerca, você lá dentro
 	hora = 21.4
 	_atualizar_ceu()
-	jogador.visible = true
-	_posar_jogador(f0 - bt.x * 2.8 + bt.z * 1.0, f0 - bt.x * 12.0, -0.05, 0.0)
+	for r in base.nos:
+		r.set_meta("animar_captura", false)
 	var pc := (ac.portao_a + ac.portao_b) * 0.5
+	var pc3 := Vector3(pc.x, f0.y, pc.y)
+	jogador.visible = true
+	_posar_jogador(pc3 + (f0 - pc3).normalized() * 2.2, pc3 + (pc3 - f0), -0.05, 0.0)
+	cam.current = true
 	var fora := Vector2(pc.x, pc.y) + (Vector2(pc.x, pc.y) - Vector2(ct.x, ct.z)).normalized() * 0.9
 	var dirc := (ac.portao_b - ac.portao_a).normalized()
 	for k in 6:
@@ -4375,11 +4379,25 @@ func _capturar_acampamento() -> void:
 		zz.set_process(false)
 		zz.loop("Zombie_Idle")
 	await get_tree().process_frame
-	var de3 := f0 - bt.x * 0.5 + bt.z * 3.5 + Vector3(0, 2.4, 0)
-	var alvo3 := Vector3(pc.x, f0.y + 1.0, pc.y)
+	var de3 := pc3 + (f0 - pc3).normalized() * 7.0 + Vector3(0, 4.2, 0)
+	var alvo3 := pc3 + (pc3 - f0).normalized() * 1.5 + Vector3(0, 0.4, 0)
 	_abrir_vista(de3, alvo3)
 	cam.look_at_from_position(de3, alvo3, Vector3.UP)
 	await _salvar("acamp_noite")
+	# 4) barra de progresso: vasculhar leva segundos, o relógio segue
+	hud.visible = true
+	_atualizar_hud()
+	hud.acao_txt = "Vasculhando: guarda-roupa"
+	hud.acao_prog = 0.62
+	jogador.anim_trabalho = "Farm_Harvest"
+	hora = 17.2
+	_atualizar_ceu()
+	_atualizar_hud()
+	var pp := picape.global_transform * Vector3(2.4, 0, -0.5)
+	_posar_jogador(pp, picape.global_transform * Vector3(0.9, 0, -1.6), -0.2, 0.6)
+	for k in 10:
+		await get_tree().process_frame
+	await _salvar("acamp_barra_acao")
 	get_tree().quit()
 
 ## Prints do cachorro: o evento de adoção, seguindo você, latindo, e na caçamba.

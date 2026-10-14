@@ -90,8 +90,20 @@
   resolve); cozinha na fogueira: café (tira o sono), sopa (ajuda na gripe e intoxicação), ensopado de caça (comida forte); itens novos:
   antibiótico (farmácias, banheiros, almoxarifado), pó de café; hospital de campanha trata tudo; doenças no HUD; salvo no jogo.
   Teste: --teste-saude; prints: --saude
-- [ ] 12. Versão v0.8 para Windows Recrutas, comboio, exploração, defesa, sobrevivência  - [ ] 12. v0.8
+- [x] 12. Versão v0.8 para Windows (recrutas, comboio, exploração, defesa, sobrevivência)
+
+## Rodada v0.9 (retorno do Davi sobre a v0.7)
+- [x] Engasgo ao carregar o mapa: grade de altura por trecho + geração em etapas (~6 ms por quadro). Teste --fluidez: 0 quadros > 100 ms a 90 km/h.
+- [x] Mouse vertical estava invertido: corrigido.
+- [x] Física dos veículos: picape, trailer e reboques bloqueiam zumbis e jogador (caixas orientadas em WorldGen.colide); zumbis contornam.
+- [x] Acampamento [C] (scripts/acampamento.gd): cerca grande (8,5 m de folga nas laterais, 7,5 m nas pontas) com colisão;
+  portão por onde só você, recrutas e cachorro passam; fogueira com tripé, lenha e luz tremulando; cadeiras em roda (uma por recruta,
+  mínimo 4) — médico, batedor e idoso sentam o dia todo, os outros depois das 17 h; conversam (Sitting_Talking/Nodding/Idle).
+- [x] Interações em segundos: nada mais pula horas. Barra de progresso (vasculhar 2–3 s, esfolar 4 s, desmontar carro 11 s,
+  criação/consertos/obras 2–12 s); andar cancela vasculhar/esfolar/desmontar; o relógio corre normal. Dormir e "esperar a horda"
+  continuam passando o tempo. Trabalhar à noite fora do trailer faz barulho.
+  Teste: --teste-fisica; prints: --acampamento
+- [x] v0.9 para Windows (branch versoes: EstradaSemFim_Windows_v0.9.zip)
 
 ## Próximos
-- gerar a v0.8 e ouvir o retorno do Davi
-- ouvir o retorno do teste no PC do Davi
+- ouvir o retorno do Davi sobre a v0.9

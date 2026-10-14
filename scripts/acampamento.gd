@@ -4,7 +4,7 @@ extends Node3D
 ## você, os recrutas e o cachorro passam pelo portão), fogueira com pedras e lenha,
 ## e cadeiras em roda onde os recrutas sentam, conversam e bebem à noite.
 
-const FOLGA_LADO := 8.5      # cerca a quantos metros da lateral dos veículos
+const FOLGA_LADO := 10.0      # cerca a quantos metros da lateral dos veículos
 const FOLGA_PONTA := 7.5     # e das pontas (frente da picape e traseira do último reboque)
 const PORTAO := 3.2          # largura do portão
 
@@ -80,9 +80,9 @@ func _cerca() -> void:
 	anel = PackedVector2Array()
 	for p in lim:
 		anel.append(Vector2(p.x, p.z))
-	# portão: no meio da lateral da cozinha do trailer (lado esquerdo do trailer = -x local)
+	# portão: na lateral da picape, do lado da cozinha do trailer (-x local), longe da roda da fogueira
 	var tr: Node3D = main.trailer
-	var pg: Vector3 = tr.global_transform * Vector3(-FOLGA_LADO, 0, 0.0)
+	var pg: Vector3 = main.picape.global_transform * Vector3(-FOLGA_LADO, 0, 0.5)
 	var pg2 := Vector2(pg.x, pg.z)
 	var melhor := 0
 	var dmin := INF
@@ -200,7 +200,7 @@ func colide_em(a: Vector3, b: Vector3, raio: float, amigo := false) -> bool:
 # ------------------------------------------------------------ fogueira e cadeiras
 func _fogueira() -> void:
 	var tr: Node3D = main.trailer
-	fogueira = tr.global_transform * Vector3(-4.6, 0, 0.4)
+	fogueira = tr.global_transform * Vector3(-4.4, 0, 0.0)
 	fogueira.y = _chao(fogueira)
 	var f := fogueira
 	var pedra := B.mat(Color(0.42, 0.4, 0.38), 0.9, 0.0, "pedra")
@@ -231,8 +231,8 @@ func _fogueira() -> void:
 	var ferro := B.mat(Color(0.15, 0.15, 0.15), 0.5, 0.7, "ferro_camp")
 	for k in 3:
 		var a2 := TAU * k / 3.0
-		B.cyl(self, 0.02, 1.4, f + Vector3(cos(a2) * 0.45, 0.65, sin(a2) * 0.45), ferro, Vector3(-18.0 * cos(a2), 0, 18.0 * sin(a2)), 4)
-	B.cyl(self, 0.2, 0.22, f + Vector3(0, 0.85, 0), ferro, Vector3.ZERO, 10)
+		B.cyl(self, 0.02, 1.25, f + Vector3(cos(a2) * 0.45, 0.58, sin(a2) * 0.45), ferro, Vector3(-18.0 * cos(a2), 0, 18.0 * sin(a2)), 4)
+	B.cyl(self, 0.16, 0.18, f + Vector3(0, 1.0, 0), ferro, Vector3.ZERO, 10)
 	# troncos de lenha empilhados
 	for i in 6:
 		B.cyl(self, 0.11, 0.9, f + tr.global_transform.basis * Vector3(-2.6, 0.11 + (i / 3) * 0.2, -2.4 + (i % 3) * 0.23), lenha, Vector3(0, 0, 90) + Vector3(0, rad_to_deg(tr.global_rotation.y), 0), 6)
