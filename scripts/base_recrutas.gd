@@ -424,7 +424,7 @@ func _postos() -> Dictionary:
 	lista_a.append([horta, tr.global_rotation.y + PI * 0.5])
 	ps["agricultor"] = lista_a
 	# médico e batedor: perto da fogueira (lado da cozinha) e da porta dos apartamentos
-	var fog := tr.global_transform * Vector3(-3.6, 0, 0.6)
+	var fog: Vector3 = main.acampamento.fogueira if main.acampamento is Acampamento else tr.global_transform * Vector3(-4.6, 0, 0.4)
 	ps["medico"] = [[_chao(fog + tr.global_transform.basis * Vector3(-0.9, 0, -0.9)), ang.call(fog + tr.global_transform.basis * Vector3(-0.9, 0, -0.9), fog)],
 		[_chao(fog + tr.global_transform.basis * Vector3(0.9, 0, 1.1)), ang.call(fog + tr.global_transform.basis * Vector3(0.9, 0, 1.1), fog)]]
 	var apto := reboque("apartamentos")

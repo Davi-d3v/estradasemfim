@@ -393,8 +393,8 @@ func _painel() -> Dictionary:
 			return {"titulo": "ÔNIBUS TOMBADO", "subtitulo": "Lá de dentro vêm batidas no vidro. Pode ser gente presa. Pode não ser.",
 				"linhas": ["Procurar sobreviventes leva tempo e faz barulho."],
 				"botoes": [
-					["Procurar sobreviventes (1 h)", func(): return _socorrer(), true],
-					["Saquear as malas e sair (20 min)", func(): return _malas(), true],
+					["Procurar sobreviventes (%s)" % main._txt_horas(1.0), func(): return _socorrer(), true],
+					["Saquear as malas e sair (%s)" % main._txt_horas(0.33), func(): return _malas(), true],
 					["Seguir viagem", func(): return _fim("ignorou", "Você deixou o ônibus para trás. As batidas no vidro não pararam."), true],
 				]}
 	return {"titulo": "", "linhas": [], "botoes": []}
@@ -530,7 +530,7 @@ func _dar_comida() -> String:
 	return _fim("ajudou", "Você deixou comida e água. Em troca, ouviu uma dica:\n%s" % dica)
 
 func _socorrer() -> String:
-	main._passar_tempo(1.0)
+	main.trabalhar(1.0, "Procurando sobreviventes", "Idle_LookAround")
 	main.ruido(main.comboio.pos, 45.0)
 	if randf() < 0.55:
 		var nome: String = NOMES[randi() % NOMES.size()]
@@ -556,7 +556,7 @@ func _socorrer() -> String:
 	return _fim("zumbis", "Quando o vidro cedeu, não saiu gente. Saíram eles.\nSeis zumbis, e estão vindo.")
 
 func _malas() -> String:
-	main._passar_tempo(0.33)
+	main.trabalhar(0.33, "Revirando as malas", "Farm_Harvest")
 	var ganho := {"comida": randi_range(1, 4), "agua": randi_range(1, 3), "tecido": randi_range(1, 3), "remedio": randi_range(0, 1)}
 	for k in ganho:
 		if ganho[k] > 0:

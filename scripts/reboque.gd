@@ -90,6 +90,9 @@ func capacidade_carga() -> int:
 		return capacidade()
 	return 0
 
+func caixa_colisao() -> Vector4:
+	return Vector4(0.0, 0.0, float(info().larg) * 0.5 + 0.05, comprimento() * 0.5)
+
 func ponto_entrada() -> Vector3:
 	var hz := comprimento() * 0.5
 	var hw: float = info().larg * 0.5

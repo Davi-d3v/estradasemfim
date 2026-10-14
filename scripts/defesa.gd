@@ -316,7 +316,7 @@ func construir(id: String, chave: String, alvo := -1) -> String:
 	var a := no_de(id)
 	if a:
 		a.redesenhar()
-	var aviso: String = main.trabalhar(horas)
+	var aviso: String = main.trabalhar(horas, "Construindo: %s" % CUSTOS[chave].nome.to_lower())
 	return "%s: pronto em %s.%s" % [CUSTOS[chave].nome, main._txt_horas(horas), (" " + aviso) if aviso != "" else ""]
 
 func consertar(id: String) -> String:
@@ -335,7 +335,7 @@ func consertar(id: String) -> String:
 	pagar(e, itens)
 	a.reparar_tudo()
 	var horas := 1.0 + falta / 260.0
-	var aviso: String = main.trabalhar(horas)
+	var aviso: String = main.trabalhar(horas, "Consertando o muro")
 	return "Muro consertado (%s).%s" % [main._txt_horas(horas), (" " + aviso) if aviso != "" else ""]
 
 func custo_conserto(id: String) -> Dictionary:
@@ -356,7 +356,8 @@ func esperar(id: String) -> String:
 	var h = horas_ate(e.pos.z) if e.fase == "preparando" else e.prox_onda_h
 	if h <= 0.05:
 		return ""
-	main.trabalhar(maxf(0.0, h) + 0.02)
+	main._passar_tempo(maxf(0.0, h) + 0.02)
+	main._atualizar_ceu()
 	return ""
 
 # ------------------------------------------------------------ postos

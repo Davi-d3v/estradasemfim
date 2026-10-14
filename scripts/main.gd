@@ -284,6 +284,8 @@ func _ready() -> void:
 			_capturar_vida()
 		elif "--cachorro" in OS.get_cmdline_user_args():
 			_capturar_cachorro()
+		elif "--acampamento" in OS.get_cmdline_user_args():
+			_capturar_acampamento()
 		elif "--comercio" in OS.get_cmdline_user_args():
 			_capturar_comercio()
 		elif "--comboio-combate" in OS.get_cmdline_user_args():
@@ -350,6 +352,10 @@ func _ready() -> void:
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
 		_teste_vida()
+	elif "--teste-fisica" in OS.get_cmdline_user_args():
+		Jogo.modo = Jogo.MODO_INFINITO
+		jogando = true
+		_teste_fisica()
 	elif "--teste-cachorro" in OS.get_cmdline_user_args():
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
@@ -662,6 +668,100 @@ func _teste_vida() -> void:
 	get_tree().quit()
 
 ## Teste do cachorro: adoção, seguir, latir, farejar, caçar, defender, caçamba e save.
+## Física: zumbis não atravessam picape/trailer nem a cerca do acampamento; você passa pelo portão.
+func _teste_fisica() -> void:
+	await get_tree().process_frame
+	comboio.set_physics_process(false)
+	var z := 14 * WorldGen.TAM + 20.0
+	comboio.posicionar(z, -0.5, 0.0)
+	jogador.position = mundo.ponto_estrada(z, 6.0)
+	mundo.atualizar(jogador.position)
+	await get_tree().process_frame
+	_limpar_zumbis_perto(comboio.pos, 120.0)
+	var dentro_caixa := func(v: Node3D, p: Vector3) -> bool:
+		var c: Vector4 = v.caixa_colisao()
+		var l: Vector3 = v.global_transform.affine_inverse() * p
+		return absf(l.x - c.x) < c.z - 0.05 and absf(l.z - c.y) < c.w - 0.05
+	# 1) zumbi do outro lado da picape, correndo atrás de você: não pode entrar na caixa
+	var pk: Node3D = picape
+	jogador.global_position = pk.global_transform * Vector3(-4.0, 0, 0)
+	jogador.global_position.y = jogador.chao(jogador.global_position)
+	var zp: Vector3 = pk.global_transform * Vector3(4.0, 0, 0.3)
+	zp.y = mundo.altura(zp.x, zp.z)
+	var zb := mundo.criar_zumbi(mundo, zp, 0.0, 5, "corredor")
+	zb.estado = Zumbi.Estado.PERSEGUINDO
+	var invadiu := 0
+	var t := 0.0
+	jogador.vida = 1e6
+	while t < 8.0:
+		await get_tree().process_frame
+		t += get_process_delta_time()
+		if dentro_caixa.call(pk, zb.global_position):
+			invadiu += 1
+		if "--debug" in OS.get_cmdline_user_args() and Engine.get_process_frames() % 20 == 0:
+			print("TFd ", pk.global_transform.affine_inverse() * zb.global_position, " est=", zb.estado)
+	print("TF picape: zumbi entrou na caixa %d quadros; chegou a %.1f m de você (contornou=%s)" % [invadiu, zb.global_position.distance_to(jogador.global_position), zb.global_position.distance_to(jogador.global_position) < 2.5])
+	var cruzou := 0
+	for v in [picape, trailer]:
+		var c: Vector4 = v.caixa_colisao()
+		for k in 9:
+			var zz: float = c.y - c.w + c.w * 2.0 * k / 8.0
+			var a: Vector3 = v.global_transform * Vector3(c.z + 0.6, 0, zz)
+			var b: Vector3 = v.global_transform * Vector3(c.z - 0.2, 0, zz)
+			if not mundo.colide(a, b, 0.25):
+				cruzou += 1
+	print("TF caixas: movimentos que atravessaram a lateral = %d (esperado 0)" % cruzou)
+	zb.queue_free()
+	await get_tree().process_frame
+	# 2) acampamento: zumbis em volta tentando chegar até você
+	jogador.global_position = trailer.global_transform * Vector3(-3.0, 0, -1.0)
+	jogador.global_position.y = jogador.chao(jogador.global_position)
+	_alternar_acampamento()
+	var ac: Acampamento = acampamento
+	print("TF cerca: %d pontos, perímetro %.0f m, portão %.1f m" % [ac.anel.size(), _perimetro(ac.anel), ac.portao_a.distance_to(ac.portao_b)])
+	var zs: Array = []
+	for k in 10:
+		var ang := TAU * k / 10.0
+		var p := comboio.pos + Vector3(sin(ang), 0, cos(ang)) * 28.0
+		p.y = mundo.altura(p.x, p.z)
+		var zz := mundo.criar_zumbi(mundo, p, 0.0, 30 + k, "corredor" if k % 2 == 0 else "comum")
+		zz.estado = Zumbi.Estado.PERSEGUINDO
+		zs.append(zz)
+	var entraram := {}
+	t = 0.0
+	while t < 25.0:
+		await get_tree().process_frame
+		t += get_process_delta_time()
+		for zz in zs:
+			if is_instance_valid(zz) and Geometry2D.is_point_in_polygon(Vector2(zz.global_position.x, zz.global_position.z), ac.anel):
+				entraram[zz] = true
+	var na_cerca := 0
+	for zz in zs:
+		if is_instance_valid(zz) and Acampamento._dist_seg(Vector2(zz.global_position.x, zz.global_position.z), ac.anel[0], ac.anel[0]) >= 0.0:
+			var dmin := INF
+			for i in ac.anel.size():
+				dmin = minf(dmin, Acampamento._dist_seg(Vector2(zz.global_position.x, zz.global_position.z), ac.anel[i], ac.anel[(i + 1) % ac.anel.size()]))
+			if dmin < 2.0:
+				na_cerca += 1
+	print("TF acampamento: zumbis que entraram = %d de %d; encostados na cerca = %d" % [entraram.size(), zs.size(), na_cerca])
+	# 3) portão: você passa, zumbi não
+	var pc := (ac.portao_a + ac.portao_b) * 0.5
+	var dentro_v := (Vector2(trailer.global_position.x, trailer.global_position.z) - pc).normalized()
+	var fora3 := Vector3(pc.x - dentro_v.x * 0.5, 0, pc.y - dentro_v.y * 0.5)
+	var dentro3 := Vector3(pc.x + dentro_v.x * 0.5, 0, pc.y + dentro_v.y * 0.5)
+	print("TF portão: você passa=%s  zumbi passa=%s" % [not mundo.colide(fora3, dentro3, 0.28, true), not mundo.colide(fora3, dentro3, 0.25)])
+	# 4) desmontar libera
+	_alternar_acampamento()
+	await get_tree().process_frame
+	print("TF desmontado: obstáculos extra = %d" % mundo.obstaculos_extra.size())
+	get_tree().quit()
+
+func _perimetro(a: PackedVector2Array) -> float:
+	var s := 0.0
+	for i in a.size():
+		s += a[i].distance_to(a[(i + 1) % a.size()])
+	return s
+
 func _teste_cachorro() -> void:
 	await get_tree().process_frame
 	var z := 12 * WorldGen.TAM + 32.0
@@ -1710,6 +1810,7 @@ func _process(dt: float) -> void:
 	if Input.is_action_just_pressed("salvar"):
 		salvar_jogo()
 	_passar_tempo(dt * velocidade_tempo)
+	_atualizar_acao(dt)
 	_combate(dt)
 	equip.atualizar(dt, jogador.visible and not comboio.dirigindo and dentro == null and not _janela_aberta() and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED)
 	defesa.processar(dt)
@@ -1763,16 +1864,60 @@ func eh_noite() -> bool:
 	return hora >= 19.3 or hora < 5.5
 
 ## Tarefas que levam horas (consertar, desmontar). Trabalhar no escuro é perigoso.
-func trabalhar(horas: float) -> String:
-	var noite_antes := eh_noite()
-	_passar_tempo(horas)
-	_atualizar_ceu()
-	var protegido: bool = seguranca_local()[0] <= -1.0 and jogador.position.distance_to(trailer.global_position) < 90.0
-	if (noite_antes or eh_noite()) and dentro == null and not protegido and _rng_eventos.randf() < 0.18 * horas:
-		var dano := _rng_eventos.randf_range(0.08, 0.2)
-		jogador.vida = maxf(0.05, jogador.vida - dano)
-		return "Enquanto trabalhava no escuro, um zumbi te atacou (−%d%% de vida)." % int(dano * 100.0)
+## Trabalho feito na hora (construir, consertar, criar): o relógio NÃO pula;
+## você fica alguns segundos ocupado, com a barra de progresso, enquanto o mundo segue.
+func trabalhar(horas: float, texto := "Trabalhando…", anim := "Fixing_Kneeling") -> String:
+	iniciar_acao(texto, segundos_acao(horas), Callable(), false, anim)
+	if eh_noite() and dentro == null and anim == "Fixing_Kneeling":
+		ruido(jogador.global_position, 22.0)   # marteladas no escuro chamam atenção
 	return ""
+
+# ------------------------------------------------------------ ações em tempo real
+var _acao := {}   # {texto, t, dur, fim, cancelavel}
+
+## Quanto tempo real (s) leva uma tarefa que antes "comia" h horas do dia.
+static func segundos_acao(horas: float) -> float:
+	return clampf(1.5 + horas * 5.0, 1.5, 12.0)
+
+func ocupado() -> bool:
+	return not _acao.is_empty()
+
+## Começa uma ação de alguns segundos. fim é chamado quando a barra enche.
+## Cancelável: andar (WASD) interrompe e nada acontece.
+func iniciar_acao(texto: String, seg: float, fim := Callable(), cancelavel := true, anim := "Farm_Harvest") -> bool:
+	if ocupado():
+		return false
+	_acao = {"texto": texto, "t": 0.0, "dur": seg, "fim": fim, "cancelavel": cancelavel}
+	jogador.preso = not cancelavel
+	jogador.anim_trabalho = anim
+	hud.acao_txt = texto
+	hud.acao_prog = 0.0
+	if capturando or "--teste" in " ".join(OS.get_cmdline_user_args()):
+		_terminar_acao()   # testes e prints: sem esperar
+	return true
+
+func _terminar_acao() -> void:
+	var f: Callable = _acao.get("fim", Callable())
+	_acao = {}
+	jogador.preso = false
+	jogador.anim_trabalho = ""
+	hud.acao_txt = ""
+	if f.is_valid():
+		f.call()
+
+func _atualizar_acao(dt: float) -> void:
+	if _acao.is_empty():
+		return
+	if _acao.cancelavel and Input.get_vector("move_left", "move_right", "move_back", "move_forward").length() > 0.3:
+		_acao = {}
+		jogador.anim_trabalho = ""
+		hud.acao_txt = ""
+		hud.aviso("Interrompido.")
+		return
+	_acao.t += dt
+	hud.acao_prog = _acao.t / _acao.dur
+	if _acao.t >= _acao.dur:
+		_terminar_acao()
 
 func _produzir(h: float) -> void:
 	for el in comboio.cadeia:
@@ -2131,6 +2276,13 @@ func _queimar_ninho(ni: Ninho) -> void:
 	hud.relatorio_t = 7.0
 
 func _vasculhar(v: Node3D) -> void:
+	if mundo.vasculhados.has(String(v.get_meta("chave"))):
+		return
+	iniciar_acao("Vasculhando: %s" % String(v.get_meta("nome")).to_lower(), segundos_acao(v.get_meta("horas")), _vasculhar_fim.bind(v))
+
+func _vasculhar_fim(v: Node3D) -> void:
+	if not is_instance_valid(v):
+		return
 	var chave: String = v.get_meta("chave")
 	var tab_nome: String = v.get_meta("tabela")
 	var pai := v.get_parent()
@@ -2141,7 +2293,7 @@ func _vasculhar(v: Node3D) -> void:
 	var tabela: Dictionary = TABELAS[tab_nome]
 	var r := RandomNumberGenerator.new()
 	r.seed = hash(chave)
-	var ev := trabalhar(v.get_meta("horas"))
+	var ev := ""
 	var ganhos: Array[String] = []
 	var fartura := mundo.fartura_diesel(v.global_position.z)
 	for item in tabela:
@@ -2382,70 +2534,15 @@ func seguranca_local() -> Array:
 func _alternar_acampamento() -> void:
 	if acampamento:
 		acampamento.queue_free()
+		mundo.obstaculos_extra.erase(acampamento)
 		acampamento = null
 		hud.aviso("Acampamento desmontado.")
 		return
-	acampamento = Node3D.new()
-	add_child(acampamento)
-	var madeira := B.mat(Color(0.35, 0.26, 0.17), 0.95, 0.0, "estaca_camp")
-	var arame := B.mat(Color(0.4, 0.4, 0.4), 0.4, 0.8, "arame")
-	# estacas e arame em volta de todo o comboio
-	var lados := [[], []]
-	var veic: Array[Node3D] = [picape]
-	veic.append_array(comboio.cadeia)
-	for v in veic:
-		var meia = 3.0 if v == picape else (v.comprimento() * 0.5 + 0.5)
-		for zz in [meia, 0.0, -meia]:
-			for k in 2:
-				var sx := 1.0 if k == 0 else -1.0
-				lados[k].append(v.global_transform * Vector3(sx * 3.6, 0, zz))
-	var frente := picape.global_transform * Vector3(0, 0, 5.0)
-	var ult := comboio.cadeia[comboio.cadeia.size() - 1]
-	var tras := ult.global_transform * Vector3(0, 0, -ult.comprimento() * 0.5 - 2.5)
-	var anel: Array = [frente]
-	anel.append_array(lados[0])
-	anel.append(tras)
-	var dir: Array = lados[1].duplicate()
-	dir.reverse()
-	anel.append_array(dir)
-	anel.append(frente)
-	for i in anel.size():
-		var a: Vector3 = anel[i]
-		a.y = jogador.chao(a)
-		B.box(acampamento, Vector3(0.1, 1.2, 0.1), a + Vector3(0, 0.6, 0), madeira, Vector3(0, 0, 4.0 * ((i % 3) - 1)))
-		if i > 0:
-			var b: Vector3 = anel[i - 1]
-			b.y = jogador.chao(b)
-			for h in [0.45, 0.95]:
-				var mid := (a + b) * 0.5 + Vector3(0, h, 0)
-				var seg := B.box(acampamento, Vector3(0.015, 0.015, a.distance_to(b)), mid, arame)
-				seg.look_at(b + Vector3(0, h, 0), Vector3.UP)
-	# fogueira e cadeiras do lado da cozinha
-	var f := trailer.global_transform * Vector3(-3.6, 0, 0.6)
-	f.y = jogador.chao(f)
-	for k in 9:
-		var a := TAU * k / 9.0
-		B.sphere(acampamento, 0.16, f + Vector3(cos(a) * 0.55, 0.08, sin(a) * 0.55), B.mat(Color(0.4, 0.38, 0.36), 0.9, 0.0, "pedra"), Vector3(1, 0.7, 1), 6)
-	for k in 3:
-		B.cyl(acampamento, 0.06, 0.8, f + Vector3(0, 0.12, 0), madeira, Vector3(80, k * 60.0, 0), 6)
-	B.sphere(acampamento, 0.25, f + Vector3(0, 0.3, 0), B.emissive(Color(1.0, 0.45, 0.1), 4.0), Vector3(1, 1.6, 1), 8)
-	var luz := OmniLight3D.new()
-	luz.light_color = Color(1.0, 0.55, 0.22)
-	luz.light_energy = 2.2
-	luz.omni_range = 9.0
-	luz.shadow_enabled = true
-	luz.position = f + Vector3(0, 0.9, 0)
-	acampamento.add_child(luz)
-	for k in 2:
-		var cp := f + trailer.global_transform.basis * Vector3(-1.4 + k * 2.8, 0, -1.2 + k * 0.3)
-		var cad := Node3D.new()
-		cad.position = cp
-		cad.rotation.y = trailer.global_rotation.y + PI * (0.15 + k * 0.7)
-		acampamento.add_child(cad)
-		B.box(cad, Vector3(0.5, 0.04, 0.45), Vector3(0, 0.42, 0), B.mat(Color(0.15, 0.3, 0.2), 0.9, 0.0, "lona_cad"))
-		B.box(cad, Vector3(0.5, 0.5, 0.04), Vector3(0, 0.68, -0.22), B.mat(Color(0.15, 0.3, 0.2), 0.9, 0.0, "lona_cad"), Vector3(-12, 0, 0))
-		for sx in [-0.22, 0.22]:
-			B.cyl(cad, 0.015, 0.6, Vector3(sx, 0.25, 0), arame, Vector3(25, 0, 0), 4)
+	var ac := Acampamento.new()
+	ac.main = self
+	add_child(ac)
+	ac.montar()
+	acampamento = ac
 	trailer.cozinha_aberta = 1.0
 	trailer.reconstruir()
 	var seg := seguranca_local()
@@ -2541,7 +2638,7 @@ func _abrir_painel(gerador: Callable) -> void:
 
 func _interacao() -> void:
 	hud.dica = ""
-	if _janela_aberta():
+	if _janela_aberta() or ocupado():
 		return
 	if not comboio.dirigindo and Input.is_action_just_pressed("criar"):
 		_abrir_painel(criacao.painel)
@@ -2570,7 +2667,7 @@ func _interacao_a_pe() -> void:
 		"[E] " + ("Fechar cozinha" if trailer.cozinha_aberta > 0.5 else "Abrir cozinha"), _alternar_cozinha)
 	add.call(trailer.global_transform * Vector3(1.6, 0, 0.9), 1.2, "interact", "[E] Pintar o comboio", _abrir_painel.bind(comboio_extra.painel_visual))
 	if comboio_extra.pneu_furado:
-		add.call(picape.global_transform * Vector3(1.3, 0, 1.6), 2.2, "interact", "[E] Trocar o pneu furado (1 pneu, 20 min)", func(): hud.aviso(comboio_extra.trocar_pneu()))
+		add.call(picape.global_transform * Vector3(1.3, 0, 1.6), 2.2, "interact", "[E] Trocar o pneu furado (1 pneu, %s)" % _txt_horas(0.33), func(): hud.aviso(comboio_extra.trocar_pneu()))
 	if estoque.galoes_diesel > 0 and comboio.diesel < comboio.tanque() - 1.0:
 		add.call(picape.global_transform * Vector3(1.2, 0, -1.9), 1.6, "abastecer", "[R] Abastecer com galão (20 L)", _abastecer_galao)
 	for i in range(1, comboio.cadeia.size()):
@@ -2582,7 +2679,7 @@ func _interacao_a_pe() -> void:
 			add.call(r.global_position, 4.2, "interact", "[E] Examinar %s %s" % [r.nome_exibicao().to_lower(), r.abandonado_txt()], _abrir_painel.bind(_painel_resgate.bind(r)))
 	for c in mundo.carros_soltos:
 		if is_instance_valid(c):
-			add.call(c.global_position, 3.0, "interact", "[E] Desmontar carro (2 h)", _desmontar.bind(c))
+			add.call(c.global_position, 3.0, "interact", "[E] Desmontar carro (%s)" % _txt_horas(2.0), _desmontar.bind(c))
 	for v in mundo.vasculhaveis:
 		if is_instance_valid(v) and not mundo.vasculhados.has(v.get_meta("chave")) and absf(v.global_position.y - p.y - 1.0) < 1.6:
 			if exploracao.trancado(v):
@@ -2599,7 +2696,7 @@ func _interacao_a_pe() -> void:
 			add.call(ni.global_position, 4.5, "interact", "[E] Queimar o ninho (%s)" % ("molotov" if estoque.get("molotov", 0) > 0 else "1 galão de diesel"), _queimar_ninho.bind(ni))
 	for an in mundo.animais:
 		if is_instance_valid(an) and not an.vivo() and not an.esfolado:
-			add.call(an.global_position, 2.2, "interact", "[E] Esfolar %s (30 min)" % an.info().nome, _esfolar.bind(an))
+			add.call(an.global_position, 2.2, "interact", "[E] Esfolar %s (%s)" % [an.info().nome, _txt_horas(0.5)], _esfolar.bind(an))
 	for h in mundo.npcs:
 		if is_instance_valid(h):
 			add.call(h.global_position, 2.2, "interact", "[E] Falar com %s" % h.get_meta("nome"), _abrir_painel.bind(_painel_npc.bind(h)))
@@ -2629,8 +2726,15 @@ func _interacao_a_pe() -> void:
 			_alternar_acampamento()
 
 func _esfolar(an: Animal) -> void:
+	if an.esfolado:
+		return
+	iniciar_acao("Esfolando o %s" % an.info().nome.to_lower(), segundos_acao(0.5), _esfolar_fim.bind(an), true, "Crouch_Idle")
+
+func _esfolar_fim(an: Animal) -> void:
+	if not is_instance_valid(an) or an.esfolado:
+		return
 	an.esfolado = true
-	var ev := trabalhar(0.5)
+	var ev := ""
 	var i: Dictionary = an.info()
 	var faca := 1 if equip.sel in ["facao", "machado"] else 0
 	var c := adicionar("carne_crua", i.carne + faca)
@@ -2646,8 +2750,9 @@ func main_som_sangue(an: Node3D) -> void:
 	var mk := B.box(an.get_parent(), Vector3(1.4, 0.01, 1.2), an.position + Vector3(0, 0.03, 0), B.mat(Color(0.3, 0.05, 0.04), 0.6, 0.0, "sangue_chao"))
 	an.queue_free()
 
+## Duração de uma tarefa para mostrar ao jogador (agora em segundos de verdade).
 func _txt_horas(h: float) -> String:
-	return "%d min" % int(h * 60.0) if h < 1.0 else ("%.1f h" % h).replace(".0", "")
+	return "%d s" % int(round(segundos_acao(h)))
 
 func _alternar_cozinha() -> void:
 	trailer.cozinha_aberta = 0.0 if trailer.cozinha_aberta > 0.5 else 1.0
@@ -3168,7 +3273,7 @@ func _painel_resgate(r: Reboque) -> Dictionary:
 		linhas.append(["Dentro: " + ", ".join(partes), Color(0.75, 0.75, 0.72)])
 		botoes.append(["Saquear", _saquear.bind(r), true])
 	if eh_noite():
-		linhas.append(["É noite: trabalhar no escuro atrai zumbis.", Color(0.95, 0.45, 0.3)])
+		linhas.append(["É noite: o barulho do conserto pode atrair zumbis da escuridão.", Color(0.95, 0.45, 0.3)])
 	return {"titulo": "%s %s" % [r.nome_exibicao().to_upper(), r.abandonado_txt().to_upper()],
 		"subtitulo": "%s · nível %d · %d kg" % [r.info().desc, r.nivel, int(r.peso_total())], "linhas": linhas, "botoes": botoes}
 
@@ -3178,7 +3283,7 @@ func _consertar_defeito(r: Reboque, d: String) -> String:
 	r.defeitos.erase(d)
 	r.reconstruir()
 	var msg := "%s consertado (%.1f h)." % [info.nome, info.horas]
-	var ev := trabalhar(info.horas)
+	var ev := trabalhar(info.horas, "Consertando: %s" % info.nome.to_lower())
 	if r.defeitos.is_empty():
 		msg += " Pronto para engatar!"
 	return msg + (" " + ev if ev != "" else "")
@@ -3206,6 +3311,11 @@ func _saquear(r: Reboque) -> String:
 	return "Você pegou: " + ", ".join(pegou) + ("" if r.saque.is_empty() else " (não coube tudo)")
 
 func _desmontar(c: Node3D) -> void:
+	iniciar_acao("Desmontando o carro", segundos_acao(2.0), _desmontar_fim.bind(c), true, "Fixing_Kneeling")
+
+func _desmontar_fim(c: Node3D) -> void:
+	if not is_instance_valid(c):
+		return
 	var r := RandomNumberGenerator.new()
 	r.seed = hash(c.get_meta("chave", ""))
 	var ganhos: Array[String] = []
@@ -3216,7 +3326,7 @@ func _desmontar(c: Node3D) -> void:
 		tabela["eixo"] = 1
 	if r.randf() < 0.25:
 		tabela["galoes_diesel"] = 1
-	var ev := trabalhar(2.0)
+	var ev := ""
 	for k in tabela:
 		var n := adicionar(k, tabela[k])
 		if n > 0:
@@ -4195,6 +4305,83 @@ func _capturar_vida() -> void:
 	await _salvar("vida_tumulo")
 	get_tree().quit()
 
+## Prints do acampamento novo: cerca grande com portão, fogueira e a roda de cadeiras.
+func _capturar_acampamento() -> void:
+	var cam := Camera3D.new()
+	cam.far = 900.0
+	add_child(cam)
+	hora = 18.6
+	_atualizar_ceu()
+	comboio.set_physics_process(false)
+	comboio.engatar(_novo_reboque("apartamentos", 3, 1.0), true)
+	var nomes := [["Tião", "vigia"], ["Marta", "medico"], ["Beto", "mecanico"], ["Rita", "agricultor"], ["Zeca", "batedor"], ["Seu Zé", "idoso"], ["Bia", "crianca"]]
+	for i in nomes.size():
+		var rc := Recrutas.novo(nomes[i][0], nomes[i][1], 100 + i)
+		VidaRecrutas.garantir(rc)
+		base.lista.append(rc)
+	base.distribuir_camas()
+	var z := 14 * WorldGen.TAM + 20.0
+	comboio.posicionar(z, -0.5, 0.0)
+	var ct := trailer.global_position
+	jogador.position = ct + trailer.global_transform.basis.x * 3.0
+	mundo.atualizar(ct)
+	await get_tree().process_frame
+	_limpar_zumbis_perto(ct, 90.0)
+	jogador.visible = false
+	hud.visible = false
+	_alternar_acampamento()
+	var ac: Acampamento = acampamento
+	base._t_cena = 0.0
+	base.atualizar_cena(1.0)
+	for r in base.nos:
+		r.set_meta("animar_captura", true)
+		if r._quer_sentar():
+			var i: int = ac.pedir_cadeira(r)
+			if i >= 0:
+				r.global_position = ac.cadeiras[i].pos
+				r.rotation.y = ac.cadeiras[i].yaw
+	for f in 50:
+		await get_tree().process_frame
+	var bt := trailer.global_transform.basis
+	# 1) visão de cima: a cerca inteira, o portão e a roda da fogueira
+	var de := ct - bt.x * 24.0 - bt.z * 6.0 + Vector3(0, 20.0, 0)
+	_abrir_vista(de, ct)
+	cam.fov = 60.0
+	cam.current = true
+	cam.look_at_from_position(de, ct + Vector3(0, 0.0, 0), Vector3.UP)
+	await _salvar("acamp_cerca")
+	# 2) de perto: a roda na fogueira
+	var f0 := ac.fogueira
+	var de2 := f0 - bt.x * 4.6 + bt.z * 2.2 + Vector3(0, 2.1, 0)
+	_abrir_vista(de2, f0)
+	cam.fov = 58.0
+	cam.look_at_from_position(de2, f0 + Vector3(0, 0.6, 0), Vector3.UP)
+	await _salvar("acamp_fogueira")
+	# 3) noite: zumbis presos do lado de fora da cerca, você lá dentro
+	hora = 21.4
+	_atualizar_ceu()
+	jogador.visible = true
+	_posar_jogador(f0 - bt.x * 2.8 + bt.z * 1.0, f0 - bt.x * 12.0, -0.05, 0.0)
+	var pc := (ac.portao_a + ac.portao_b) * 0.5
+	var fora := Vector2(pc.x, pc.y) + (Vector2(pc.x, pc.y) - Vector2(ct.x, ct.z)).normalized() * 0.9
+	var dirc := (ac.portao_b - ac.portao_a).normalized()
+	for k in 6:
+		var q := fora + dirc * (k - 2.5) * 1.7 + (Vector2(pc.x, pc.y) - Vector2(ct.x, ct.z)).normalized() * (0.4 + (k % 2) * 0.9)
+		if absf((q - pc).dot(dirc)) < 2.0:
+			q += (Vector2(pc.x, pc.y) - Vector2(ct.x, ct.z)).normalized() * 0.2
+		var p3 := Vector3(q.x, 0, q.y)
+		p3.y = mundo.altura(p3.x, p3.z)
+		var zz := mundo.criar_zumbi(mundo, p3, atan2(ct.x - p3.x, ct.z - p3.z), 60 + k, "comum")
+		zz.set_process(false)
+		zz.loop("Zombie_Idle")
+	await get_tree().process_frame
+	var de3 := f0 - bt.x * 0.5 + bt.z * 3.5 + Vector3(0, 2.4, 0)
+	var alvo3 := Vector3(pc.x, f0.y + 1.0, pc.y)
+	_abrir_vista(de3, alvo3)
+	cam.look_at_from_position(de3, alvo3, Vector3.UP)
+	await _salvar("acamp_noite")
+	get_tree().quit()
+
 ## Prints do cachorro: o evento de adoção, seguindo você, latindo, e na caçamba.
 func _capturar_cachorro() -> void:
 	var cam := Camera3D.new()
@@ -5104,7 +5291,7 @@ func _capturar_r5() -> void:
 	hud.limpar_aviso()
 	_posar_jogador(qj + Vector3(1.6, 0, -1.4), qj, -0.35, 0.3)
 	_atualizar_hud()
-	hud.dica = "[E] Esfolar javali (30 min)"
+	hud.dica = "[E] Esfolar javali (%s)" % _txt_horas(0.5)
 	await _salvar("104_esfolar")
 	hud.dica = ""
 	# 105 — acampamento: criação de armadura

@@ -95,7 +95,7 @@ func trocar_pneu() -> String:
 	main.estoque.pneu -= 1
 	main.adicionar("sucata", 2)
 	pneu_furado = false
-	main._passar_tempo(0.33)
+	main.trabalhar(0.33, "Trocando o pneu")
 	Som.tela("kenney/weapon_change", -4.0)
 	return "Pneu trocado. O furado virou 2 de sucata."
 
@@ -232,8 +232,8 @@ func painel(r: Reboque) -> Dictionary:
 		"hospital":
 			linhas.append("Leitos: %d. Com o comboio parado ou andando, cura você, os recrutas e o cachorro e combate a infecção." % r.capacidade())
 			linhas.append("A cada 8 h transforma 2 retalhos de tecido em 1 bandagem (tecido: %d)." % main.estoque.get("tecido", 0))
-			botoes.append(["Deitar e tratar os ferimentos (3 h)", func():
-				main._passar_tempo(3.0)
+			botoes.append(["Deitar e tratar os ferimentos (%s)" % main._txt_horas(3.0), func():
+				main.trabalhar(3.0, "Tratando os ferimentos", "Idle_Tired")
 				main.jogador.vida = minf(1.0, main.jogador.vida + 0.25)
 				main.jogador.infeccao = maxf(0.0, main.jogador.infeccao - 0.3)
 				return "Três horas num leito de verdade. Você se sente outra pessoa.", r.funcional()])

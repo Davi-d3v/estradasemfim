@@ -196,7 +196,56 @@ func _ameaca(raio: float) -> bool:
 			return true
 	return false
 
+## Com o acampamento montado, quem não está de vigia senta na roda da fogueira
+## (idosos, médicos e batedores o dia todo; os outros depois do expediente).
+func _quer_sentar() -> bool:
+	if not (main.acampamento is Acampamento) or assent != null or fixo:
+		return false
+	match dados.funcao:
+		"vigia":
+			return false
+		"idoso", "medico", "batedor":
+			return true
+	var h: float = main.hora
+	return h >= 17.0 or h < 5.0
+
+var _cadeira := -1
+var _conversa := ""
+var _t_conversa := 0.0
+
+func _sentar_fogueira(dt: float) -> bool:
+	var ac: Acampamento = main.acampamento
+	_cadeira = ac.pedir_cadeira(self)
+	if _cadeira < 0:
+		return false
+	var c: Dictionary = ac.cadeiras[_cadeira]
+	var frente: Vector3 = c.pos + Vector3(sin(c.yaw), 0, cos(c.yaw)) * 0.7
+	if global_position.distance_to(c.pos) > 0.9:
+		if _andar_ate(frente, 0.25, dt, 1.6):
+			global_position = c.pos
+		return true
+	global_position = c.pos
+	rotation.y = lerp_angle(rotation.y, c.yaw, dt * 6.0)
+	# a conversa vai mudando: um fala, o outro concorda, alguém fica quieto olhando o fogo
+	_t_conversa -= dt
+	if _t_conversa <= 0.0 or _conversa == "":
+		var ops := ["Sitting_Talking", "Sitting_Nodding", "Sitting_Talking", "Sitting_Idle", "Sitting_Nodding", "Sitting_Idle03"]
+		_conversa = ops[(int(_t * 0.13) + semente + _cadeira) % ops.size()]
+		_t_conversa = randf_range(5.0, 11.0)
+	if modelo:
+		loop(_conversa)
+	else:
+		pose_sentar()
+	return true
+
 func _no_posto(dt: float) -> void:
+	if _quer_sentar():
+		if _sentar_fogueira(dt):
+			return
+	elif _cadeira >= 0:
+		if main.acampamento is Acampamento:
+			main.acampamento.largar_cadeira(self)
+		_cadeira = -1
 	match dados.funcao:
 		"vigia":
 			if fixo:
@@ -240,7 +289,14 @@ func _andar_ate(p: Vector3, perto: float, dt: float, vel := 2.6) -> bool:
 	dir /= d
 	rotation.y = lerp_angle(rotation.y, atan2(dir.x, dir.z), minf(1.0, dt * 6.0))
 	var nova := global_position + dir * minf(vel * dt, d)
-	if not main.mundo.colide(global_position, nova, 0.25):
+	if main.mundo.colide(global_position, nova, 0.25, true):
+		# desvia pela lateral (veículos, cerca)
+		var lado := Vector3(-dir.z, 0, dir.x) * minf(vel * dt, d)
+		for q in [global_position + lado, global_position - lado]:
+			if not main.mundo.colide(global_position, q, 0.25, true):
+				nova = q
+				break
+	if not main.mundo.colide(global_position, nova, 0.25, true):
 		nova.y = main.mundo.altura(nova.x, nova.z)
 		var cx: float = main.mundo.centro_x(nova.z)
 		if absf(nova.x - cx) < WorldGen.LARG_ESTRADA * 0.5 + 0.3:

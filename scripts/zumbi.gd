@@ -21,6 +21,9 @@ var estado := Estado.VAGANDO
 var vida := 60.0
 var mundo: WorldGen
 var alvo_pos := Vector3.ZERO
+var _contorno := 0.0
+var _contorno_dir := Vector3.ZERO
+var _lado_sinal := 1.0
 var _rumo := 0.0
 var _t_decisao := 0.0
 var _t_ataque := 0.0
@@ -215,10 +218,38 @@ func _process(dt: float) -> void:
 	var frente := Vector3(sin(rotation.y), 0, cos(rotation.y))
 	var nova := global_position + frente * vel * dt * float(get_meta("lento", 1.0)) + _empurrao * dt
 	_empurrao = _empurrao.move_toward(Vector3.ZERO, dt * 12.0)
-	if not mundo.bloqueado(nova) and not mundo.colide(global_position, nova, 0.25) and mundo.agua_em(nova.x, nova.z) < mundo.altura(nova.x, nova.z) + 0.6:
+	var pode := func(q: Vector3) -> bool:
+		return not mundo.bloqueado(q) and not mundo.colide(global_position, q, 0.25) and mundo.agua_em(q.x, q.z) < mundo.altura(q.x, q.z) + 0.6
+	if _contorno > 0.0 and estado != Estado.VAGANDO and vel > 0.0:
+		# contornando um obstáculo: segue de lado até passar a quina
+		_contorno -= dt
+		var q := global_position + _contorno_dir * vel * dt
+		if pode.call(q):
+			q.y = _chao(q)
+			global_position = q
+			rotation.y = lerp_angle(rotation.y, atan2(_contorno_dir.x, _contorno_dir.z), minf(1.0, dt * 6.0))
+		else:
+			_contorno = 0.0
+			_lado_sinal = -_lado_sinal
+	elif pode.call(nova):
 		nova.y = _chao(nova)
 		global_position = nova
-	elif estado == Estado.VAGANDO:
+	elif estado != Estado.VAGANDO:
+		# bateu num veículo/cerca: escolhe um lado e contorna por um tempo
+		var passo := nova - global_position
+		var lado := Vector3(-passo.z, 0, passo.x).normalized() * _lado_sinal
+		var desliza := false
+		for q in [global_position + lado * vel * dt, global_position - lado * vel * dt]:
+			if pode.call(q):
+				_contorno_dir = (q - global_position).normalized()
+				_contorno = 1.1
+				q.y = _chao(q)
+				global_position = q
+				desliza = true
+				break
+		if not desliza:
+			_lado_sinal = -_lado_sinal
+	else:
 		_rumo += PI
 	_fase += dt * (2.0 + vel * 2.2)
 	_animar(vel)

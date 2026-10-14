@@ -47,6 +47,8 @@ var horda_txt := ""
 var clima_txt := ""
 var arma_txt := ""
 var recarga := -1.0
+var acao_txt := ""         # barra de progresso da ação em curso (vasculhar, consertar...)
+var acao_prog := 0.0
 var mirando := false
 var defesa_armadura := 0.0
 var _t_dano := 0.0
@@ -140,6 +142,15 @@ func _binoculo(s: Vector2, e: float) -> void:
 	draw_line(Vector2(s.x * 0.5, s.y * 0.5 - 12 * e), Vector2(s.x * 0.5, s.y * 0.5 + 12 * e), Color(1, 1, 1, 0.35), 1.5 * e)
 	_texto("BINÓCULO  ·  " + binoculo_txt + "  ·  [Z] baixar", Vector2(0, s.y * 0.9), int(16 * e), Color(0.95, 0.9, 0.75), HORIZONTAL_ALIGNMENT_CENTER, s.x)
 
+func _barra_acao(s: Vector2, e: float) -> void:
+	var w := 360.0 * e
+	var r := Rect2(Vector2((s.x - w) * 0.5, s.y * 0.62), Vector2(w, 46 * e))
+	_painel(r)
+	_texto(acao_txt, r.position + Vector2(0, 19 * e), int(15 * e), Color(0.95, 0.92, 0.85), HORIZONTAL_ALIGNMENT_CENTER, w)
+	var bar := Rect2(r.position + Vector2(12, 28) * e, Vector2(w - 24 * e, 8 * e))
+	draw_rect(bar, Color(0, 0, 0, 0.5))
+	draw_rect(Rect2(bar.position, Vector2(bar.size.x * clampf(acao_prog, 0.0, 1.0), bar.size.y)), DOURADO)
+
 func _draw() -> void:
 	size = get_viewport_rect().size
 	var s := size
@@ -148,6 +159,8 @@ func _draw() -> void:
 	var e := s.y / 900.0  # escala
 	if binoculo:
 		_binoculo(s, e)
+	if acao_txt != "":
+		_barra_acao(s, e)
 	if cochilo > 0.0:
 		draw_rect(Rect2(Vector2.ZERO, s), Color(0, 0, 0, clampf(cochilo * 1.4, 0.0, 0.96)))
 	_objetivo(e)

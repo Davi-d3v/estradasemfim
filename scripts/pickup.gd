@@ -58,6 +58,10 @@ func _process(_dt: float) -> void:
 func _ready() -> void:
 	reconstruir()
 
+## Caixa de colisão no espaço local: (centro x, centro z, meia largura, meio comprimento).
+func caixa_colisao() -> Vector4:
+	return Vector4(0.0, 0.1, LARGURA * 0.5 + 0.05, 2.95)
+
 func nivel(slot: String) -> int:
 	return int(config[slot].nivel)
 

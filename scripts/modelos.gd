@@ -7,7 +7,7 @@ const ESCALA := 1.0
 const UAL := ["res://assets/personagens/UAL1.glb", "res://assets/personagens/UAL2.glb"]
 const LOOPS := ["Idle", "Idle_LookAround", "Idle_Talking", "Idle_Tired", "Idle_FoldArms", "Idle_Torch", "Walk", "Walk_Formal",
 	"Jog_Fwd", "Sprint", "Crouch_Idle", "Crouch_Fwd", "Crawl_Fwd", "Crawl_Idle", "Pistol_Idle", "Pistol_Aim_Neutral",
-	"Pistol_Aim_Down", "Pistol_Aim_Up", "Fixing_Kneeling", "GroundSit_Idle", "Sitting_Idle", "Sitting_Talking",
+	"Pistol_Aim_Down", "Pistol_Aim_Up", "Fixing_Kneeling", "GroundSit_Idle", "Sitting_Idle", "Sitting_Talking", "Sitting_Nodding", "Sitting_Idle02", "Sitting_Idle03",
 	"Zombie_Idle", "Zombie_Walk_Fwd", "Zombie_Run_Fwd", "Farm_Harvest", "Farm_Watering", "Mining", "TreeChopping",
 	"Walk_Carry", "Sword_Idle", "Driving", "Crying", "Idle_Lantern", "Idle_TalkingPhone", "Idle_Rail", "Consume"]
 

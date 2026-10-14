@@ -36,6 +36,8 @@ var _armadura := {}
 var tremor := 0.0          # tremor de câmera (0..1)
 var _vel_real := 0.0
 var _t_acao := 0.0         # animação de ação (comer, enfaixar...) em curso
+var preso := false         # fazendo um trabalho que não dá para largar (não anda)
+var anim_trabalho := ""    # animação em loop enquanto vasculha/conserta/esfola
 
 ## Golpe de cada arma no modelo animado: [animação, velocidade, fração do impacto].
 const MODELO_GOLPE := {
@@ -172,6 +174,8 @@ func _process(dt: float) -> void:
 	if _flash_luz:
 		_flash_luz.visible = _t_flash > 0.0
 	var entrada := Input.get_vector("move_left", "move_right", "move_back", "move_forward")
+	if preso:
+		entrada = Vector2.ZERO
 	var frente := Vector3(sin(yaw), 0, cos(yaw))
 	var direita := Vector3(-cos(yaw), 0, sin(yaw))
 	var mov := (frente * entrada.y + direita * entrada.x)
@@ -215,6 +219,8 @@ func _process(dt: float) -> void:
 		corpo.arma_costas(longa and not em_uso)
 		var branca = Armas.LISTA.has(corpo.arma) and not fogo
 		corpo.anim_parado = ("Pistol_Idle" if (fogo and not (longa and not em_uso)) else ("Sword_Idle" if branca and _t_golpe > 0.0 else "Idle"))
+		if anim_trabalho != "":
+			corpo.anim_parado = anim_trabalho
 		if mirando:
 			corpo.rotation.y = lerp_angle(corpo.rotation.y, yaw, minf(1.0, dt * 14.0))
 			corpo.pose_mirar(1.0)

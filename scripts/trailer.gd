@@ -102,6 +102,9 @@ func abrir_compartimento(id: String, aberto: bool) -> void:
 	compartimentos_abertos[id] = aberto
 	reconstruir()
 
+func caixa_colisao() -> Vector4:
+	return Vector4(0.0, 0.0, LARGURA * 0.5 + 0.15, COMPRIMENTO * 0.5)
+
 func ponto_entrada() -> Vector3:
 	return Vector3(LARGURA * 0.5 + 0.7, 0, 0.35)
 

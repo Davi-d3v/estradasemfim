@@ -148,7 +148,7 @@ func _process(dt: float) -> void:
 	if vel > 0.0:
 		var passo := Vector3(sin(rotation.y), 0, cos(rotation.y)) * vel * dt
 		var nova := global_position + passo
-		if not main.mundo.colide(global_position, nova, 0.25):
+		if not main.mundo.colide(global_position, nova, 0.25, true):
 			nova.y = _chao(nova)
 			global_position = nova
 	if vel > 4.0:

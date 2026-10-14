@@ -100,14 +100,14 @@ func painel_tranca(v: Node3D) -> Dictionary:
 			["Sem a chave, dá para arrombar com um pé de cabra: leva 2 h e faz um barulho que se ouve de longe.", Color(0.95, 0.6, 0.35)]],
 		"botoes": [
 			["Usar %s" % TRANCAS[item], func(): return _abrir(v, false), tem],
-			["Arrombar (pé de cabra, 2 h, barulho)", func(): return _abrir(v, true), pe],
+			["Arrombar (pé de cabra, %s, barulho)" % main._txt_horas(2.0), func(): return _abrir(v, true), pe],
 		]}
 
 func _abrir(v: Node3D, arrombar: bool) -> String:
 	main.mundo.vasculhados[String(v.get_meta("chave")) + ":aberto"] = true
 	main.call_deferred("_fechar_janela")
 	if arrombar:
-		main._passar_tempo(2.0)
+		main.trabalhar(2.0, "Arrombando com o pé de cabra")
 		main.ruido(v.global_position, 110.0, "tiro")
 		Som.em("impacto_metal", v.global_position, 4.0, 0.1, 3.0)
 		# o barulho chama quem estava por perto

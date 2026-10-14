@@ -67,7 +67,7 @@ func fazer(id: String, vezes := 1) -> String:
 		main.estoque[k] -= rc.entra[k] * vezes
 	if rc.has("diesel"):
 		main.comboio.diesel -= rc.diesel * vezes
-	var ev: String = main.trabalhar(rc.horas * vezes)
+	var ev: String = main.trabalhar(rc.horas * vezes, "%s…" % rc.nome, "Fixing_Kneeling" if rc.local != "qualquer" else "Farm_Harvest")
 	var ganhos: Array[String] = []
 	for k in rc.sai:
 		var n: int = main.adicionar(k, rc.sai[k] * vezes)
@@ -97,7 +97,7 @@ func reforcar(slot: String) -> String:
 		return "Faltam chapas/peças ou a forja da oficina."
 	main.gastar(c)
 	a.reforco += 1
-	var ev: String = main.trabalhar(2.0)
+	var ev: String = main.trabalhar(2.0, "Reforçando a armadura")
 	main.jogador.atualizar_armadura(main.equip.armadura)
 	return "%s reforçado com chapas (nível %d)." % [Armas.ARMADURA[a.id].nome, a.reforco] + ((" " + ev) if ev != "" else "")
 
@@ -110,7 +110,7 @@ func consertar_armadura(slot: String) -> String:
 		return "Precisa de %s." % main._txt_custo(c)
 	main.gastar(c)
 	a.condicao = 1.0
-	main.trabalhar(1.0)
+	main.trabalhar(1.0, "Costurando a armadura")
 	return "%s consertado." % Armas.ARMADURA[a.id].nome
 
 func consertar_arma(id: String) -> String:
@@ -119,7 +119,7 @@ func consertar_arma(id: String) -> String:
 		return "Precisa de 4 sucata e da oficina."
 	main.gastar(c)
 	main.equip.cond_armas[id] = 1.0
-	main.trabalhar(0.75)
+	main.trabalhar(0.75, "Afiando e consertando")
 	return "%s afiado e consertado." % Armas.LISTA[id].nome
 
 func tirar(slot: String) -> String:

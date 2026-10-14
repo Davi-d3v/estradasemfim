@@ -485,7 +485,38 @@ func estrutura_em(p: Vector3, margem := 0.0) -> Predio:
 	return null
 
 ## O movimento atravessa alguma parede de construção?
+## Veículos e outros obstáculos com caixa de colisão (picape, trailer, reboques, cerca do acampamento).
+var obstaculos_extra: Array = []      # nós com método colide_em(a, b, raio) (ex.: cerca do acampamento)
+
+func _veiculos() -> Array:
+	var l: Array = []
+	var m: Node = get_parent()
+	if m and m.get("comboio"):
+		l.append(m.picape)
+		l.append_array(m.comboio.cadeia)
+	for r in reboques_soltos:
+		if is_instance_valid(r):
+			l.append(r)
+	return l
+
+func _colide_caixa(no: Node3D, cx: Vector4, a: Vector3, b: Vector3, raio: float) -> bool:
+	var inv := no.global_transform.affine_inverse()
+	var lb := inv * b
+	if absf(lb.x - cx.x) >= cx.z + raio or absf(lb.z - cx.y) >= cx.w + raio or lb.y < -1.2 or lb.y > 3.2:
+		return false
+	# já estava dentro (veículo andou por cima): deixa sair
+	var la := inv * a
+	if absf(la.x - cx.x) < cx.z + raio - 0.05 and absf(la.z - cx.y) < cx.w + raio - 0.05:
+		return Vector2(lb.x - cx.x, lb.z - cx.y).length() < Vector2(la.x - cx.x, la.z - cx.y).length()
+	return true
+
 func colide(a: Vector3, b: Vector3, raio := 0.28, jogador := false) -> bool:
+	for v in _veiculos():
+		if is_instance_valid(v) and v.visible and v.global_position.distance_squared_to(b) < 64.0 and _colide_caixa(v, v.caixa_colisao(), a, b, raio):
+			return true
+	for o in obstaculos_extra:
+		if is_instance_valid(o) and o.colide_em(a, b, raio, jogador):
+			return true
 	for mu in muros:
 		if is_instance_valid(mu) and mu.global_position.distance_squared_to(b) < 1600.0 and mu.colide(a, b, raio, jogador):
 			return true
