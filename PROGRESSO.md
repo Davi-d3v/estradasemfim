@@ -48,9 +48,14 @@
   objetivo do HUD mostra próximo marco/missão; trechos de marco e missão sem prédios. Teste: --teste-progresso; prints: --progresso
 - [x] 4. Combate com o comboio (scripts/combate_comboio.gd): zumbis se agarram na picape/trailer (até 5), batem na lataria, seguram o comboio (−7% cada)
   e alcançam o motorista pela janela; soltam com ziguezague, acima de 54 km/h ou freada brusca; módulos novos na oficina: Espinhos laterais e
-  Posto de tiro (picape), Couraça (trailer: chapas, nível 2 com espinhos); vigia atira da caçamba gastando munição. Teste: --teste-comboio; prints: --comboio-combate  - [ ] 4. Combate com o comboio  - [ ] 5. Comércio/reputação/facções
+  Posto de tiro (picape), Couraça (trailer: chapas, nível 2 com espinhos); vigia atira da caçamba gastando munição. Teste: --teste-comboio; prints: --comboio-combate
+- [x] 5. Comércio, reputação e facções (scripts/comercio.gd): cada lugar tem o que sobra (×0,6) e o que falta (×1,7), preços sobem com a distância
+  (diesel ainda mais); bancas da vila (mantimentos, peças/armas, remédios), comerciante nos assentamentos e no marco; crédito por lugar;
+  estoque diário; pedidos ("me traga X") com prêmio; reputação Desconhecido/Conhecido/Amigo/Aliado (descontos, itens raros, presente diário;
+  defender o assentamento = aliado); 4 facções por distância (Abutres, Irmandade do Asfalto, Carniceiros da BR, Reis do Sertão) que lembram:
+  pagou 2× = passagem livre, furou/atirou 2× = pedágio em dobro. Teste: --teste-comercio; prints: --comercio  - [ ] 4. Combate com o comboio  - [ ] 5. Comércio/reputação/facções
 - [ ] 6. Cachorro  - [ ] 7-11. Recrutas, comboio, exploração, defesa, sobrevivência  - [ ] 12. v0.8
 
 ## Próximos
-- seguir a rodada grande (etapa 5: comércio, reputação e facções)
+- seguir a rodada grande (etapa 6: cachorro)
 - ouvir o retorno do teste no PC do Davi

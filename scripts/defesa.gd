@@ -549,6 +549,9 @@ func _vitoria(e: Dictionary, a: Assentamento) -> void:
 		main.mundo.nivel_ameaca += 1.0
 		z_horda = float(e.pos.z) - 7000.0
 		linhas.append("Assentamento defendido! Total: %d. A horda se espalhou e vai se reagrupar." % defendidos)
+		if main.get("comercio"):
+			main.comercio.reputacao(e.id, 45.0, "defendeu o assentamento")
+			linhas.append("%s agora te trata como aliado: descontos, estoque melhor e presentes." % e.nome)
 		_marco(linhas)
 	# recompensa: os moradores dividem o que têm (cresce a cada onda)
 	var rec := {"comida": 3 + n * 2, "agua": 3 + n * 2, "pecas": 2 + n, "sucata": 8 + n * 5}

@@ -43,11 +43,16 @@ static func construir(m: WorldGen, n: Node3D, z0: float, k: int) -> void:
 
 static func _saqueadores(m: WorldGen, raiz: Node3D, z: float, rot: float, r: RandomNumberGenerator, feito: Dictionary) -> void:
 	var lar := WorldGen.LARG_ESTRADA
-	# placas de aviso antes do bloqueio
+	var fac: Dictionary = Comercio.FACCOES[0]
+	for fc in Comercio.FACCOES:
+		if z / 1000.0 >= fc.km:
+			fac = fc
+	raiz.set_meta("faccao", fac.nome)
+	# placas de aviso antes do bloqueio, com o nome do bando
 	for zz in [z - 120.0, z - 60.0]:
 		var pl := m.ponto_estrada(zz, lar * 0.5 + 2.0)
 		pl.y = m.elevacao(zz) + 1.8
-		Lugares._placa(raiz, pl, rot + PI, "PEDÁGIO\nPARE O CARRO", Color(0.85, 0.2, 0.15))
+		Lugares._placa(raiz, pl, rot + PI, "PEDÁGIO\n%s" % String(fac.nome).to_upper(), fac.cor)
 	var sem := r.randi()
 	_bloqueio(m, raiz, z, rot, sem, feito.get("resultado", "") in ["pagou", "furou"])
 
@@ -301,13 +306,28 @@ func _painel() -> Dictionary:
 	var est: Dictionary = main.estoque
 	match e.tipo:
 		"saqueadores":
-			var comida_paga := maxi(3, int(est.get("comida", 0) * 0.3))
+			var fac_nome: String = e.no.get_meta("faccao", "Os Abutres") if is_instance_valid(e.no) else "Os Abutres"
+			var fac: Dictionary = Comercio.FACCOES[0]
+			for fc in Comercio.FACCOES:
+				if fc.nome == fac_nome:
+					fac = fc
+			var rel: String = main.comercio.relacao(fac_nome)
+			if rel == "amigo":
+				return {"titulo": String(fac_nome).to_upper(), "subtitulo": "Eles reconhecem o comboio de longe e baixam as armas.",
+					"linhas": ["\"Esse aí pagou direitinho das outras vezes. Deixa passar.\""],
+					"botoes": [["Seguir viagem (passagem livre)", func(): return _passe_livre(fac_nome), true]]}
+			var mult: float = fac.pedagio * (2.0 if rel == "inimigo" else 1.0)
+			var comida_paga := maxi(3, int(est.get("comida", 0) * 0.3 * mult))
 			var tem_galao: bool = est.get("galoes_diesel", 0) > 0
 			var para: int = main.picape.nivel("parachoque") if main.picape.config.has("parachoque") else 0
 			var vigias: int = main.base.presentes("vigia").size()
-			return {"titulo": "BLOQUEIO NA ESTRADA", "subtitulo": "Carros atravessados, pneus queimando e três armas apontadas para o seu para-brisa.",
-				"linhas": ["\"Pedágio, amigo. %d de comida%s e cada um segue seu rumo.\"" % [comida_paga, " e um galão de diesel" if tem_galao else ""],
-					["Comida: %d · Galões: %d · Para-choque nível %d · Vigias no comboio: %d" % [est.get("comida", 0), est.get("galoes_diesel", 0), para, vigias], Color(0.7, 0.7, 0.68)]],
+			var fala := "\"Pedágio, amigo. %d de comida%s e cada um segue seu rumo.\"" % [comida_paga, " e um galão de diesel" if tem_galao else ""]
+			if rel == "inimigo":
+				fala = "\"Olha quem voltou! O espertinho que passou por cima da gente. Agora o preço é outro: %d de comida%s.\"" % [comida_paga, " e um galão" if tem_galao else ""]
+			return {"titulo": "BLOQUEIO — %s" % String(fac_nome).to_upper(), "subtitulo": "Carros atravessados, pneus queimando e armas apontadas para o seu para-brisa.",
+				"linhas": [fala,
+					["Comida: %d · Galões: %d · Para-choque nível %d · Vigias no comboio: %d" % [est.get("comida", 0), est.get("galoes_diesel", 0), para, vigias], Color(0.7, 0.7, 0.68)],
+					["%s lembram de você: %s." % [fac_nome, {"neutro": "ainda não te conhecem", "inimigo": "estão com raiva", "amigo": "te respeitam"}[rel]], fac.cor]],
 				"botoes": [
 					["Pagar o pedágio", func(): return _pagar(comida_paga, tem_galao), est.get("comida", 0) >= comida_paga],
 					["Furar o bloqueio (acelerar)", func(): return _furar(para, vigias), true],
@@ -333,13 +353,22 @@ func _painel() -> Dictionary:
 	return {"titulo": "", "linhas": [], "botoes": []}
 
 # ------------------------------------------------------------ resultados
+func _fac_atual() -> String:
+	return _atual.no.get_meta("faccao", "Os Abutres") if is_instance_valid(_atual.get("no")) else "Os Abutres"
+
+func _passe_livre(fac: String) -> String:
+	main.comercio.registrar_faccao(fac, "pagou")
+	return _fim("pagou", "%s afastaram os carros e acenaram. Ter fama de quem paga tem suas vantagens." % fac)
+
 func _pagar(comida: int, galao: bool) -> String:
+	main.comercio.registrar_faccao(_fac_atual(), "pagou")
 	main.estoque.comida -= comida
 	if galao:
 		main.estoque.galoes_diesel -= 1
 	return _fim("pagou", "Você pagou %d de comida%s. Eles afastaram os carros e acenaram.\n\"Boa viagem. A estrada é longa.\"" % [comida, " e um galão" if galao else ""])
 
 func _furar(para: int, vigias: int) -> String:
+	main.comercio.registrar_faccao(_fac_atual(), "furou")
 	var r := randf()
 	var p: Pickup = main.picape
 	var dano := 0.45 - para * 0.1
@@ -383,6 +412,7 @@ func _desvio() -> String:
 	return ""
 
 func _atirar(vigias: int) -> String:
+	main.comercio.registrar_faccao(_fac_atual(), "atirou")
 	var gasto := 6
 	for m in ["municao_rifle", "cartucho", "municao_pistola"]:
 		var tira := mini(gasto, main.estoque.get(m, 0))

@@ -92,6 +92,7 @@ var eventos: Eventos
 var clima: Clima
 var progresso: Progresso
 var combate_comboio: CombateComboio
+var comercio: Comercio
 var horda_visivel: HordaVisivel
 var retrovisor: Retrovisor
 var _t_autosave := 0.0
@@ -201,6 +202,9 @@ func _ready() -> void:
 	combate_comboio = CombateComboio.new()
 	combate_comboio.main = self
 	add_child(combate_comboio)
+	comercio = Comercio.new()
+	comercio.main = self
+	add_child(comercio)
 	progresso.registrar_no_mundo()
 	horda_visivel = HordaVisivel.new()
 	horda_visivel.main = self
@@ -226,6 +230,8 @@ func _ready() -> void:
 			_capturar_trailer()
 		elif "--eventos" in OS.get_cmdline_user_args():
 			_capturar_eventos()
+		elif "--comercio" in OS.get_cmdline_user_args():
+			_capturar_comercio()
 		elif "--comboio-combate" in OS.get_cmdline_user_args():
 			_capturar_combate_comboio()
 		elif "--progresso" in OS.get_cmdline_user_args():
@@ -258,6 +264,10 @@ func _ready() -> void:
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
 		_teste_recrutas()
+	elif "--teste-comercio" in OS.get_cmdline_user_args():
+		Jogo.modo = Jogo.MODO_INFINITO
+		jogando = true
+		_teste_comercio()
 	elif "--teste-comboio" in OS.get_cmdline_user_args():
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
@@ -342,6 +352,56 @@ func _teste_salvar() -> void:
 	defesa.z_horda = -3333.0
 	var ok := Salvar.salvar(self)
 	print("TS salvo=", ok, " resumo=", Salvar.resumo())
+	get_tree().quit()
+
+## Teste do comércio: preços por lugar, troca, pedido, reputação e facções.
+func _teste_comercio() -> void:
+	await get_tree().process_frame
+	var cm := comercio
+	for id in ["vila_a", "vila_b", "vila_c"]:
+		var l := cm._lugar(id)
+		print("TM %s sobra=%s falta=%s remedio compra=%d venda=%d | diesel compra=%d" % [id, str(l.sobra), str(l.falta), cm.preco_compra(id, "remedio"), cm.preco_venda(id, "remedio"), cm.preco_compra(id, "galoes_diesel")])
+	estoque.remedio = 6
+	estoque.sucata = 40
+	var id := "vila_a"
+	print("TM vender: ", cm._vender(id, "remedio", "remedio", 3), " credito=", cm._lugar(id).credito)
+	var est := cm._estoque_banca(id, "remedio")
+	print("TM estoque banca: ", est)
+	for it in est:
+		print("TM comprar: ", cm._comprar(id, "remedio", it, 1))
+		break
+	cm._banca_aberta = {"id": id, "banca": "geral", "nome": "Zé", "fala": "Oi"}
+	var pn := cm.painel()
+	print("TM painel geral: botoes=%d | %s" % [pn.botoes.size(), pn.linhas[2][0]])
+	var ped: Dictionary = cm._lugar(id).pedido
+	print("TM pedido: ", ped)
+	estoque[ped.item] = ped.qtd + 1
+	print("TM entregar: ", cm._entregar(id), " rep=", cm._lugar(id).rep, " ", Comercio.nivel_rep(cm._lugar(id).rep), " desconto=", cm.desconto(id))
+	cm.reputacao(id, 60.0)
+	print("TM aliado presente: ", cm.presente_aliado(id), " desconto=", cm.desconto(id))
+	# facções
+	cm.registrar_faccao("Os Abutres", "pagou")
+	cm.registrar_faccao("Os Abutres", "pagou")
+	cm.registrar_faccao("Irmandade do Asfalto", "furou")
+	cm.registrar_faccao("Irmandade do Asfalto", "atirou")
+	print("TM relacoes: abutres=%s irmandade=%s carniceiros=%s" % [cm.relacao("Os Abutres"), cm.relacao("Irmandade do Asfalto"), cm.relacao("Carniceiros da BR")])
+	# evento de saqueadores com facção inimiga
+	var k := 400
+	mundo.pois_fixos[k] = "evento"
+	mundo.eventos_tipo[k] = "saqueadores"
+	var z := k * WorldGen.TAM + 32.0
+	comboio.posicionar(z - 60.0, -0.5, 0.0)
+	jogador.position = mundo.ponto_estrada(z - 30.0, 0.0)
+	mundo.atualizar(jogador.position)
+	await get_tree().process_frame
+	var e: Dictionary = mundo.eventos_ativos.get(k, {})
+	eventos._atual = e
+	estoque.comida = 20
+	var pnl := eventos._painel()
+	print("TM bloqueio: ", pnl.titulo, " | ", pnl.linhas[0])
+	var sv := cm.salvar()
+	cm.carregar(sv)
+	print("TM save ok: lugares=", cm.lugares.size(), " faccoes=", cm.faccoes.size())
 	get_tree().quit()
 
 ## Teste do combate com o comboio: agarrar, soltar no ziguezague, espinhos e atirador.
@@ -1457,8 +1517,15 @@ func _painel_npc(h: Node3D) -> Dictionary:
 	var titulos := {"vendedor": "Vendedor", "vigia": "Vigia", "mecanico": "Mecânico", "agricultor": "Agricultor", "medico": "Médico", "morador": "Morador", "batedor": "Batedor"}
 	var linhas: Array = ["\"%s\"" % h.get_meta("fala")]
 	var botoes: Array = []
-	if funcao == "vendedor":
-		linhas.append(["O comércio por troca chega na etapa 5 do roteiro.", Color(0.7, 0.7, 0.68)])
+	var banca := Comercio.banca_de(h)
+	if banca != "":
+		var lid := Comercio.lugar_de(h)
+		var lg := comercio._lugar(lid)
+		linhas.append(["Comerciante · reputação: %s · crédito: %d" % [Comercio.nivel_rep(lg.rep), lg.credito.get("lugar", 0)], Hud.DOURADO])
+		botoes.append(["Negociar", func(): comercio.abrir(h); return "", true])
+		var pres := comercio.presente_aliado(lid)
+		if pres != "":
+			linhas.append([pres, Color(0.6, 0.85, 0.6)])
 	if Recrutas.pode_recrutar(h):
 		var fr: String = Recrutas.funcao_de_npc(funcao)
 		var info: Dictionary = Recrutas.FUNCOES[fr]
@@ -3090,6 +3157,64 @@ func _capturar_trailer() -> void:
 			_abrir_painel(_painel_compartimento.bind(id))
 			await _salvar("trailer_painel_%s" % id)
 			_fechar_janela()
+	get_tree().quit()
+
+## Prints do comércio: banca na vila, painel de troca, pedido e bloqueio de facção.
+func _capturar_comercio() -> void:
+	var cam := Camera3D.new()
+	cam.far = 900.0
+	add_child(cam)
+	hora = 16.2
+	_atualizar_ceu()
+	comboio.set_physics_process(false)
+	var vila := _achar_lugar("vila")
+	mundo.atualizar(vila.pos)
+	await get_tree().process_frame
+	var raiz: Node3D = mundo.lugares_ativos.get(vila.id)
+	var vend: Node3D = null
+	for h in mundo.npcs:
+		if is_instance_valid(h) and String(h.get_meta("chave", "")).ends_with(":vendedor"):
+			vend = h
+	jogador.visible = false
+	hud.visible = false
+	var alvo := vend.global_position + Vector3(0, 1.1, 0)
+	var para_centro := (raiz.global_position - vend.global_position)
+	para_centro.y = 0.0
+	var de := vend.global_position + para_centro.normalized() * 5.5 + para_centro.normalized().cross(Vector3.UP) * 2.0 + Vector3(0, 2.0, 0)
+	_abrir_vista(de, alvo)
+	cam.fov = 60.0
+	cam.look_at_from_position(de, alvo, Vector3.UP)
+	cam.current = true
+	await _salvar("comercio_banca")
+	# painel de troca, com coisa para vender e crédito
+	estoque.merge({"remedio": 4, "pele": 3, "couro": 2, "molotov": 2, "sucata": 40}, true)
+	comercio.reputacao(vila.id, 30.0)
+	comercio._lugar(vila.id).credito["lugar"] = 45
+	hud.visible = true
+	_atualizar_hud()
+	comercio.abrir(vend)
+	await _salvar("comercio_painel")
+	_fechar_janela()
+	# bloqueio de facção inimiga
+	comercio.registrar_faccao("Irmandade do Asfalto", "furou")
+	comercio.registrar_faccao("Irmandade do Asfalto", "furou")
+	var k := 380
+	mundo.pois_fixos[k] = "evento"
+	mundo.eventos_tipo[k] = "saqueadores"
+	var z := k * WorldGen.TAM + 32.0
+	comboio.posicionar(z - 20.0, -0.5, 0.0)
+	jogador.position = comboio.pos + Vector3(3, 0, 0)
+	mundo.atualizar(comboio.pos)
+	await get_tree().process_frame
+	_limpar_zumbis_perto(comboio.pos, 60.0)
+	var e: Dictionary = mundo.eventos_ativos.get(k, {})
+	var d0 := mundo.direcao(z)
+	var de2 := mundo.ponto_estrada(z - 14.0, -1.0) + Vector3(0, 2.3, 0)
+	cam.look_at_from_position(de2, mundo.ponto_estrada(z, 0.0) + Vector3(0, 1.4, 0), Vector3.UP)
+	estoque.comida = 25
+	eventos._atual = e
+	_abrir_painel(eventos._painel)
+	await _salvar("comercio_faccao")
 	get_tree().quit()
 
 ## Prints do combate com o comboio: agarrados, atirador na caçamba, espinhos e couraça.

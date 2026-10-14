@@ -752,6 +752,9 @@ static func _assentamento(p: Node3D, f: Dictionary, r: RandomNumberGenerator, m:
 	lid.set_meta("nome", e.get("lider", "Dona Rosa"))
 	lid.set_meta("assent", f.id)
 	lid.com_bone = true
+	# comerciante do assentamento (troca, pedidos e reputação)
+	var vend := _pessoa(p, Vector3(-4.5, 0, -6.0), 0.4, "vendedor", r, m, j.id + ":vendedor")
+	vend.set_meta("nao_mesclar", true)
 	var funcoes := ["agricultor", "mecanico", "medico", "morador", "batedor", "vigia", "morador"]
 	for i in r.randi_range(5, 7):
 		var an3 := r.randf() * TAU
