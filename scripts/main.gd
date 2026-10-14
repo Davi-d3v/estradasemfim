@@ -88,6 +88,7 @@ var fumacas: Node3D
 var cinzas: CPUParticles3D
 var equip: Equipamento
 var tutorial: Tutorial
+var _t_autosave := 0.0
 var _compartimento_preso := false     # prints: deixa a porta aberta ao fechar o painel
 var criacao: Criacao
 var defesa: Defesa
@@ -125,6 +126,8 @@ var _frame_fechou := -10
 
 func _ready() -> void:
 	capturando = "--capturar" in OS.get_cmdline_user_args()
+	if "--carregar" in OS.get_cmdline_user_args():
+		Salvar.preparar()
 	_rng_eventos.seed = 12345
 	_ambiente()
 	mundo = WorldGen.new()
@@ -180,6 +183,7 @@ func _ready() -> void:
 	menu.escolheu.connect(_comecar)
 	menu.continuar.connect(_acordar_apos_queda)
 	menu.recomecar.connect(_novo_jogo)
+	menu.carregar.connect(_carregar_jogo)
 	cl.add_child(menu)
 	menu.visible = false
 	_atualizar_ceu()
@@ -210,16 +214,70 @@ func _ready() -> void:
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
 		_teste_recrutas()
+	elif "--teste-salvar" in OS.get_cmdline_user_args():
+		Jogo.modo = Jogo.MODO_INFINITO
+		jogando = true
+		_teste_salvar()
 	elif "--teste" in OS.get_cmdline_user_args():
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
 		_teste()
+	elif Jogo.carregar:
+		Jogo.carregar = false
+		jogando = true
+		if Salvar.aplicar(self):
+			hud.banner("Jogo carregado", "Dia %d · %.1f km rodados" % [dia, comboio.odometro / 1000.0])
+		if "--carregar" in OS.get_cmdline_user_args() and "--sair" in OS.get_cmdline_user_args():
+			await get_tree().process_frame
+			var tipos: Array = []
+			for i in range(1, comboio.cadeia.size()):
+				tipos.append([comboio.cadeia[i].tipo, comboio.cadeia[i].nivel, comboio.cadeia[i].get("litros")])
+			print("TC dia=", dia, " hora=", hora, " abates=", abates, " sucata=", estoque.sucata, " esping=", estoque.get("espingarda"), " reboques=", tipos,
+				" recrutas=", base.lista.map(func(x): return x.nome), " diesel=", comboio.diesel, " odo=", comboio.odometro, " pos=", comboio.pos.snapped(Vector3.ONE * 0.1),
+				" motor=", picape.config.motor.nivel, " despensa=", trailer.config.lateral_direita.nivel, " sel=", equip.sel, " pente=", equip.pentes.get("espingarda"),
+				" armadura=", equip.armadura.keys(), " vida=", jogador.vida, " vasc=", mundo.vasculhados.has("teste:x"), " horda=", defesa.z_horda, " modo=", Jogo.modo)
+			get_tree().quit()
+		_t_autosave = 0.0
 	elif Jogo.modo == "":
 		hud.visible = false
 		jogador.set_process(false)
 		menu.mostrar_inicio()
 	else:
 		jogando = true
+
+## Teste do salvar: muda bastante coisa e salva. Depois rodar com --carregar e conferir.
+func _teste_salvar() -> void:
+	await get_tree().process_frame
+	estoque.sucata = 77
+	estoque.espingarda = 1
+	estoque.cartucho = 9
+	estoque.colete_couro = 1
+	dia = 9
+	hora = 13.5
+	abates = 42
+	picape.config.motor.nivel = 3
+	trailer.config.lateral_direita.nivel = 3
+	trailer.cor_pintura = Color(0.2, 0.4, 0.3)
+	comboio.engatar(_novo_reboque("armazem", 2, 0.8), true)
+	var tq := _novo_reboque("tanque", 1, 0.6)
+	tq.litros = 123.0
+	comboio.engatar(tq, true)
+	print("TS cadeia=", comboio.cadeia.size())
+	base.lista.append(Recrutas.novo("Tião", "vigia", 77))
+	base.lista.append(Recrutas.novo("Marta", "medico", 78))
+	comboio.diesel = 33.0
+	comboio.odometro = 12345.0
+	comboio.posicionar(900.0, -0.5, 0.0)
+	jogador.position = comboio.pos + Vector3(3, 0, 0)
+	equip.vestir("colete_couro")
+	equip.selecionar("espingarda")
+	equip.pentes["espingarda"] = 2
+	jogador.vida = 0.66
+	mundo.vasculhados["teste:x"] = true
+	defesa.z_horda = -3333.0
+	var ok := Salvar.salvar(self)
+	print("TS salvo=", ok, " resumo=", Salvar.resumo())
+	get_tree().quit()
 
 ## Teste automático: zumbis cercando o jogador, golpes, atropelamento e morte.
 func _teste() -> void:
@@ -462,7 +520,7 @@ func _teste_defesa() -> void:
 
 ## Teclas novas (armas e barra rápida), criadas por código para não depender do project.godot.
 func _acoes_extras() -> void:
-	var teclas := {"recarregar": KEY_R, "criar": KEY_B, "slot_1": KEY_1, "slot_2": KEY_2, "slot_3": KEY_3, "slot_4": KEY_4,
+	var teclas := {"salvar": KEY_F5, "recarregar": KEY_R, "criar": KEY_B, "slot_1": KEY_1, "slot_2": KEY_2, "slot_3": KEY_3, "slot_4": KEY_4,
 		"slot_5": KEY_5, "slot_6": KEY_6, "slot_7": KEY_7, "slot_8": KEY_8, "slot_9": KEY_9}
 	for a in teclas:
 		if not InputMap.has_action(a):
@@ -478,7 +536,23 @@ func _acoes_extras() -> void:
 			eb.button_index = botoes[a]
 			InputMap.action_add_event(a, eb)
 
+func _carregar_jogo() -> void:
+	if Salvar.preparar():
+		get_tree().reload_current_scene()
+
+## Salva agora (F5, ao dormir, periodicamente e ao fechar). mudo = sem aviso na tela.
+func salvar_jogo(mudo := false) -> void:
+	if Salvar.salvar(self):
+		_t_autosave = 0.0
+		if not mudo:
+			hud.aviso("Jogo salvo.")
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST and jogando and not capturando:
+		salvar_jogo(true)
+
 func _comecar(m: String) -> void:
+	Salvar.preservar_se_outro_mundo(Jogo.semente)
 	Jogo.modo = m
 	jogando = true
 	hud.visible = true
@@ -622,6 +696,11 @@ func _process(dt: float) -> void:
 	if not jogando or _morto:
 		return
 	_tempo += dt
+	_t_autosave += dt
+	if _t_autosave > 600.0 and not comboio.dirigindo and defesa.onda.is_empty():
+		salvar_jogo(true)
+	if Input.is_action_just_pressed("salvar"):
+		salvar_jogo()
 	_passar_tempo(dt * velocidade_tempo)
 	_combate(dt)
 	equip.atualizar(dt, jogador.visible and not comboio.dirigindo and dentro == null and not _janela_aberta() and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED)
@@ -892,6 +971,7 @@ func _morrer(causa: String) -> void:
 	jogador.set_process(false)
 	var km := comboio.odometro / 1000.0
 	if Jogo.modo == Jogo.MODO_TOTAL:
+		Salvar.apagar()
 		menu.mostrar_morte(causa, ["Você sobreviveu %d dias e rodou %.1f km." % [dia, km],
 			"Zumbis abatidos: %d   ·   Lugares descobertos: %d" % [abates, conhecidos.size()],
 			"No modo Sobrevivência total, tudo recomeça do zero."], true)
@@ -956,6 +1036,7 @@ func _acordar_apos_queda() -> void:
 	jogador.set_process(true)
 	_entrar_em(trailer)
 	hud.relatorio = "Você acordou no trailer, ferido. O comboio pagou o preço."
+	salvar_jogo(true)
 	hud.relatorio_titulo = ""
 	hud.relatorio_t = 6.0
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -2002,10 +2083,12 @@ func dormir() -> String:
 	jogador.vida = minf(1.0, jogador.vida + 0.1 * horas / 8.0)
 	trailer.reconstruir()
 	_atualizar_ceu()
+	linhas.append("(Jogo salvo.)")
 	var txt := "\n".join(linhas)
 	hud.relatorio = txt
 	hud.relatorio_titulo = ""
 	hud.relatorio_t = 6.0
+	call_deferred("salvar_jogo", true)
 	return txt
 
 const RUMORES := {

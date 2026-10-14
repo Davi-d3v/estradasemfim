@@ -5,6 +5,7 @@ extends Control
 signal escolheu(modo: String)
 signal continuar
 signal recomecar
+signal carregar
 
 const DOURADO := Color(0.95, 0.68, 0.22)
 var _caixa: VBoxContainer
@@ -96,14 +97,22 @@ func mostrar_inicio() -> void:
 	var esp := Control.new()
 	esp.custom_minimum_size = Vector2(0, 18)
 	_caixa.add_child(esp)
-	_label("Escolha o modo. Ele não pode ser trocado depois.", 16, Color(0.7, 0.7, 0.68))
-	_cartao("Sobrevivência total", "Morreu ou perdeu uma defesa, acabou: o mundo é gerado de novo e você recomeça do zero, só com a picape e o trailer.", func(): _escolher(Jogo.MODO_TOTAL), true)
+	var rs := Salvar.resumo()
+	if not rs.is_empty():
+		var modo_txt := "Sobrevivência total" if rs.modo == Jogo.MODO_TOTAL else "Estrada sem fim"
+		_cartao("Continuar", "%s · Dia %d · %.1f km rodados · %d reboque%s · %d recruta%s\nSalvo em %s" % [modo_txt, rs.dia, rs.km, rs.reboques, "" if rs.reboques == 1 else "s", rs.recrutas, "" if rs.recrutas == 1 else "s", String(rs.data).replace("T", " ").substr(0, 16)], func():
+			visible = false
+			carregar.emit(), true)
+		_label("Ou comece um jogo novo (o salvo atual fica guardado como \"anterior\"):", 15, Color(0.7, 0.7, 0.68))
+	else:
+		_label("Escolha o modo. Ele não pode ser trocado depois.", 16, Color(0.7, 0.7, 0.68))
+	_cartao("Sobrevivência total", "Morreu ou perdeu uma defesa, acabou: o mundo é gerado de novo e você recomeça do zero, só com a picape e o trailer.", func(): _escolher(Jogo.MODO_TOTAL), rs.is_empty())
 	_cartao("Estrada sem fim", "Morrer cobra caro: reboques perdidos ou destruídos, recrutas mortos, metade da carga perdida. Mas a estrada continua e o progresso fica.", func(): _escolher(Jogo.MODO_INFINITO))
 	var esp2 := Control.new()
 	esp2.custom_minimum_size = Vector2(0, 8)
 	_caixa.add_child(esp2)
 	_label("CONTROLES", 15, DOURADO)
-	_label("WASD andar · Shift correr · Ctrl agachar · Mouse olhar · Botão esq. atacar/usar · Botão dir. mirar · R recarregar\n1-9 / rodinha trocar item · E interagir/vasculhar · F entrar/dirigir · Tab oficina · B criação · C acampar · H remédio\nNo carro: WASD dirigir · Espaço freio · G engatar · L luz · V câmera · R abastecer com galão · Esc solta o mouse", 13, Color(0.8, 0.78, 0.74))
+	_label("WASD andar · Shift correr · Ctrl agachar · Mouse olhar · Botão esq. atacar/usar · Botão dir. mirar · R recarregar\n1-9 / rodinha trocar item · E interagir/vasculhar · F entrar/dirigir · Tab oficina · B criação · C acampar · H remédio\nNo carro: WASD dirigir · Espaço freio · G engatar · L luz · V câmera · R abastecer com galão · Esc solta o mouse · F5 salvar", 13, Color(0.8, 0.78, 0.74))
 
 func _escolher(m: String) -> void:
 	visible = false

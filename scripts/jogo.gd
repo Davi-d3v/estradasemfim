@@ -7,3 +7,4 @@ const MODO_INFINITO := "infinito"  # morreu: penalidades pesadas, mas continua
 static var modo := ""
 static var semente := 2026
 static var mortes := 0
+static var carregar := false   # ao recarregar a cena, aplicar o save
