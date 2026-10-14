@@ -44,6 +44,8 @@ const COMPARTIMENTOS := {
 var modo_interior := false
 ## Luz interna vermelha (enxerga sem chamar atenção de fora).
 var luz_vermelha := false
+var nome_comboio := ""            # pintado na lateral (ComboioExtra)
+var assinaturas: Array = []        # nomes dos recrutas rabiscados na lateral
 
 # ---------------------------------------------------------------- engate (interface comum a todos os rebocados)
 func engate_frente_z() -> float:
@@ -195,6 +197,47 @@ func reconstruir() -> void:
 		var fn: String = "_mod_" + c.id
 		if has_method(fn):
 			call(fn, int(c.nivel), float(c.condicao))
+	_pintura_comboio()
+
+## Nome do comboio em letras pintadas à mão e assinaturas dos recrutas.
+func _pintura_comboio() -> void:
+	var hw := LARGURA * 0.5
+	if nome_comboio != "":
+		for lado in [-1.0, 1.0]:
+			var l := Label3D.new()
+			l.text = nome_comboio
+			l.font_size = 96
+			l.pixel_size = 0.0022
+			l.outline_size = 0
+			l.modulate = Color(0.95, 0.93, 0.85, 0.95)
+			l.shaded = true
+			l.double_sided = false
+			l.position = Vector3(lado * (hw + 0.09), BASE_Y + 0.13, -0.1)
+			l.rotation.y = lado * PI * 0.5
+			l.rotation.z = lado * 0.02
+			_root.add_child(l)
+	if not assinaturas.is_empty():
+		var a := Label3D.new()
+		var linhas: Array[String] = []
+		var lin := ""
+		for i in assinaturas.size():
+			lin += ("  " if lin != "" else "") + String(assinaturas[i])
+			if (i + 1) % 3 == 0:
+				linhas.append(lin)
+				lin = ""
+		if lin != "":
+			linhas.append(lin)
+		a.text = "\n".join(linhas)
+		a.font_size = 48
+		a.pixel_size = 0.0028
+		a.modulate = Color(0.08, 0.07, 0.06, 0.85)
+		a.shaded = true
+		a.double_sided = false
+		a.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		a.position = Vector3(-hw - 0.012, BASE_Y + 0.35, -COMPRIMENTO * 0.5 + 0.9)
+		a.rotation.y = -PI * 0.5
+		a.rotation.z = 0.04
+		_root.add_child(a)
 
 # ---------------------------------------------------------------- base
 func _base() -> void:

@@ -156,6 +156,9 @@ func velocidade_maxima() -> float:
 	var cc = mundo.get_parent().get("combate_comboio") if mundo else null
 	if cc:
 		vmax *= cc.fator_velocidade()
+	var ex = mundo.get_parent().get("comboio_extra") if mundo else null
+	if ex:
+		vmax = minf(vmax, ex.limite_velocidade())
 	return clampf(vmax, 3.0, 32.0)
 
 func _unhandled_input(e: InputEvent) -> void:
@@ -213,6 +216,9 @@ func _physics_process(dt: float) -> void:
 	velocidade = clampf(velocidade, -6.0, velocidade_maxima())
 	# em alta velocidade o volante responde menos
 	var giro := esterco * lerpf(0.55, 0.16, clampf(absf(velocidade) / 30.0, 0.0, 1.0))
+	var ex2 = mundo.get_parent().get("comboio_extra") if mundo else null
+	if ex2 and ex2.pneu_furado and absf(velocidade) > 1.0:
+		giro += ex2.puxao() * 0.25    # pneu furado puxa para a direita
 	giro *= lerpf(0.6, 1.0, aderencia_clima)
 	yaw += velocidade * tan(giro) / ENTRE_EIXOS * dt
 	# pista lisa: em curva rápida a traseira escorrega (o comboio "abre")

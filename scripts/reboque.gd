@@ -16,7 +16,30 @@ const TIPOS := {
 		"desc": "Camas para recrutas", "capacidade": [0, 2, 4, 6], "unidade": "camas", "cor": Color(0.62, 0.5, 0.36)},
 	"plataforma": {"nome": "Plataforma de carga", "comp": 4.0, "larg": 2.0, "nivel_max": 3, "peso": 300.0,
 		"desc": "Leva carga pesada e uma moto", "capacidade": [0, 80, 140, 220], "unidade": "itens", "cor": Color(0.35, 0.18, 0.12)},
+	# raros: só aparecem longe (km mínimo), abandonados ou como prêmio dos marcos
+	"hospital": {"nome": "Hospital de campanha", "comp": 4.6, "larg": 2.1, "nivel_max": 3, "peso": 700.0, "raro": true, "km": 40.0,
+		"desc": "Cura feridos e infecção bem mais rápido; faz bandagens", "capacidade": [0, 2, 3, 4], "unidade": "leitos", "cor": Color(0.86, 0.86, 0.83)},
+	"radio": {"nome": "Torre de rádio", "comp": 3.4, "larg": 1.9, "nivel_max": 3, "peso": 450.0, "raro": true, "km": 55.0,
+		"desc": "Mostra no mapa eventos, ninhos e reboques à frente; avisa a hora exata da horda", "capacidade": [0, 2, 3, 5], "unidade": "km de alcance", "cor": Color(0.3, 0.33, 0.3)},
+	"destilaria": {"nome": "Destilaria", "comp": 3.8, "larg": 2.0, "nivel_max": 3, "peso": 560.0, "raro": true, "km": 75.0,
+		"desc": "Faz álcool combustível com comida (milho, mandioca, fruta podre)", "capacidade": [0, 12, 18, 26], "unidade": "L por lote", "cor": Color(0.45, 0.3, 0.18)},
+	"torreta": {"nome": "Blindado com torreta", "comp": 4.2, "larg": 2.1, "nivel_max": 3, "peso": 1100.0, "raro": true, "km": 100.0,
+		"desc": "Metralhadora que atira sozinha nos zumbis perto do comboio (gasta munição de rifle)", "capacidade": [0, 22, 30, 38], "unidade": "m de alcance", "cor": Color(0.28, 0.32, 0.22)},
 }
+
+## Tipos comuns (achados em qualquer lugar e com projeto para construir).
+const COMUNS := ["armazem", "tanque", "oficina", "estufa", "plataforma", "apartamentos"]
+
+## Sorteia o tipo de um reboque abandonado em z: depois de certa distância, às vezes um raro.
+static func sortear_tipo(r: RandomNumberGenerator, z: float) -> String:
+	var km := z / 1000.0
+	var raros: Array = []
+	for t in TIPOS:
+		if TIPOS[t].get("raro", false) and km >= float(TIPOS[t].km):
+			raros.append(t)
+	if not raros.is_empty() and r.randf() < 0.3:
+		return raros[r.randi() % raros.size()]
+	return COMUNS[r.randi() % COMUNS.size()]
 
 @export var tipo := "armazem"
 @export var nivel := 1
@@ -78,9 +101,9 @@ func ponto_entrada() -> Vector3:
 		_:
 			return Vector3(hw + 0.7, 0, -0.6)
 
-## Tanque não tem interior: abre o painel da bomba.
+## Tanque e reboques raros não têm interior: abrem um painel.
 func tem_interior() -> bool:
-	return tipo != "tanque"
+	return not (tipo == "tanque" or TIPOS[tipo].get("raro", false))
 
 func interior() -> Dictionary:
 	var hz := comprimento() * 0.5
@@ -146,8 +169,7 @@ func gerar_abandonado(r: RandomNumberGenerator) -> void:
 	if r.randf() < 0.25:
 		saque["pneu"] = 1
 	if r.randf() < 0.3:
-		var tipos := TIPOS.keys()
-		saque["projeto"] = tipos[r.randi() % tipos.size()]
+		saque["projeto"] = COMUNS[r.randi() % COMUNS.size()]
 	if tipo == "tanque":
 		litros = r.randf_range(50.0, 220.0)
 
@@ -178,7 +200,7 @@ func engate_tras() -> Vector3:
 	return Vector3(0, 0.6, -comprimento() * 0.5 - 0.4)
 
 func feminino() -> bool:
-	return tipo in ["oficina", "estufa", "plataforma"]
+	return tipo in ["oficina", "estufa", "plataforma", "torre", "radio", "destilaria"]
 
 func abandonado_txt() -> String:
 	if tipo == "apartamentos":
@@ -246,7 +268,7 @@ func _chassi() -> void:
 	B.box(r, Vector3(0.12, 0.12, 0.45), Vector3(0, 0.6, -hz - 0.18), aco)
 	B.sphere(r, 0.05, Vector3(0, 0.67, -hz - 0.4), B.mat(Color(0.6, 0.6, 0.6), 0.3, 0.9))
 	# eixos: um no nível 1, dois a partir do nível 2 (armazém e plataforma)
-	var duplo := nivel >= 2 and tipo in ["armazem", "plataforma", "tanque"]
+	var duplo := (nivel >= 2 and tipo in ["armazem", "plataforma", "tanque"]) or tipo == "torreta"
 	var eixos := [eixo_z() - 0.5, eixo_z() + 0.5] if duplo else [eixo_z()]
 	var furado := defeitos.has("pneus")
 	for ez in eixos:
@@ -639,3 +661,142 @@ func _moto(r: Node3D, p: Vector3) -> void:
 	B.box(m, Vector3(0.12, 0.35, 0.5), Vector3(0, 0.5, 0.0), preto)
 	var garfo := B.cyl(m, 0.025, 0.7, Vector3(0, 0.62, 0.55), B.mat(Color(0.6, 0.6, 0.6), 0.3, 0.8), Vector3(-25, 0, 0), 6)
 	B.cyl(m, 0.02, 0.6, Vector3(0, 0.98, 0.42), preto, Vector3(0, 0, 90), 6)
+
+
+# ---------------------------------------------------------------- raros
+func _corpo_hospital() -> void:
+	var r := _root
+	var L := comprimento()
+	var hz := L * 0.5
+	var hw: float = info().larg * 0.5
+	var branco := _pint(info().cor, condicao, 0.6, 0.15)
+	var vermelho := B.mat(Color(0.75, 0.08, 0.06), 0.6)
+	var aco := B.mat(Color(0.2, 0.2, 0.22), 0.5, 0.6)
+	var vid := B.mat(Color(0.55, 0.65, 0.7), 0.2, 0.3)
+	B.box(r, Vector3(hw * 2.0, 2.0, L), Vector3(0, 1.74, 0), branco)
+	B.box(r, Vector3(hw * 2.0 + 0.04, 0.12, L + 0.04), Vector3(0, 2.78, 0), aco)
+	for s in [-1.0, 1.0]:
+		# cruz vermelha nas laterais
+		B.box(r, Vector3(0.03, 0.9, 0.3), Vector3(s * (hw + 0.01), 1.85, 0.6), vermelho)
+		B.box(r, Vector3(0.03, 0.3, 0.9), Vector3(s * (hw + 0.01), 1.85, 0.6), vermelho)
+		B.box(r, Vector3(0.03, 0.12, L), Vector3(s * (hw + 0.01), 1.0, 0), vermelho)
+		B.box(r, Vector3(0.03, 0.45, 0.8), Vector3(s * (hw + 0.01), 2.15, -1.2), vid)
+	# porta traseira dupla e degrau
+	B.box(r, Vector3(1.5, 1.8, 0.04), Vector3(0, 1.66, -hz - 0.01), _pint(info().cor.darkened(0.08), condicao, 0.6, 0.15))
+	B.box(r, Vector3(0.03, 1.8, 0.05), Vector3(0, 1.66, -hz - 0.03), aco)
+	B.box(r, Vector3(1.0, 0.05, 0.35), Vector3(0, 0.5, -hz - 0.25), aco)
+	# cruz no teto e giroflex
+	B.box(r, Vector3(1.0, 0.03, 0.32), Vector3(0, 2.86, 0), vermelho)
+	B.box(r, Vector3(0.32, 0.03, 1.0), Vector3(0, 2.86, 0), vermelho)
+	B.cyl(r, 0.12, 0.16, Vector3(0, 2.92, hz - 0.4), B.emissive(Color(1.0, 0.1, 0.05), 1.5 if funcional() else 0.0), Vector3.ZERO, 12)
+	if nivel >= 2:
+		# toldo lateral com maca
+		B.box(r, Vector3(1.6, 0.04, L * 0.7), Vector3(hw + 0.8, 2.5, 0), B.mat(Color(0.35, 0.42, 0.35), 0.95), Vector3(0, 0, -8))
+		for z in [-L * 0.3, L * 0.3]:
+			B.cyl(r, 0.03, 2.3, Vector3(hw + 1.55, 1.25, z), aco, Vector3.ZERO, 6)
+		B.box(r, Vector3(0.6, 0.08, 1.9), Vector3(hw + 0.8, 0.7, 0), B.mat(Color(0.25, 0.4, 0.3), 0.8))
+	if nivel >= 3:
+		B.box(r, Vector3(0.7, 0.45, 0.5), Vector3(0, 3.02, -0.9), aco)   # gerador/ar-condicionado
+
+func _corpo_radio() -> void:
+	var r := _root
+	var L := comprimento()
+	var hz := L * 0.5
+	var hw: float = info().larg * 0.5
+	var lata := _pint(info().cor, condicao, 0.55, 0.35)
+	var aco := B.mat(Color(0.55, 0.55, 0.55), 0.4, 0.8)
+	var vermelho := B.mat(Color(0.75, 0.12, 0.08), 0.5)
+	B.box(r, Vector3(hw * 2.0, 1.4, L * 0.6), Vector3(0, 1.44, hz * 0.35), lata)
+	B.box(r, Vector3(0.6, 0.35, 0.03), Vector3(hw * 0.4, 1.7, hz * 0.35 + L * 0.3 + 0.01), B.mat(Color(0.1, 0.12, 0.1), 0.3, 0.3))
+	# mastro treliçado
+	var alt := 5.0 + nivel * 1.5
+	var base := Vector3(0, 0.75, -hz * 0.5)
+	for s in [[-1, -1], [1, -1], [-1, 1], [1, 1]]:
+		B.cyl(r, 0.03, alt, base + Vector3(s[0] * 0.18, alt * 0.5, s[1] * 0.18), aco, Vector3.ZERO, 5)
+	var k := 0.0
+	while k < alt:
+		for e in 4:
+			var cor := vermelho if int(k) % 2 == 0 else aco
+			B.box(r, Vector3(0.38, 0.025, 0.025), base + Vector3(0, k + 0.2, 0.18 if e < 2 else -0.18), cor, Vector3(0, 0, 35.0 * (1 if e % 2 == 0 else -1)))
+		k += 0.7
+	B.cyl(r, 0.015, 1.6, base + Vector3(0, alt + 0.8, 0), aco, Vector3.ZERO, 4)
+	B.sphere(r, 0.07, base + Vector3(0, alt + 1.6, 0), B.emissive(Color(1, 0.1, 0.05), 2.0 if funcional() else 0.0))
+	# antena parabólica
+	var prato := B.sphere(r, 0.45, base + Vector3(0.3, alt * 0.65, 0.35), B.mat(Color(0.85, 0.85, 0.82), 0.5, 0.3), Vector3(1, 1, 0.25), 12)
+	prato.rotation_degrees = Vector3(-25, 30, 0)
+	# estais
+	for s in [-1.0, 1.0]:
+		var a := base + Vector3(0, alt * 0.9, 0)
+		var b := Vector3(s * hw, 0.9, -hz + 0.1)
+		var mid := (a + b) * 0.5
+		var c := B.cyl(r, 0.006, a.distance_to(b), mid, aco, Vector3.ZERO, 3)
+		c.look_at_from_position(mid, b, Vector3.UP if absf((b - a).normalized().y) < 0.99 else Vector3.RIGHT)
+		c.rotate_object_local(Vector3.RIGHT, PI * 0.5)
+		c.position = mid
+
+func _corpo_destilaria() -> void:
+	var r := _root
+	var L := comprimento()
+	var hz := L * 0.5
+	var hw: float = info().larg * 0.5
+	var madeira := _pint(info().cor, condicao, 0.85, 0.0)
+	var cobre := B.mat(Color(0.72, 0.42, 0.22), 0.3, 0.85)
+	var aco := B.mat(Color(0.25, 0.25, 0.26), 0.45, 0.7)
+	# grade baixa de madeira
+	for s in [-1.0, 1.0]:
+		B.box(r, Vector3(0.06, 0.5, L), Vector3(s * hw, 1.0, 0), madeira)
+	B.box(r, Vector3(hw * 2.0, 0.5, 0.06), Vector3(0, 1.0, hz), madeira)
+	# alambique: caldeira, capacete, pescoço e serpentina
+	B.cyl(r, 0.5, 0.8, Vector3(-0.35, 1.15, 0.5), cobre, Vector3.ZERO, 18)
+	B.sphere(r, 0.5, Vector3(-0.35, 1.55, 0.5), cobre, Vector3(1, 0.6, 1), 14)
+	var pes := B.cyl(r, 0.06, 1.0, Vector3(0.05, 1.95, 0.1), cobre, Vector3(50, 0, 0), 8)
+	pes.rotation_degrees = Vector3(-50, 0, 0)
+	B.cyl(r, 0.32, 0.9, Vector3(0.45, 1.2, -0.55), B.mat(Color(0.3, 0.35, 0.4), 0.4, 0.6), Vector3.ZERO, 14)
+	for i in 5:
+		B.cyl(r, 0.36, 0.04, Vector3(0.45, 0.95 + i * 0.13, -0.55), cobre, Vector3.ZERO, 14)
+	# fornalha com fogo
+	B.box(r, Vector3(0.7, 0.32, 0.7), Vector3(-0.35, 0.92, 0.5), B.mat(Color(0.18, 0.15, 0.13), 0.9))
+	B.box(r, Vector3(0.3, 0.12, 0.05), Vector3(-0.35, 0.9, 0.87), B.emissive(Color(1.0, 0.45, 0.1), 2.5 if funcional() else 0.2))
+	# barris e bombonas de álcool
+	for i in 3:
+		B.cyl(r, 0.24, 0.6, Vector3(-hw + 0.35, 1.05, -hz + 0.4 + i * 0.55), B.mat(Color(0.35, 0.22, 0.12), 0.8), Vector3.ZERO, 12)
+	for i in nivel:
+		B.box(r, Vector3(0.26, 0.4, 0.2), Vector3(hw - 0.25, 0.95, -hz + 0.3 + i * 0.3), B.mat(Color(0.2, 0.45, 0.75), 0.5))
+	# chaminé
+	B.cyl(r, 0.08, 1.5, Vector3(-0.75, 1.8, 0.85), aco, Vector3.ZERO, 8)
+
+func _corpo_torreta() -> void:
+	var r := _root
+	var L := comprimento()
+	var hz := L * 0.5
+	var hw: float = info().larg * 0.5
+	var blind := _pint(info().cor, condicao, 0.6, 0.45)
+	var aco := B.mat(Color(0.15, 0.15, 0.15), 0.45, 0.75)
+	var rebite := B.mat(Color(0.3, 0.3, 0.28), 0.4, 0.8)
+	# casco inclinado
+	var perfil := PackedVector2Array([Vector2(-hz, 0.74), Vector2(hz, 0.74), Vector2(hz, 1.5), Vector2(hz - 0.5, 2.15),
+		Vector2(-hz + 0.4, 2.15), Vector2(-hz, 1.7)])
+	B.extruded(r, perfil, hw * 2.0, Vector3.ZERO, blind)
+	for s in [-1.0, 1.0]:
+		for i in 7:
+			B.box(r, Vector3(0.02, 0.05, 0.05), Vector3(s * (hw + 0.01), 1.95, -hz + 0.3 + i * (L - 0.6) / 6.0), rebite)
+		B.box(r, Vector3(0.03, 0.06, 0.5), Vector3(s * (hw + 0.01), 1.55, 0.3), B.mat(Color(0.02, 0.02, 0.02), 0.9))
+		B.box(r, Vector3(0.05, 0.55, L), Vector3(s * (hw + 0.03), 0.95, 0), aco)   # saias sobre as rodas
+	# torreta (gira para o alvo): nó com nome fixo
+	var t := Node3D.new()
+	t.name = "Torreta"
+	t.position = Vector3(0, 2.15, -0.2)
+	r.add_child(t)
+	B.cyl(t, 0.62, 0.35, Vector3(0, 0.17, 0), blind, Vector3.ZERO, 16)
+	B.box(t, Vector3(0.9, 0.4, 0.7), Vector3(0, 0.5, 0.05), blind)
+	var cano_n := 1 if nivel < 3 else 2
+	for c in cano_n:
+		var x := 0.0 if cano_n == 1 else (-0.1 + c * 0.2)
+		B.cyl(t, 0.05, 1.3, Vector3(x, 0.5, 0.95), aco, Vector3(90, 0, 0), 8)
+		B.cyl(t, 0.075, 0.2, Vector3(x, 0.5, 1.55), aco, Vector3(90, 0, 0), 8)
+	B.box(t, Vector3(0.3, 0.25, 0.3), Vector3(0.38, 0.55, -0.15), B.mat(Color(0.25, 0.3, 0.18), 0.7))   # caixa de munição
+	var flash := B.sphere(t, 0.14, Vector3(0, 0.5, 1.72), B.emissive(Color(1.0, 0.8, 0.3), 4.0), Vector3(1, 1, 1.6), 6)
+	flash.name = "Flash"
+	flash.visible = false
+	if nivel >= 2:
+		B.box(t, Vector3(1.0, 0.45, 0.05), Vector3(0, 0.62, 0.62), blind)   # escudo

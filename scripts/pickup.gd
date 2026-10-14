@@ -23,6 +23,7 @@ const MODULOS := {
 
 @export var cor := Color(0.42, 0.43, 0.42)
 @export var condicao := 0.6
+var trofeus := 0          # crânios de brutamonte no quebra-mato
 
 var config := {
 	"motor": {"id": "motor", "nivel": 1, "condicao": 0.7},
@@ -218,6 +219,7 @@ func reconstruir() -> void:
 		_farois.add_child(sp)
 	_farois.visible = farol
 	_parachoque(b, aco, plastico)
+	_trofeus(b)
 	B.box(b, Vector3(LARGURA, 0.16, 0.15), Vector3(0, 0.6, -2.78), aco)
 	B.box(b, Vector3(0.08, 0.08, 0.2), Vector3(0, 0.55, -2.85), aco)
 	B.sphere(b, 0.05, Vector3(0, 0.62, -2.88), B.mat(Color(0.6, 0.6, 0.6), 0.3, 0.9))
@@ -305,6 +307,22 @@ func _parachoque(b: Node3D, aco: Material, plastico: Material) -> void:
 		for k in range(-3, 4):
 			B.box(b, Vector3(0.06, 0.55, 0.06), Vector3(k * 0.3, 0.52, 3.08), aco, Vector3(-15, 0, 0))
 		B.box(b, Vector3(1.0, 0.1, 0.1), Vector3(0, 1.22, 2.95), B.emissive(Color(1.0, 0.95, 0.8), 1.0))
+
+func _trofeus(b: Node3D) -> void:
+	if trofeus <= 0:
+		return
+	var osso := B.mat(Color(0.82, 0.78, 0.66), 0.75, 0.0, "cranio")
+	var buraco := B.mat(Color(0.05, 0.04, 0.03), 1.0, 0.0, "cranio_olho")
+	var arame := B.mat(Color(0.3, 0.3, 0.3), 0.5, 0.8)
+	var xs := [-0.5, 0.5, -0.16, 0.16]
+	for i in trofeus:
+		var p := Vector3(xs[i], 1.0 if nivel("parachoque") >= 2 else 0.86, 2.98 if nivel("parachoque") >= 2 else 2.84)
+		B.sphere(b, 0.13, p + Vector3(0, 0.05, 0), osso, Vector3(0.95, 1.0, 1.05), 10)
+		B.box(b, Vector3(0.15, 0.08, 0.12), p + Vector3(0, -0.08, 0.03), osso)
+		for s in [-1.0, 1.0]:
+			B.sphere(b, 0.035, p + Vector3(s * 0.05, 0.05, 0.11), buraco, Vector3(1, 1.1, 0.6), 6)
+		B.box(b, Vector3(0.03, 0.04, 0.02), p + Vector3(0, -0.01, 0.12), buraco)
+		B.cyl(b, 0.006, 0.25, p + Vector3(0, 0.18, -0.02), arame, Vector3.ZERO, 3)
 
 func _santo_antonio(b: Node3D, preto: Material) -> void:
 	var n := nivel("santo_antonio")

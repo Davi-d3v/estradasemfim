@@ -624,20 +624,7 @@ func _gerar_chunk(k: int) -> Node3D:
 	for zp in [marco.z - 420.0, marco.z - 190.0]:
 		if zp >= z0 and zp < z0 + TAM:
 			_placa_texto(n, zp, LARG_ESTRADA * 0.5 + 2.4, ("PONTE CAÍDA\nDESVIO " if marco.tipo == "ponte" else "BLOQUEIO MILITAR\nDESVIO ") + ("→" if marco.lado > 0 else "←"), Color(0.85, 0.55, 0.1))
-	var tipo: String = pois_fixos.get(k, "")
-	if tipo == "" and not perto_marco:
-		var r := _rng_chunk(k, 99)
-		var sorte := r.randf()
-		if sorte < 0.14 * fartura_diesel(z0) and bio != "cidade":
-			tipo = "posto"
-		elif sorte < 0.2:
-			tipo = "placa"
-		elif sorte < 0.24:
-			tipo = "reboque"
-		elif sorte < 0.305 and k > 3 and bio != "cidade":
-			tipo = "evento"
-		if tipo == "posto" and perto_de_feature(centro_x(z0 + 44.0), z0 + 44.0, 60.0):
-			tipo = ""
+	var tipo := tipo_poi(k)
 	if tipo != "":
 		for t in tipo.split(","):
 			var partes := t.split(":")
@@ -1420,7 +1407,7 @@ func reboque_abandonado_em(pos: Vector3, rot_y: float, chave: String, r: RandomN
 	if reboques_levados.has(chave):
 		return
 	var reb := Reboque.new()
-	reb.tipo = TIPOS_REBOQUE[r.randi() % TIPOS_REBOQUE.size()]
+	reb.tipo = Reboque.sortear_tipo(r, pos.z)
 	reb.nivel = 1
 	if estado_reboques.has(chave):
 		reb.carregar(estado_reboques[chave])
@@ -1875,7 +1862,7 @@ func _poi_reboque(n: Node3D, z0: float, k: int, tipo := "") -> void:
 		return
 	var r := _rng_chunk(k, 6)
 	if tipo == "":
-		tipo = TIPOS_REBOQUE[r.randi() % TIPOS_REBOQUE.size()]
+		tipo = Reboque.sortear_tipo(r, z0)
 	var z := z0 + 30.0
 	var lado := 1.0 if r.randf() < 0.5 else -1.0
 	var p := ponto_estrada(z, lado * (LARG_ESTRADA * 0.5 + 4.0))
@@ -1896,6 +1883,37 @@ func _poi_reboque(n: Node3D, z0: float, k: int, tipo := "") -> void:
 	reboques_soltos.append(reb)
 
 ## Posição aproximada de um reboque que ainda vai ser gerado (para o marcador do rádio).
+## O que vai aparecer no trecho k (posto, placa, reboque, evento...), sem gerar nada.
+## Usado na geração e pela torre de rádio, que "ouve" o que tem à frente.
+func tipo_poi(k: int) -> String:
+	var z0 := k * TAM
+	var zm := z0 + TAM * 0.5
+	var bio := bioma_em(zm)
+	var marco := reg.marco(reg.indice(zm))
+	var perto_marco := absf(zm - marco.z) < 320.0
+	var tipo: String = pois_fixos.get(k, "")
+	if tipo == "" and not perto_marco:
+		var r := _rng_chunk(k, 99)
+		var sorte := r.randf()
+		if sorte < 0.14 * fartura_diesel(z0) and bio != "cidade":
+			tipo = "posto"
+		elif sorte < 0.2:
+			tipo = "placa"
+		elif sorte < 0.24:
+			tipo = "reboque"
+		elif sorte < 0.305 and k > 3 and bio != "cidade":
+			tipo = "evento"
+		if tipo == "posto" and perto_de_feature(centro_x(z0 + 44.0), z0 + 44.0, 60.0):
+			tipo = ""
+	return tipo
+
+## Tipo do evento do trecho k (mesmo sorteio de Eventos.construir), sem gerar.
+func tipo_evento(k: int) -> String:
+	if eventos_tipo.has(k):
+		return eventos_tipo[k]
+	var r := _rng_chunk(k, 77)
+	return Eventos.TIPOS[r.randi() % Eventos.TIPOS.size()]
+
 func posicao_poi_reboque(k: int) -> Vector3:
 	return ponto_estrada(k * TAM + 30.0, 0.0)
 

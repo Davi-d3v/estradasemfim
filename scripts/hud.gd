@@ -21,6 +21,7 @@ var fora_estrada := false
 var re := false
 var estoque := {}
 var marcadores: Array[Vector3] = []
+var radar: Array = []          # torre de rádio: [{pos, cor, letra}]
 var mira := false
 var carga_usada := 0.0
 var carga_max := 0
@@ -426,6 +427,15 @@ func _bussola(s: Vector2, e: float) -> void:
 		var cor_l: Color = {"vila": Color(0.45, 0.85, 0.5), "fazenda": Color(0.95, 0.85, 0.35), "ferro_velho": Color(0.9, 0.55, 0.3)}.get(l.tipo, Color(0.55, 0.75, 0.95))
 		draw_rect(Rect2(q2 + Vector2(-5, -2) * e, Vector2(10, 8) * e), cor_l)
 		draw_colored_polygon(PackedVector2Array([q2 + Vector2(-7, -2) * e, q2 + Vector2(0, -9) * e, q2 + Vector2(7, -2) * e]), cor_l)
+	# torre de rádio: o que vem pela frente
+	for it in radar:
+		var rp := _mapa(it.pos - pos, yaw) * escala
+		if rp.length() > raio - 10 * e:
+			rp = rp.normalized() * (raio - 10 * e)
+		var qr := c + rp
+		draw_circle(qr, 7 * e, Color(0.05, 0.05, 0.05, 0.8))
+		draw_arc(qr, 7 * e, 0, TAU, 16, it.cor, 1.5 * e)
+		_texto(it.letra, qr + Vector2(-4, 4.5) * e, int(11 * e), it.cor)
 	# marcadores do rádio
 	for m in marcadores:
 		var mp := _mapa(m - pos, yaw) * escala

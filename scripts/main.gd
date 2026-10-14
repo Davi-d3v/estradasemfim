@@ -50,7 +50,8 @@ const ITENS := {
 }
 ## Custo para construir um reboque na oficina móvel (além do projeto).
 const CUSTO_CONSTRUCAO := {"pneu": 2, "eixo": 1, "sucata": 60, "pecas": 15}
-const NOMES_TIPO := {"armazem": "Armazém", "tanque": "Tanque de diesel", "oficina": "Oficina móvel", "estufa": "Estufa", "plataforma": "Plataforma de carga", "apartamentos": "Apartamentos"}
+const NOMES_TIPO := {"armazem": "Armazém", "tanque": "Tanque de diesel", "oficina": "Oficina móvel", "estufa": "Estufa", "plataforma": "Plataforma de carga", "apartamentos": "Apartamentos",
+	"hospital": "Hospital de campanha", "radio": "Torre de rádio", "destilaria": "Destilaria", "torreta": "Blindado com torreta"}
 
 var mundo: WorldGen
 var sol: DirectionalLight3D
@@ -94,6 +95,7 @@ var progresso: Progresso
 var combate_comboio: CombateComboio
 var comercio: Comercio
 var cachorro: Cachorro = null
+var comboio_extra: ComboioExtra
 var horda_visivel: HordaVisivel
 var retrovisor: Retrovisor
 var _t_autosave := 0.0
@@ -211,6 +213,9 @@ func _ready() -> void:
 	if not mundo.pois_fixos.has(12):
 		mundo.pois_fixos[12] = "evento"
 		mundo.eventos_tipo[12] = "cachorro"
+	comboio_extra = ComboioExtra.new()
+	comboio_extra.main = self
+	add_child(comboio_extra)
 	horda_visivel = HordaVisivel.new()
 	horda_visivel.main = self
 	add_child(horda_visivel)
@@ -235,6 +240,8 @@ func _ready() -> void:
 			_capturar_trailer()
 		elif "--eventos" in OS.get_cmdline_user_args():
 			_capturar_eventos()
+		elif "--reboques-raros" in OS.get_cmdline_user_args():
+			_capturar_raros()
 		elif "--vida" in OS.get_cmdline_user_args():
 			_capturar_vida()
 		elif "--cachorro" in OS.get_cmdline_user_args():
@@ -273,6 +280,10 @@ func _ready() -> void:
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
 		_teste_recrutas()
+	elif "--teste-reboques" in OS.get_cmdline_user_args():
+		Jogo.modo = Jogo.MODO_INFINITO
+		jogando = true
+		_teste_reboques()
 	elif "--teste-vida" in OS.get_cmdline_user_args():
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
@@ -369,6 +380,82 @@ func _teste_salvar() -> void:
 	defesa.z_horda = -3333.0
 	var ok := Salvar.salvar(self)
 	print("TS salvo=", ok, " resumo=", Salvar.resumo())
+	get_tree().quit()
+
+## Teste da etapa 8: reboques raros, desgaste, álcool, torreta, rádio e visual.
+func _teste_reboques() -> void:
+	await get_tree().process_frame
+	# sorteio dos raros por distância
+	var cont := {}
+	var r := RandomNumberGenerator.new()
+	r.seed = 3
+	for km in [10.0, 60.0, 130.0]:
+		var c := {}
+		for i in 400:
+			var t := Reboque.sortear_tipo(r, km * 1000.0)
+			c[t] = c.get(t, 0) + 1
+		print("TB sorteio km %d: %s" % [int(km), str(c)])
+	for t in ["hospital", "radio", "destilaria", "torreta"]:
+		comboio.engatar(_novo_reboque(t, 2, 1.0), true)
+	print("TB cadeia: ", comboio.cadeia.map(func(x): return x.tipo if x is Reboque else x.name))
+	await get_tree().process_frame
+	# hospital
+	jogador.vida = 0.4
+	jogador.infeccao = 0.3
+	estoque.tecido = 6
+	var b0: int = estoque.get("bandagem", 0)
+	_passar_tempo(10.0)
+	print("TB hospital: vida 0.40 -> %.2f, infecção 0.30 -> %.2f, bandagens %d -> %d" % [jogador.vida, jogador.infeccao, b0, estoque.bandagem])
+	# destilaria
+	var dest := comboio_extra.reboque("destilaria")
+	estoque.comida = 30
+	comboio.diesel = 20.0
+	var pn := comboio_extra.painel(dest)
+	var msg = pn.botoes[0][1].call()
+	_passar_tempo(4.5)
+	print("TB destilaria: '%s' comida 30 -> %d, diesel 20 -> %.0f" % [msg, estoque.comida, comboio.diesel])
+	# rádio
+	comboio_extra._atualizar_radar()
+	print("TB radio: %d itens no mapa; %s" % [comboio_extra.radar.size(), ", ".join(comboio_extra.radar.slice(0, 5).map(func(x): return "%.1f km %s" % [x.km, x.nome]))])
+	print("TB radio horda: ", comboio_extra.texto_radio())
+	# torreta
+	estoque.municao_rifle = 30
+	var tor := comboio_extra.reboque("torreta")
+	var zs: Array = []
+	for i in 4:
+		var zp := tor.global_position + Vector3(8 + i * 2.0, 0, 6 - i * 3.0)
+		zp.y = mundo.altura(zp.x, zp.z)
+		var zb := mundo.criar_zumbi(mundo, zp, 0.0, 50 + i, "comum")
+		zb.set_process(false)
+		zs.append(zb)
+	var t := 0.0
+	while t < 8.0 and zs.any(func(z): return is_instance_valid(z) and z.vivo()):
+		comboio_extra._torreta(0.05)
+		t += 0.05
+		await get_tree().process_frame
+	print("TB torreta: %d/4 abatidos em %.1f s, munição 30 -> %d" % [zs.filter(func(z): return not z.vivo()).size(), t, estoque.municao_rifle])
+	# desgaste: motor e pneu
+	var m0: float = picape.config.motor.condicao
+	comboio.dirigindo = true
+	comboio.fora_da_estrada = true
+	comboio.velocidade = 12.0
+	var furou_em := -1.0
+	for i in 3000:
+		comboio_extra._desgaste(0.1, comboio)
+		comboio.velocidade = 12.0
+		if comboio_extra.pneu_furado and furou_em < 0.0:
+			furou_em = i * 0.1 * 12.0
+	comboio.dirigindo = false
+	comboio.fora_da_estrada = false
+	print("TB desgaste: 3,6 km fora da estrada: motor %.3f -> %.3f, pneu furou em %.0f m, limite %.1f m/s" % [m0, picape.config.motor.condicao, furou_em, comboio_extra.limite_velocidade()])
+	estoque.pneu = 1
+	print("TB troca: ", comboio_extra.trocar_pneu(), " furado=", comboio_extra.pneu_furado)
+	# visual
+	comboio_extra.nome_comboio = "ÚLTIMA PARADA"
+	comboio_extra.trofeus = 3
+	comboio_extra.aplicar_visual()
+	print("TB visual: nome=", trailer.nome_comboio, " trofeus=", picape.trofeus)
+	print("TB save=", Salvar.salvar(self), " extra=", comboio_extra.salvar())
 	get_tree().quit()
 
 ## Teste da vida dos recrutas: traços, níveis, amizades, brigas, casais, quem vai embora, luto e túmulo.
@@ -1232,6 +1319,7 @@ func _process(dt: float) -> void:
 		_abrir_painel(progresso.painel_diario)
 	_sons_ambiente(dt)
 	eventos.atualizar(dt)
+	comboio_extra.atualizar(dt)
 	_t_autosave += dt
 	if _t_autosave > 600.0 and not comboio.dirigindo and defesa.onda.is_empty():
 		salvar_jogo(true)
@@ -1267,6 +1355,8 @@ func _passar_tempo(h: float) -> void:
 		dia += 1
 	_produzir(h)
 	base.passar(h)
+	if comboio_extra:
+		comboio_extra.passar(h)
 	if defesa:
 		defesa.passar(h)
 	if clima:
@@ -1967,6 +2057,9 @@ func _atualizar_hud() -> void:
 	hud.defesa_armadura = equip.defesa()
 	hud.defesa = defesa.info_hud()
 	hud.horda_txt = defesa.texto_horda()
+	var tr_radio := comboio_extra.texto_radio()
+	if tr_radio != "" and hud.horda_txt != "":
+		hud.horda_txt += " · " + tr_radio
 	hud.clima_txt = "%s · %s" % [clima.nome(), clima.estacao()]
 	hud.dirigindo = comboio.dirigindo
 	hud.mira = dentro != null or (jogador.visible and not comboio.dirigindo)
@@ -2041,6 +2134,9 @@ func _interacao_a_pe() -> void:
 		add.call(trailer.global_transform * trailer.ponto_compartimento(cid), 1.1, "interact", "[E] Abrir: %s" % Trailer.COMPARTIMENTOS[cid].nome, _abrir_compartimento.bind(cid))
 	add.call(trailer.global_transform * Vector3(-1.4, 0, -0.6), 1.5, "interact",
 		"[E] " + ("Fechar cozinha" if trailer.cozinha_aberta > 0.5 else "Abrir cozinha"), _alternar_cozinha)
+	add.call(trailer.global_transform * Vector3(1.6, 0, 0.9), 1.2, "interact", "[E] Pintar o comboio", _abrir_painel.bind(comboio_extra.painel_visual))
+	if comboio_extra.pneu_furado:
+		add.call(picape.global_transform * Vector3(1.3, 0, 1.6), 2.2, "interact", "[E] Trocar o pneu furado (1 pneu, 20 min)", func(): hud.aviso(comboio_extra.trocar_pneu()))
 	if estoque.galoes_diesel > 0 and comboio.diesel < comboio.tanque() - 1.0:
 		add.call(picape.global_transform * Vector3(1.2, 0, -1.9), 1.6, "abastecer", "[R] Abastecer com galão (20 L)", _abastecer_galao)
 	for i in range(1, comboio.cadeia.size()):
@@ -2191,7 +2287,10 @@ func _desengatar(indice: int) -> void:
 func _entrar_em(v: Node3D) -> void:
 	Som.em("porta", v.global_position + Vector3(0, 1.2, 0), -6.0)
 	if v is Reboque and not v.tem_interior():
-		_abrir_painel(_painel_tanque.bind(v))
+		if v.tipo == "tanque":
+			_abrir_painel(_painel_tanque.bind(v))
+		else:
+			_abrir_painel(comboio_extra.painel.bind(v))
 		return
 	if v is Reboque and v.tipo == "armazem" and not v.aberto:
 		v.aberto = true
@@ -3357,6 +3456,79 @@ func _capturar_trailer() -> void:
 			_abrir_painel(_painel_compartimento.bind(id))
 			await _salvar("trailer_painel_%s" % id)
 			_fechar_janela()
+	get_tree().quit()
+
+## Prints da etapa 8: os 4 reboques raros, o comboio com nome e troféus, pneu furado e o rádio no mapa.
+func _capturar_raros() -> void:
+	comboio.set_physics_process(false)
+	var cam := Camera3D.new()
+	cam.far = 2500.0
+	cam.near = 0.05
+	add_child(cam)
+	hud.visible = false
+	hora = 15.5
+	_atualizar_ceu()
+	var zc := 1460.0
+	var dz := mundo.direcao(zc)
+	var pc := mundo.ponto_estrada(zc, -0.6)
+	comboio.posicionar_livre(pc, atan2(dz.x, dz.z), 0.0)
+	for t in ["hospital", "radio", "destilaria", "torreta"]:
+		comboio.engatar(_novo_reboque(t, 3 if t != "radio" else 2, 0.9), true)
+	comboio.posicionar_livre(pc, atan2(dz.x, dz.z), 0.0)
+	comboio_extra.nome_comboio = "ÚLTIMA PARADA"
+	comboio_extra.trofeus = 3
+	var nomes := [["Tião", "vigia"], ["Marta", "medico"], ["Beto", "mecanico"], ["Rita", "agricultor"], ["Zeca", "batedor"]]
+	for i in nomes.size():
+		var rc := Recrutas.novo(nomes[i][0], nomes[i][1], 300 + i)
+		rc.dias = 10
+		base.lista.append(rc)
+	comboio_extra.aplicar_visual()
+	jogador.position = pc + Vector3(30, 0, 0)
+	mundo.atualizar(pc)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_limpar_zumbis_perto(pc, 120.0)
+	jogador.visible = false
+	var lado := Vector3(dz.z, 0, -dz.x)
+	# cada reboque raro de lado
+	for i in range(1, comboio.cadeia.size()):
+		var r: Node3D = comboio.cadeia[i]
+		var alvo := r.global_position + Vector3(0, 1.4, 0)
+		var de := alvo + lado * 5.5 - dz * 2.5 + Vector3(0, 1.3, 0)
+		if r.tipo == "radio":
+			de = alvo + lado * 8.0 - dz * 3.0 + Vector3(0, 2.0, 0)
+			alvo += Vector3(0, 2.2, 0)
+		_abrir_vista(de, alvo)
+		cam.fov = 55.0
+		cam.look_at_from_position(de, alvo, Vector3.UP)
+		cam.current = true
+		await _salvar("raro_%s" % r.tipo)
+	# frente: troféus e nome no trailer
+	var pf := picape.global_position + dz * 5.0 + lado * 2.6 + Vector3(0, 1.6, 0)
+	cam.look_at_from_position(pf, picape.global_position + dz * 1.5 + Vector3(0, 1.0, 0), Vector3.UP)
+	await _salvar("comboio_trofeus")
+	var tl := trailer.global_position + lado * 4.2 + dz * 0.8 + Vector3(0, 1.5, 0)
+	cam.look_at_from_position(tl, trailer.global_position + Vector3(0, 1.4, 0), Vector3.UP)
+	await _salvar("comboio_nome")
+	# visão geral do comboio
+	var meio: Vector3 = comboio.cadeia[2].global_position
+	var dg := meio + lado * 16.0 + dz * 6.0 + Vector3(0, 7.0, 0)
+	_abrir_vista(dg, meio)
+	cam.look_at_from_position(dg, meio + Vector3(0, 0.8, 0), Vector3.UP)
+	await _salvar("comboio_raros")
+	# pneu furado e rádio no mapa (dirigindo)
+	comboio_extra.furar()
+	_entrar_no_carro()
+	comboio_extra._atualizar_radar()
+	hud.visible = true
+	for i in 3:
+		await get_tree().process_frame
+	_atualizar_hud()
+	await _salvar("comboio_pneu_furado")
+	_sair_do_carro()
+	comboio_extra.pneu_furado = false
+	_abrir_painel(comboio_extra.painel.bind(comboio_extra.reboque("radio")))
+	await _salvar("raro_radio_painel")
 	get_tree().quit()
 
 ## Prints da vida dos recrutas: acampamento com criança e idoso, painel e túmulo.

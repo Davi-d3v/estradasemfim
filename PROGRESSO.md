@@ -64,8 +64,14 @@
   leal e criança ficam; o par às vezes vai junto); luto (par sofre muito) e túmulo com nome e dia na beira da estrada (salvo);
   funções novas: idoso (ensina, +25% de aprendizado, ajuda na horta e oficina) e criança (anima, acha coisas pequenas ao vasculhar, se esconde)
   — chegam pela carona e pelo ônibus tombado. Teste: --teste-vida; prints: --vida
-- [ ] 8-11. Recrutas, comboio, exploração, defesa, sobrevivência  - [ ] 12. v0.8
+- [x] 8. Comboio (scripts/comboio_extra.gd + reboques raros em reboque.gd): Hospital de campanha (km 40: cura acelerada, infecção, bandagens de tecido,
+  leito de 3 h), Torre de rádio (km 55: mostra no mapa eventos, reboques e postos à frente até 2-5 km e a hora exata da horda), Destilaria (km 75:
+  comida vira álcool combustível), Blindado com torreta (km 100: metralhadora automática que gasta munição de rifle); aparecem abandonados (30%
+  depois do km) e como prêmio dos marcos; desgaste: motor perde condição com os km e engasga abaixo de 30%, pneus gastam e furam (muito mais na
+  terra/mato) — pneu furado limita a 30 km/h e puxa a direção, troca com 1 pneu; cara do comboio: nome pintado no trailer, assinaturas dos
+  recrutas veteranos, crânios de brutamonte no quebra-mato (até 4). Teste: --teste-reboques; prints: --reboques-raros
+- [ ] 9-11. Recrutas, comboio, exploração, defesa, sobrevivência  - [ ] 12. v0.8
 
 ## Próximos
-- seguir a rodada grande (etapa 8: comboio)
+- seguir a rodada grande (etapa 9: exploração)
 - ouvir o retorno do teste no PC do Davi

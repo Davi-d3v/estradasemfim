@@ -133,6 +133,9 @@ func morrer() -> void:
 			cair("Death01" if _rng.randf() < 0.55 else "Death02", _rng.randf_range(0.9, 1.25))
 	if mundo:
 		mundo.zumbis_vivos.erase(self)
+		var ex = mundo.get_parent().get("comboio_extra")
+		if ex:
+			ex.abateu(self)
 
 func _process(dt: float) -> void:
 	if not mundo:

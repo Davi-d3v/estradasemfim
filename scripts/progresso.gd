@@ -153,6 +153,8 @@ func _painel_premio() -> Dictionary:
 		return {"titulo": "", "linhas": [], "botoes": []}
 	var mc := marco(i)
 	var reb: String = REBOQUES_PREMIO[i % REBOQUES_PREMIO.size()]
+	if i >= 1 and i % 2 == 1:
+		reb = ["hospital", "radio", "destilaria", "torreta"][(i / 2) % 4]   # raros a partir do segundo marco
 	var esp: Array = RECRUTAS_ESPECIAIS[i % RECRUTAS_ESPECIAIS.size()]
 	var prox := marco(i + 1)
 	return {"titulo": String(mc.nome).to_upper(), "subtitulo": "Muro de contêineres, gente armada nas torres e cheiro de comida quente. Por uma noite, dá para respirar.",
