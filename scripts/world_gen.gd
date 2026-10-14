@@ -57,6 +57,10 @@ var ruidos: Array = []
 var nivel_ameaca := 0.0
 ## Lugares (vilas, fazendas, ferro-velhos) já gerados como cena, por id.
 var lugares_ativos := {}
+## Eventos na estrada (Eventos): ativos por chunk e já resolvidos (salvo).
+var eventos_ativos := {}
+var eventos_feitos := {}
+var eventos_tipo := {}     # força o tipo (testes/prints)
 
 ## Os shaders do chão usam coordenadas do mundo; longe da origem o float perde precisão
 ## (fica quadriculado). Recentra a cada 2 km.
@@ -429,6 +433,10 @@ func bloqueado(p: Vector3) -> bool:
 		return true
 	if m.tipo == "ponte" and dz < 5.0 and lat < LARG_ESTRADA * 0.5 + 1.5:
 		return true
+	# bloqueio de saqueadores ainda não resolvido
+	var e: Dictionary = eventos_ativos.get(int(floor(p.z / TAM)), {})
+	if not e.is_empty() and e.tipo == "saqueadores" and not e.resolvido and absf(p.z - float(e.z)) < 2.5 and lat < LARG_ESTRADA * 0.5 + 1.0:
+		return true
 	var ag := agua_em(p.x, p.z)
 	if ag > -1e8 and ag - altura(p.x, p.z) > 1.1:
 		return true
@@ -469,6 +477,7 @@ func atualizar(pos: Vector3) -> void:
 							r.queue_free()   # reboque de lugar: filho do mundo, não do chunk
 			_chunks[i].queue_free()
 			_chunks.erase(i)
+			eventos_ativos.erase(i)
 	reboques_soltos = reboques_soltos.filter(func(r): return is_instance_valid(r) and not r.is_queued_for_deletion() and not _na_fila(r))
 	estruturas = estruturas.filter(func(v): return is_instance_valid(v) and not v.is_queued_for_deletion() and not _na_fila(v))
 	vasculhaveis = vasculhaveis.filter(func(v): return is_instance_valid(v) and not v.is_queued_for_deletion() and not _na_fila(v))
@@ -546,6 +555,8 @@ func _gerar_chunk(k: int) -> Node3D:
 			tipo = "placa"
 		elif sorte < 0.24:
 			tipo = "reboque"
+		elif sorte < 0.305 and k > 3 and bio != "cidade":
+			tipo = "evento"
 		if tipo == "posto" and perto_de_feature(centro_x(z0 + 44.0), z0 + 44.0, 60.0):
 			tipo = ""
 	if tipo != "":
@@ -555,7 +566,7 @@ func _gerar_chunk(k: int) -> Node3D:
 				_poi_reboque(n, z0, k, partes[1] if partes.size() > 1 else "")
 			else:
 				call("_poi_" + t, n, z0, k)
-	if gerar_zumbis and k != 0:
+	if gerar_zumbis and k != 0 and eventos_ativos.get(k, {}).get("tipo", "") not in ["saqueadores", "carona"]:
 		_zumbis(n, z0, k)
 	if k > 0:
 		_animais(n, z0, k, bio)
@@ -1726,6 +1737,9 @@ func _poi_posto(n: Node3D, z0: float, k: int) -> void:
 	for i in 18:
 		var e := B.box(p, Vector3(r.randf_range(0.2, 1.2), r.randf_range(0.05, 0.3), r.randf_range(0.2, 1.0)), Vector3(r.randf_range(-12, 12), 0.1, r.randf_range(-11, 11)), concreto if r.randf() < 0.6 else vermelho)
 		e.rotation_degrees = Vector3(r.randf_range(-15, 15), r.randf() * 360, r.randf_range(-15, 15))
+
+func _poi_evento(n: Node3D, z0: float, k: int) -> void:
+	Eventos.construir(self, n, z0, k)
 
 func _poi_placa(n: Node3D, z0: float, k: int) -> void:
 	var z := z0 + 20.0

@@ -88,7 +88,7 @@ static func salvar(m: Node) -> bool:
 	var w: WorldGen = m.mundo
 	d.mundo = {"vasculhados": w.vasculhados.duplicate(true), "recrutados": w.recrutados.duplicate(true),
 		"reboques_levados": w.reboques_levados.duplicate(true), "estado_reboques": w.estado_reboques.duplicate(true),
-		"carros_desmontados": w.carros_desmontados.duplicate(true)}
+		"carros_desmontados": w.carros_desmontados.duplicate(true), "eventos_feitos": w.eventos_feitos.duplicate(true)}
 	_limpar_objetos(d)
 	var tmp := ARQ + ".tmp"
 	var f := FileAccess.open(tmp, FileAccess.WRITE)

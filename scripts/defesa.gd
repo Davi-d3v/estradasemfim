@@ -46,10 +46,10 @@ func km_horda(z: float) -> float:
 	return (z - z_horda) / 1000.0
 
 func no_de(id: String) -> Assentamento:
-	var n: Node = main.mundo.lugares_ativos.get(id, null)
-	if n == null or not is_instance_valid(n):
+	var v: Variant = main.mundo.lugares_ativos.get(id, null)
+	if v == null or not is_instance_valid(v):
 		return null
-	for c in n.get_children():
+	for c in (v as Node).get_children():
 		if c is Assentamento:
 			return c
 	return null

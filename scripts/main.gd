@@ -88,6 +88,7 @@ var fumacas: Node3D
 var cinzas: CPUParticles3D
 var equip: Equipamento
 var tutorial: Tutorial
+var eventos: Eventos
 var _t_autosave := 0.0
 var _t_radio := 0.0
 var _compartimento_preso := false     # prints: deixa a porta aberta ao fechar o painel
@@ -121,6 +122,7 @@ const TABELAS := {
 	"acampamento": {"comida": [1, 3, 0.8], "agua": [1, 3, 0.8], "remedio": [0, 1, 0.3], "sucata": [1, 3, 0.5], "molotov": [1, 2, 0.3], "municao_pistola": [2, 6, 0.3], "bandagem": [1, 2, 0.4]},
 	"torre": {"comida": [1, 2, 0.6], "agua": [1, 2, 0.6], "remedio": [1, 2, 0.4], "pecas": [0, 1, 0.3], "rifle": [1, 1, 0.15], "municao_rifle": [2, 6, 0.5], "sinalizador": [1, 2, 0.5]},
 	"carro_mata": {"sucata": [3, 8, 1.0], "pecas": [1, 2, 0.6], "galoes_diesel": [1, 1, 0.3], "remedio": [0, 1, 0.2], "sinalizador": [1, 1, 0.3], "pistola": [1, 1, 0.06], "municao_pistola": [3, 9, 0.35]},
+	"militar": {"municao_rifle": [6, 18, 0.9], "municao_pistola": [6, 16, 0.8], "cartucho": [3, 8, 0.5], "comida": [2, 6, 0.8], "agua": [2, 5, 0.7], "bandagem": [1, 4, 0.7], "remedio": [1, 2, 0.5], "rifle": [1, 1, 0.25], "sinalizador": [1, 3, 0.5], "galoes_diesel": [1, 2, 0.5], "chapa": [1, 2, 0.3]},
 	"serraria": {"sucata": [5, 12, 1.0], "pecas": [1, 4, 0.8], "eixo": [1, 1, 0.15], "galoes_diesel": [1, 2, 0.35], "machado": [1, 1, 0.35], "cordame": [1, 3, 0.5]},
 }
 var _frame_fechou := -10
@@ -180,6 +182,9 @@ func _ready() -> void:
 	var som := Som.new()
 	som.main = self
 	add_child(som)
+	eventos = Eventos.new()
+	eventos.main = self
+	add_child(eventos)
 	tutorial = Tutorial.new()
 	tutorial.main = self
 	cl.add_child(tutorial)
@@ -196,6 +201,8 @@ func _ready() -> void:
 		jogando = true
 		if "--trailer" in OS.get_cmdline_user_args():
 			_capturar_trailer()
+		elif "--eventos" in OS.get_cmdline_user_args():
+			_capturar_eventos()
 		elif "--modelos" in OS.get_cmdline_user_args():
 			_capturar_modelos()
 		elif "--rodada5" in OS.get_cmdline_user_args():
@@ -218,6 +225,10 @@ func _ready() -> void:
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
 		_teste_recrutas()
+	elif "--teste-eventos" in OS.get_cmdline_user_args():
+		Jogo.modo = Jogo.MODO_INFINITO
+		jogando = true
+		_teste_eventos()
 	elif "--teste-salvar" in OS.get_cmdline_user_args():
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
@@ -239,7 +250,7 @@ func _ready() -> void:
 			print("TC dia=", dia, " hora=", hora, " abates=", abates, " sucata=", estoque.sucata, " esping=", estoque.get("espingarda"), " reboques=", tipos,
 				" recrutas=", base.lista.map(func(x): return x.nome), " diesel=", comboio.diesel, " odo=", comboio.odometro, " pos=", comboio.pos.snapped(Vector3.ONE * 0.1),
 				" motor=", picape.config.motor.nivel, " despensa=", trailer.config.lateral_direita.nivel, " sel=", equip.sel, " pente=", equip.pentes.get("espingarda"),
-				" armadura=", equip.armadura.keys(), " vida=", jogador.vida, " vasc=", mundo.vasculhados.has("teste:x"), " horda=", defesa.z_horda, " modo=", Jogo.modo)
+				" armadura=", equip.armadura.keys(), " vida=", jogador.vida, " vasc=", mundo.vasculhados.has("teste:x"), " evento55=", mundo.eventos_feitos.get(55, {}), " horda=", defesa.z_horda, " modo=", Jogo.modo)
 			get_tree().quit()
 		_t_autosave = 0.0
 	elif Jogo.modo == "":
@@ -278,9 +289,54 @@ func _teste_salvar() -> void:
 	equip.pentes["espingarda"] = 2
 	jogador.vida = 0.66
 	mundo.vasculhados["teste:x"] = true
+	mundo.eventos_feitos[55] = {"tipo": "saqueadores", "resultado": "pagou"}
 	defesa.z_horda = -3333.0
 	var ok := Salvar.salvar(self)
 	print("TS salvo=", ok, " resumo=", Salvar.resumo())
+	get_tree().quit()
+
+## Teste dos eventos na estrada: cada tipo dispara e cada escolha tem efeito.
+func _teste_eventos() -> void:
+	await get_tree().process_frame
+	var tipos := ["saqueadores", "carona", "acidente", "militar"]
+	var escolhas := {"saqueadores": [0, 1, 2, 3], "carona": [0, 1, 2], "acidente": [0, 1, 2]}
+	var k := 30
+	for t in tipos:
+		for esc in escolhas.get(t, [-1]):
+			mundo.pois_fixos[k] = "evento"
+			mundo.eventos_tipo[k] = t
+			k += 3
+	k = 30
+	for t in tipos:
+		var lista: Array = escolhas.get(t, [-1])
+		for esc in lista:
+			estoque.merge({"comida": 20, "agua": 10, "galoes_diesel": 2, "municao_pistola": 20, "sucata": 30, "pecas": 6}, true)
+			comboio.diesel = 40.0
+			jogador.vida = 1.0
+			var z := k * WorldGen.TAM + 32.0
+			comboio.posicionar(z - 60.0, -0.5, 0.0)
+			jogador.position = mundo.ponto_estrada(z - (30.0 if t == "saqueadores" else 14.0), 0.0)
+			jogador.position.y = jogador.chao(jogador.position)
+			mundo.atualizar(jogador.position)
+			await get_tree().process_frame
+			var e: Dictionary = mundo.eventos_ativos.get(k, {})
+			print("TE k=%d tipo=%s criado=%s resolvido=%s zumbis_perto=%d" % [k, t, str(not e.is_empty()), str(e.get("resolvido", "-")), mundo.zumbis_vivos.filter(func(zz): return is_instance_valid(zz) and zz.global_position.distance_to(e.get("pos", Vector3.ZERO)) < 30.0).size()])
+			if esc < 0:
+				k += 3
+				continue
+			eventos._t_checar = 0.0
+			eventos.atualizar(0.1)
+			print("TE   painel=%s titulo=%s" % [str(painel.visible), eventos._painel().get("titulo", "")])
+			var antes := {"comida": estoque.comida, "recrutas": base.lista.size(), "vida": jogador.vida, "z": comboio.pos.z, "hora": hora, "diesel": comboio.diesel}
+			var bt: Array = eventos._painel().botoes[esc]
+			var msg = bt[1].call()
+			await get_tree().process_frame
+			await get_tree().process_frame
+			print("TE   escolha='%s' msg='%s' comida %d->%d recrutas %d->%d vida %.2f->%.2f z %.0f->%.0f diesel %.0f->%.0f" % [bt[0], str(msg), antes.comida, estoque.comida, antes.recrutas, base.lista.size(), antes.vida, jogador.vida, antes.z, comboio.pos.z, antes.diesel, comboio.diesel])
+			print("TE   relatorio: ", hud.relatorio.replace("\n", " | "), " feito=", mundo.eventos_feitos.get(k, {}), " painel=", painel.visible)
+			eventos.atualizar(0.3)
+			print("TE   redisparou=", not eventos._atual.is_empty())
+			k += 3
 	get_tree().quit()
 
 ## Teste automático: zumbis cercando o jogador, golpes, atropelamento e morte.
@@ -717,6 +773,7 @@ func _process(dt: float) -> void:
 		return
 	_tempo += dt
 	_sons_ambiente(dt)
+	eventos.atualizar(dt)
 	_t_autosave += dt
 	if _t_autosave > 600.0 and not comboio.dirigindo and defesa.onda.is_empty():
 		salvar_jogo(true)
@@ -2741,6 +2798,64 @@ func _capturar_trailer() -> void:
 			_abrir_painel(_painel_compartimento.bind(id))
 			await _salvar("trailer_painel_%s" % id)
 			_fechar_janela()
+	get_tree().quit()
+
+## Prints dos eventos na estrada (--eventos): cena de cada tipo e o painel de escolha.
+func _capturar_eventos() -> void:
+	comboio.set_physics_process(false)
+	var cam := Camera3D.new()
+	cam.far = 900.0
+	add_child(cam)
+	hora = 16.6
+	_atualizar_ceu()
+	var tipos := ["saqueadores", "carona", "acidente", "militar"]
+	var k := 30
+	for t in tipos:
+		mundo.pois_fixos[k] = "evento"
+		mundo.eventos_tipo[k] = t
+		k += 4
+	k = 30
+	for t in tipos:
+		var z := k * WorldGen.TAM + 32.0
+		var zc: float = z - {"saqueadores": 15.0, "carona": 9.0, "acidente": 14.0, "militar": 24.0}[t]
+		comboio.posicionar(zc - 14.0, -0.5, 0.0)
+		jogador.visible = false
+		jogador.position = comboio.pos
+		mundo.atualizar(comboio.pos)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var e: Dictionary = mundo.eventos_ativos.get(k, {})
+		var alvo: Vector3 = e.get("pos", mundo.ponto_estrada(z, 0.0))
+		alvo.y = mundo.elevacao(z) + 1.2
+		var lat: float = {"saqueadores": -1.0, "carona": 1.0, "acidente": -3.0, "militar": -1.5}[t]
+		var de := mundo.ponto_estrada(zc, lat) + Vector3(0, (2.3 if t != "militar" else 4.2), 0)
+		if t == "carona":
+			alvo.y -= 0.3
+		if t == "militar":
+			alvo = mundo.ponto_estrada(z + 6.0, 0.0) + Vector3(0, 1.0, 0)
+		_abrir_vista(de, alvo)
+		cam.fov = 58.0
+		cam.look_at_from_position(de, alvo, Vector3.UP)
+		cam.current = true
+		hud.visible = false
+		await _salvar("evento_%s" % t)
+		if t in ["saqueadores", "carona", "acidente"] and not e.is_empty():
+			hud.visible = true
+			_atualizar_hud()
+			eventos._atual = e
+			_abrir_painel(eventos._painel)
+			await _salvar("evento_%s_painel" % t)
+			if t == "saqueadores":
+				# depois de pagar: os carros vão para o acostamento
+				estoque.comida = 20
+				eventos._painel().botoes[0][1].call()
+				await get_tree().process_frame
+				_fechar_janela()
+				hud.visible = true
+				await _salvar("evento_saqueadores_pago")
+			eventos._atual = {}
+			_fechar_janela()
+		k += 4
 	get_tree().quit()
 
 ## Prints dos modelos novos (personagens com rosto, zumbis, armas, ações).

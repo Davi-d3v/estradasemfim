@@ -16,5 +16,17 @@
 - [x] Tutorial (scripts/tutorial.gd): 11 passos que completam sozinhos; F1 reabre; salvo em user://config.cfg
 - [x] Export Windows: ../build/windows/EstradaSemFim.exe (templates 4.5.1 em ~/.local/share/godot/export_templates)
 
+## 14/10 — rodada "salvar, som, eventos, horda" (nessa ordem)
+- [x] 1. Salvar e carregar (scripts/salvar.gd): F5, autosave a cada 10 min, ao dormir e ao fechar; "Continuar" no menu; save anterior preservado
+- [x] 2. Som (scripts/som.gd + tools/gerar_sons.py + assets/sons/kenney): tiros, golpes, zumbis, passos por superfície, motor pela velocidade, vento/grilos/rádio/uivo
+- [x] 3. Eventos na estrada (scripts/eventos.gd), ~6% dos trechos depois do km 0,2:
+  - saqueadores: bloqueio com PEDÁGIO (pagar / furar / desvio de 3 h / atirar primeiro); bloqueia de verdade até resolver, depois os carros vão para o acostamento
+  - carona: pessoa com placa AJUDA (vira recruta, 22% é isca e roubam a caçamba / dar comida e ouvir dica / seguir)
+  - acidente: ônibus tombado (procurar sobreviventes: recruta ferido + remédios ou 6 zumbis / saquear malas / seguir)
+  - comboio militar: caminhões com carga "militar" para vasculhar, arame farpado e zumbis fardados
+  - resultado salvo em mundo.eventos_feitos; teste: --teste-eventos; prints: ./capturar.sh --eventos
+- [ ] 4. Horda visível
+
 ## Próximos
+- horda visível (massa de zumbis atrás do comboio, no retrovisor)
 - ouvir o retorno do teste no PC do Davi
