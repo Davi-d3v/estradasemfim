@@ -14,7 +14,13 @@ const CUSTOS := {
 		"desc": "À noite, sem luz, os tiros erram muito."},
 	"armadilha": {"nome": "Estacas num setor do muro", "itens": {"sucata": 12}, "horas": 1.5,
 		"desc": "Ferem e seguram quem passa (12 cargas)."},
+	"fosso": {"nome": "Cavar um fosso", "itens": {"comida": 4, "agua": 4}, "horas": 5.0,
+		"desc": "Os moradores cavam (precisam comer). Quem atravessa anda a passo de tartaruga e às vezes cai."},
+	"arame": {"nome": "Esticar arame farpado", "itens": {"cordame": 2, "sucata": 10}, "horas": 1.5,
+		"desc": "Rente ao muro: corta e prende quem encosta (40 cargas)."},
 }
+## Ondas com chefe (a cada 3) e o nome que o rádio dá a ele.
+const CHEFES := ["o Colosso", "o Gigante da BR", "o Açougueiro", "o Rei da Horda"]
 const NOMES_SETOR := ["do portão", "da esquerda", "dos fundos", "da direita"]
 
 var main: Node
@@ -76,7 +82,7 @@ func obter(id: String, a: Assentamento = null) -> Dictionary:
 		"fase": "livre", "ondas": 0, "defendido": false, "prox_onda_h": -1.0,
 		"vigias": 1 + r.randi_range(0, 1), "armados": 2 + r.randi_range(0, 1), "moradores": 9,
 		"lider": ["Dona Rosa", "Seu Arlindo", "Capitão Vidal", "Irmã Lúcia", "Comandante Neves"][r.randi() % 5],
-		"postos": {}, "bonus_portao": 0.0,
+		"postos": {}, "bonus_portao": 0.0, "fossos": [false, false, false, false], "arames": [0, 0, 0, 0], "t_presente": 0.0,
 	}
 	if z_horda > float(e.pos.z) + 100.0:
 		e.fase = "caido"
@@ -89,13 +95,24 @@ func obter(id: String, a: Assentamento = null) -> Dictionary:
 	estado[id] = e
 	return e
 
+## Campos novos para estados de saves antigos.
+func _garantir(e: Dictionary) -> void:
+	if not e.has("fossos"):
+		e.fossos = [false, false, false, false]
+	if not e.has("arames"):
+		e.arames = [0, 0, 0, 0]
+	if not e.has("t_presente"):
+		e.t_presente = 0.0
+
 func nivel(e: Dictionary) -> int:
+	_garantir(e)
 	var pts := 0
 	pts += 2 if e.chapas else 0
 	pts += 1 if e.portao else 0
 	for k in 4:
 		pts += (1 if e.torres[k] else 0) + (1 if e.holofotes[k] else 0)
 		pts += 1 if e.armadilhas[k] > 0 else 0
+		pts += (1 if e.fossos[k] else 0) + (1 if e.arames[k] > 0 else 0)
 	return 1 + pts / 3
 
 # ------------------------------------------------------------ tempo e horda
@@ -127,6 +144,7 @@ func passar(h: float) -> void:
 					e.fase = "aliado"
 					ativo = ""
 					main.hud.aviso("%s fica para trás, agora como aliado." % e.nome)
+	_aliados(h)
 	# a horda alcança o comboio na estrada
 	if onda.is_empty() and foco.z - z_horda < 120.0:
 		var l: Dictionary = main.mundo.lugar_em(foco)
@@ -142,6 +160,55 @@ func passar(h: float) -> void:
 		main.hud.aviso("A horda está a menos de 5 km atrás do comboio.")
 	elif km > 6.0:
 		_avisou_horda = 0.0
+
+## Aliados: mandam ajuda pelo rádio (gente e mantimentos) e enfrentam a horda sozinhos quando ela passa de novo.
+func _aliados(h: float) -> void:
+	for id in estado:
+		var e: Dictionary = estado[id]
+		if e.fase != "aliado":
+			continue
+		_garantir(e)
+		e.t_presente += h
+		if e.t_presente >= 36.0:
+			e.t_presente = 0.0
+			var r := RandomNumberGenerator.new()
+			r.seed = hash([id, main.dia, "presente"])
+			if r.randf() < 0.25 and main.base.camas_livres() > 0:
+				var nome: String = ["Toninho", "Cleide", "Valdir", "Joana", "Rui", "Edna"][r.randi() % 6]
+				var funcao: String = ["vigia", "agricultor", "mecanico", "medico", "batedor"][r.randi() % 5]
+				var rc := Recrutas.novo(nome, funcao, r.randi())
+				rc.moral = 0.9
+				main.base.lista.append(rc)
+				main.base.distribuir_camas()
+				main.registrar("%s mandou %s (%s) pela estrada, de moto, para reforçar o comboio." % [e.nome, nome, Recrutas.titulo(rc).to_lower()])
+				main.hud.aviso("Pelo rádio: %s mandou %s para se juntar a você." % [e.nome, nome])
+			else:
+				var pres := {"comida": r.randi_range(3, 6), "agua": r.randi_range(2, 5), "sucata": r.randi_range(5, 12), "municao_pistola": r.randi_range(0, 10)}
+				var ganhos: Array[String] = []
+				for k in pres:
+					if pres[k] > 0:
+						var q: int = main.adicionar(k, pres[k])
+						if q > 0:
+							ganhos.append("%d %s" % [q, main.ITENS[k].nome.to_lower()])
+				if not ganhos.is_empty():
+					main.registrar("Uma caravana de %s alcançou o comboio com %s." % [e.nome, ", ".join(ganhos)])
+					main.hud.aviso("Caravana de %s: %s." % [e.nome, ", ".join(ganhos)])
+		# a horda volta a passar por lá
+		if z_horda >= float(e.pos.z) - 250.0 and not e.get("resistiu_%d" % int(z_horda / 7000.0), false):
+			e["resistiu_%d" % int(z_horda / 7000.0)] = true
+			var forca: float = nivel(e) * 0.14 + 0.3
+			var rr := RandomNumberGenerator.new()
+			rr.seed = hash([id, int(z_horda), "aliado"])
+			if rr.randf() < forca:
+				e.ondas += 1
+				main.registrar("Pelo rádio: %s aguentou a horda de novo. \"A gente aprendeu com você.\"" % e.nome)
+			else:
+				e.fase = "caido"
+				main.registrar("Pelo rádio: %s caiu. Foi a última transmissão deles." % e.nome)
+				main.hud.aviso("Pelo rádio: o aliado %s caiu para a horda." % e.nome)
+				var a := no_de(id)
+				if a:
+					a.redesenhar()
 
 func _cair_sozinho(e: Dictionary) -> void:
 	# sem o jogador, só resiste quem se preparou muito
@@ -222,7 +289,7 @@ func construir(id: String, chave: String, alvo := -1) -> String:
 	var itens: Dictionary = CUSTOS[chave].itens
 	if not pode_pagar(e, itens):
 		return "Faltam materiais."
-	var horas: float = CUSTOS[chave].horas * (0.7 if e.armados + e.vigias >= 5 else 1.0)
+	var horas: float = CUSTOS[chave].horas * (0.7 if e.armados + e.vigias >= 5 else 1.0) * (1.0 if chave != "fosso" else clampf(9.0 / float(maxi(1, e.moradores)), 0.6, 2.0))
 	horas *= 1.0 - 0.15 * mini(main.base.n("mecanico"), 2)
 	pagar(e, itens)
 	match chave:
@@ -239,6 +306,12 @@ func construir(id: String, chave: String, alvo := -1) -> String:
 			e.holofotes[alvo] = true
 		"armadilha":
 			e.armadilhas[alvo] += 12
+		"fosso":
+			_garantir(e)
+			e.fossos[alvo] = true
+		"arame":
+			_garantir(e)
+			e.arames[alvo] += 40
 	e.nivel = nivel(e)
 	var a := no_de(id)
 	if a:
@@ -331,6 +404,14 @@ const NOMES_POSTO := {"torre": "torre de vigia", "portao": "portão", "muro": "m
 func tamanho_onda(n: int) -> int:
 	return mini(160, int(round((14.0 + 5.0 * main.mundo.nivel_ameaca) * pow(1.5, n - 1))))
 
+## De que setor a próxima onda vai chegar (vem de trás, pela estrada).
+func setor_da_horda(id: String) -> int:
+	var a := no_de(id)
+	if a == null:
+		return 2
+	var l := a.local_de(a.global_position + Vector3(0, 0, -50.0))
+	return Assentamento.setor(l)
+
 func iniciar_onda(id: String) -> void:
 	var e := obter(id)
 	var a := no_de(id)
@@ -338,6 +419,10 @@ func iniciar_onda(id: String) -> void:
 		return
 	var n: int = e.ondas + 1
 	var total := tamanho_onda(n)
+	var noturna: bool = main.eh_noite()
+	if noturna:
+		total = int(total * 1.25)
+	var chefe := n % 3 == 0
 	# de onde vem: de trás, pela estrada (onde está a horda)
 	var atras_l := a.local_de(a.global_position + Vector3(0, 0, -50.0))
 	var ang_base := atan2(atras_l.x, atras_l.z)
@@ -352,7 +437,8 @@ func iniciar_onda(id: String) -> void:
 	e.bonus_portao = bonus
 	e.muro[0] = minf(a.hp_max(0), e.muro[0] + bonus)
 	onda = {"id": id, "n": n, "total": total, "fila": total, "vivos": [], "abates": 0, "ang": ang_base,
-		"t_spawn": 0.0, "resistencia": 1.0, "muro_ini": a.muro_medio(), "perdas": [], "t": 0.0}
+		"t_spawn": 0.0, "resistencia": 1.0, "muro_ini": a.muro_medio(), "perdas": [], "t": 0.0,
+		"noturna": noturna, "chefe": chefe, "chefe_no": null, "chefe_nome": CHEFES[(n / 3 - 1) % CHEFES.size()] if chefe else ""}
 	e.fase = "onda"
 	_reg_onda.clear()
 	if main._janela_aberta():
@@ -363,7 +449,12 @@ func iniciar_onda(id: String) -> void:
 	main.base.limpar_cena()
 	_criar_defensores(e, a)
 	var lado = ["dos fundos", "da direita", "do portão", "da esquerda"][int(fposmod(ang_base + PI * 0.25 + PI, TAU) / (PI * 0.5)) % 4]
-	main.hud.banner("Onda %d" % n, "%d zumbis vindo %s. Segurem o muro!" % [total, lado])
+	var extra := ""
+	if noturna:
+		extra += " Onda noturna: mais gente e mais corredores."
+	if chefe:
+		extra += " E com eles vem %s." % onda.chefe_nome
+	main.hud.banner("Onda %d%s" % [n, " (noite)" if noturna else ""], "%d zumbis vindo %s. Segurem o muro!%s" % [total, lado, extra])
 
 func _criar_defensores(e: Dictionary, a: Assentamento) -> void:
 	limpar_defensores()
@@ -503,13 +594,22 @@ func processar(dt: float) -> void:
 			g.y = main.mundo.altura(g.x, g.z)
 			# ondas mais altas trazem mais especiais
 			var tipo := ""
-			if randf() < 0.06 * onda.n:
+			if randf() < 0.06 * onda.n + (0.15 if onda.get("noturna", false) else 0.0):
 				tipo = ["corredor", "brutamonte", "corredor", "rastejante", "gritador"][randi() % 5]
+				if onda.get("noturna", false) and randf() < 0.5:
+					tipo = "corredor"
+			# o chefe chega no meio da onda
+			if onda.get("chefe", false) and onda.chefe_no == null and onda.fila <= onda.total / 2:
+				tipo = "colosso"
 			var z: Zumbi = main.mundo.criar_zumbi(main.mundo, g, a.global_rotation.y + ang + PI, randi(), tipo)
 			z.cerco = a
 			z.estado = Zumbi.Estado.PERSEGUINDO
 			onda.vivos.append(z)
 			onda.fila -= 1
+			if tipo == "colosso":
+				onda.chefe_no = z
+				main.hud.banner(String(onda.chefe_nome).to_upper(), "Um gigante vem andando para o muro %s. Ele derruba paliçada com as mãos." % NOMES_SETOR[Assentamento.setor(l)])
+				Som.tela("zumbi_grito", 2.0, 0.0)
 	# dentro do muro, cada zumbi assusta e machuca os moradores
 	var dentro := 0
 	for z in vivos:
@@ -518,6 +618,29 @@ func processar(dt: float) -> void:
 		if r2 < Assentamento.R - 1.0:
 			dentro += 1
 			onda.resistencia -= dt * (0.0012 if r2 > 10.0 else 0.0035)
+		var lento := 1.0
+		var sk := Assentamento.setor(l2)
+		_garantir(e)
+		if e.fossos[sk] and r2 > Assentamento.R + 5.0 and r2 < Assentamento.R + 8.5:
+			lento = 0.3 if z.tipo != "colosso" else 0.6
+			if not z.get_meta("caiu_fosso", false) and randf() < dt * 0.6:
+				z.set_meta("caiu_fosso", true)
+				z.ferir(18.0, Vector3.DOWN, z.global_position)
+				if not z.vivo():
+					onda.abates += 1
+		if e.arames[sk] > 0 and r2 > Assentamento.R + 0.6 and r2 < Assentamento.R + 2.2:
+			lento = minf(lento, 0.45)
+			if randf() < dt * 1.5:
+				e.arames[sk] -= 1
+				z.ferir(9.0, Vector3.ZERO, z.global_position)
+				if not z.vivo():
+					onda.abates += 1
+				if e.arames[sk] % 10 == 0:
+					a.redesenhar()
+		if lento < 1.0:
+			z.set_meta("lento", lento)
+		elif z.has_meta("lento"):
+			z.remove_meta("lento")
 		if a.armadilha_em(l2) and not z.get_meta("estacado", false):
 			z.set_meta("estacado", true)
 			z.ferir(32.0, (z.global_position - a.global_position).normalized() * 3.0)
@@ -565,6 +688,10 @@ func _vitoria(e: Dictionary, a: Assentamento) -> void:
 		rec["remedio"] = 1 + n / 2
 	if n >= 3:
 		rec["pneu"] = 1
+	if onda.get("chefe", false):
+		rec["municao_rifle"] = 15 + n * 2
+		rec["chapa"] = 3
+		linhas.append("%s caiu. Os moradores penduraram a cabeça dele no portão." % String(onda.chefe_nome).capitalize())
 	var ganhos: Array[String] = []
 	for k in rec:
 		var q: int = main.adicionar(k, rec[k])
@@ -633,8 +760,12 @@ func info_hud() -> Dictionary:
 	var foco: Vector3 = main._foco()
 	if not onda.is_empty():
 		var a := no_de(onda.id)
-		return {"titulo": "%s — ONDA %d" % [estado[onda.id].nome.to_upper(), onda.n],
-			"linha": "%d zumbis restantes%s" % [onda.fila + onda.vivos.size(), ("  ·  %d dentro do muro!" % onda.get("dentro", 0)) if onda.get("dentro", 0) > 0 else ""],
+		var ch: Variant = onda.get("chefe_no")
+		var txt_chefe := ""
+		if ch != null and is_instance_valid(ch) and ch.vivo():
+			txt_chefe = "  ·  %s: %d%%" % [String(onda.chefe_nome).capitalize(), int(ch.vida / Zumbi.TIPOS.colosso.vida * 100.0)]
+		return {"titulo": "%s — ONDA %d%s" % [estado[onda.id].nome.to_upper(), onda.n, " (NOITE)" if onda.get("noturna", false) else ""],
+			"linha": "%d zumbis restantes%s%s" % [onda.fila + onda.vivos.size(), ("  ·  %d dentro do muro!" % onda.get("dentro", 0)) if onda.get("dentro", 0) > 0 else "", txt_chefe],
 			"muro": a.muro_medio() if a else 0.0, "resistencia": onda.resistencia, "onda": true}
 	if ativo != "":
 		var e: Dictionary = estado[ativo]

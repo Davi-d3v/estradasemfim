@@ -78,8 +78,14 @@
   é quase breu e algo pode morder, com lanterna dá para ver (itens novos: lanterna, binóculo); binóculo [Z]: zoom e marca no mapa os zumbis à
   vista por 1 minuto; pichações de sobreviventes na beira da estrada, algumas apontando um esconderijo de verdade no mato.
   Corrigido: o mundo seguia o comboio quando o jogador estava num subsolo. Teste: --teste-exploracao; prints: --exploracao
-- [ ] 10-11. Recrutas, comboio, exploração, defesa, sobrevivência  - [ ] 12. v0.8
+- [x] 10. Defesa: o líder mostra os 4 setores do muro (e de onde a horda vem) e você escolhe o que construir em cada um — torre, holofote,
+  estacas, fosso (os moradores cavam, gasta comida e água; quem atravessa fica a passo de tartaruga e cai; passagem de tábuas no portão) e
+  arame farpado (colado no muro, corta e prende, 40 cargas); onda noturna (+25% e mais corredores); a cada 3 ondas um chefe — o Colosso
+  (zumbi gigante, 800 de vida, derruba muro 5× mais rápido) com barra no HUD e aviso do líder antes; vencer o chefe rende munição e chapas;
+  consequências: aliados mandam caravanas com mantimentos e às vezes um morador como recruta; quando a horda volta a passar, o aliado
+  resiste conforme o nível do que você construiu — ou cai, e você ouve pelo rádio. Teste: --teste-defesa2; prints: --defesa2
+- [ ] 11. Recrutas, comboio, exploração, defesa, sobrevivência  - [ ] 12. v0.8
 
 ## Próximos
-- seguir a rodada grande (etapa 10: defesa)
+- seguir a rodada grande (etapa 11: sobrevivência)
 - ouvir o retorno do teste no PC do Davi

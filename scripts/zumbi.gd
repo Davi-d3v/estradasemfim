@@ -12,6 +12,8 @@ const TIPOS := {
 	"gritador": {"vida": 45.0, "vel_vagar": 0.7, "vel_correr": 2.4, "dano": 6.0, "dano_veic": 0.006, "escala": 0.95},
 	"blindado": {"vida": 150.0, "vel_vagar": 0.55, "vel_correr": 1.9, "dano": 13.0, "dano_veic": 0.02, "escala": 1.05},
 	"rastejante": {"vida": 35.0, "vel_vagar": 0.4, "vel_correr": 1.4, "dano": 12.0, "dano_veic": 0.004, "escala": 1.0},
+	# chefe das ondas: um gigante que derruba muro
+	"colosso": {"vida": 800.0, "vel_vagar": 0.45, "vel_correr": 1.35, "dano": 38.0, "dano_veic": 0.08, "escala": 1.95},
 }
 
 var tipo := "comum"
@@ -36,9 +38,11 @@ func configurar(t: String) -> void:
 	vida = TIPOS[t].vida
 	var esc: float = TIPOS[t].escala
 	scale = Vector3.ONE * esc * randf_range(0.94, 1.04)
-	feminino = randf() < 0.4 and t != "brutamonte"
+	feminino = randf() < 0.4 and t != "brutamonte" and t != "colosso"
 	sujeira = randf_range(0.2, 0.6)
 	match t:
+		"colosso":
+			cores = {"pele": Color(0.42, 0.36, 0.33), "roupa": Color(0.2, 0.08, 0.06)}
 		"brutamonte":
 			cores = {"Skin": Color(0.42, 0.44, 0.38), "Clothes": Color(0.16, 0.15, 0.14)}
 		"gritador":
@@ -209,7 +213,7 @@ func _process(dt: float) -> void:
 		var ang := atan2(alvo_dir.x, alvo_dir.z)
 		rotation.y = lerp_angle(rotation.y, ang, minf(1.0, dt * 4.0))
 	var frente := Vector3(sin(rotation.y), 0, cos(rotation.y))
-	var nova := global_position + frente * vel * dt + _empurrao * dt
+	var nova := global_position + frente * vel * dt * float(get_meta("lento", 1.0)) + _empurrao * dt
 	_empurrao = _empurrao.move_toward(Vector3.ZERO, dt * 12.0)
 	if not mundo.bloqueado(nova) and not mundo.colide(global_position, nova, 0.25) and mundo.agua_em(nova.x, nova.z) < mundo.altura(nova.x, nova.z) + 0.6:
 		nova.y = _chao(nova)

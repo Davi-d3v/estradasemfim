@@ -256,6 +256,8 @@ func _ready() -> void:
 			_capturar_trailer()
 		elif "--eventos" in OS.get_cmdline_user_args():
 			_capturar_eventos()
+		elif "--defesa2" in OS.get_cmdline_user_args():
+			_capturar_defesa2()
 		elif "--exploracao" in OS.get_cmdline_user_args():
 			_capturar_exploracao()
 		elif "--reboques-raros" in OS.get_cmdline_user_args():
@@ -298,6 +300,10 @@ func _ready() -> void:
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
 		_teste_recrutas()
+	elif "--teste-defesa2" in OS.get_cmdline_user_args():
+		Jogo.modo = Jogo.MODO_INFINITO
+		jogando = true
+		_teste_defesa2()
 	elif "--teste-exploracao" in OS.get_cmdline_user_args():
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
@@ -1209,6 +1215,67 @@ func _teste_defesa() -> void:
 	print("TD recrutas=%d" % base.lista.size())
 	get_tree().quit()
 
+## Teste da etapa 10: obras por setor (fosso, arame), onda noturna com chefe, aliados e consequências.
+func _teste_defesa2() -> void:
+	await get_tree().process_frame
+	var l := {}
+	for ll in mundo.lugares_da_regiao(0):
+		if ll.tipo == "assentamento":
+			l = ll
+	jogador.position = l.pos + Vector3(0, 0, 3)
+	mundo.atualizar(l.pos)
+	for f in 3:
+		await get_tree().process_frame
+	var a := defesa.no_de(l.id)
+	estoque.merge({"sucata": 300, "pecas": 80, "cordame": 12, "comida": 60, "agua": 60, "galoes_diesel": 3}, true)
+	for fn in ["vigia", "vigia", "batedor"]:
+		base.lista.append(Recrutas.novo("T-" + fn, fn, hash(fn)))
+	print("TD2 ", defesa.ficar(l.id))
+	var sh := defesa.setor_da_horda(l.id)
+	print("TD2 horda vem pelo setor ", Defesa.NOMES_SETOR[sh])
+	for obra in ["fosso", "arame", "armadilha", "torre"]:
+		print("TD2 ", defesa.construir(l.id, obra, sh))
+	var e: Dictionary = defesa.obter(l.id)
+	print("TD2 setor: ", _resumo_setor(e, sh), " · nível ", defesa.nivel(e))
+	var pn := _painel_setor(l.id, sh)
+	print("TD2 painel setor: %s | %s" % [pn.titulo, " / ".join(pn.botoes.map(func(b): return b[0]))])
+	# onda 3 (chefe), à noite
+	e.ondas = 2
+	e.fase = "entre_ondas"
+	hora = 23.0
+	jogador.visible = false
+	defesa.iniciar_onda(l.id)
+	print("TD2 onda: n=%d total=%d noturna=%s chefe=%s (%s)" % [defesa.onda.n, defesa.onda.total, str(defesa.onda.noturna), str(defesa.onda.chefe), defesa.onda.chefe_nome])
+	Engine.time_scale = 3.0
+	var viu_lento := 0
+	var arame0: int = e.arames[sh]
+	for f in (14000 if not "--rapido" in OS.get_cmdline_user_args() else 0):
+		await get_tree().process_frame
+		if not defesa.em_combate():
+			break
+		for z in defesa.onda.vivos:
+			if is_instance_valid(z) and z.has_meta("lento"):
+				viu_lento += 1
+		if f % 1500 == 0:
+			print("TD2 t=%d fila=%d vivos=%d muro=%.2f resist=%.2f · %s" % [f, defesa.onda.fila, defesa.onda.vivos.size(), a.muro_medio(), defesa.onda.resistencia, defesa.info_hud().linha])
+	Engine.time_scale = 1.0
+	print("TD2 fim: fase=%s, zumbis lentos (quadros)=%d, arame %d -> %d" % [e.fase, viu_lento, arame0, e.arames[sh]])
+	print("TD2 relatorio: ", hud.relatorio.replace("\n", " | ").substr(0, 400))
+	# aliado: presentes e a horda passando de novo
+	e.fase = "aliado"
+	for k in ["sucata", "pecas", "comida", "agua", "cordame"]:
+		estoque[k] = 5
+	var c0: int = estoque.comida
+	var r0 := base.lista.size()
+	for d in 6:
+		defesa._aliados(24.0)
+	print("TD2 aliado: comida %d -> %d, recrutas %d -> %d" % [c0, estoque.comida, r0, base.lista.size()])
+	defesa.z_horda = float(e.pos.z)
+	defesa._aliados(1.0)
+	print("TD2 horda passou pelo aliado: fase=%s" % e.fase)
+	print("TD2 registro: ", " | ".join(base.registro.slice(-4)))
+	get_tree().quit()
+
 ## Teclas novas (armas e barra rápida), criadas por código para não depender do project.godot.
 func _acoes_extras() -> void:
 	var teclas := {"binoculo": KEY_Z, "diario": KEY_J, "salvar": KEY_F5, "recarregar": KEY_R, "criar": KEY_B, "slot_1": KEY_1, "slot_2": KEY_2, "slot_3": KEY_3, "slot_4": KEY_4,
@@ -1611,7 +1678,7 @@ func zumbi_atacou(z: Zumbi, alvo: Dictionary) -> void:
 	if alvo.tipo == "muro":
 		var a: Assentamento = alvo.no
 		if is_instance_valid(a):
-			a.danificar(alvo.idx, info.dano * (1.0 if z.tipo != "brutamonte" else 2.5))
+			a.danificar(alvo.idx, info.dano * ({"brutamonte": 2.5, "colosso": 5.0}.get(z.tipo, 1.0) as float))
 		return
 	if alvo.tipo == "povo":
 		defesa.atacar_povo(0.004 + info.dano * 0.0004)
@@ -1932,7 +1999,12 @@ func _painel_npc(h: Node3D) -> Dictionary:
 	return {"titulo": "%s — %s" % [h.get_meta("nome"), titulos.get(funcao, "Morador")], "linhas": linhas, "botoes": botoes}
 
 # ------------------------------------------------------------ assentamento: conversa com o líder
+var _lider_aberto := []
+func _painel_lider_atual() -> Dictionary:
+	return _painel_lider(_lider_aberto[0], _lider_aberto[1]) if _lider_aberto.size() == 2 else {"titulo": "", "linhas": [], "botoes": []}
+
 func _painel_lider(id: String, nome_lider: String) -> Dictionary:
+	_lider_aberto = [id, nome_lider]
 	var e: Dictionary = defesa.obter(id)
 	var a: Assentamento = defesa.no_de(id)
 	var linhas: Array = []
@@ -1967,6 +2039,8 @@ func _painel_lider(id: String, nome_lider: String) -> Dictionary:
 				linhas.append(["A horda chega em ~%d h. Use o tempo para preparar o muro." % int(ceil(h)), vermelho])
 			else:
 				linhas.append(["Próxima onda: %d zumbis em ~%d h." % [defesa.tamanho_onda(e.ondas + 1), int(ceil(e.prox_onda_h))], vermelho])
+			if (e.ondas + 1) % 3 == 0:
+				linhas.append(["\"Os batedores viram uma coisa enorme no meio deles. A próxima onda vem com %s.\"" % Defesa.CHEFES[((e.ondas + 1) / 3 - 1) % Defesa.CHEFES.size()], vermelho])
 			# melhorias
 			var opcoes: Array = []
 			var cc := defesa.custo_conserto(id)
@@ -1976,20 +2050,11 @@ func _painel_lider(id: String, nome_lider: String) -> Dictionary:
 				opcoes.append(_opcao_obra(id, e, "chapas"))
 			if not e.portao:
 				opcoes.append(_opcao_obra(id, e, "portao"))
+			# o resto se escolhe por setor do muro
+			var sh := defesa.setor_da_horda(id)
 			for k in 4:
-				if not e.torres[k]:
-					opcoes.append(_opcao_obra(id, e, "torre", k))
-					break
-			for k in 4:
-				if e.torres[k] and not e.holofotes[k]:
-					opcoes.append(_opcao_obra(id, e, "holofote", k))
-					break
-			var pior := 0
-			for k in 4:
-				if e.armadilhas[k] < e.armadilhas[pior]:
-					pior = k
-			if e.armadilhas[pior] < 24:
-				opcoes.append(_opcao_obra(id, e, "armadilha", pior))
+				botoes.append(["Planejar o setor %s%s: %s" % [Defesa.NOMES_SETOR[k], " (a horda vem por aqui)" if k == sh else "", _resumo_setor(e, k)],
+					func(): _abrir_painel(_painel_setor.bind(id, k)); return "", true])
 			botoes.append_array(opcoes)
 			# postos dos recrutas
 			for rc in base.presentes():
@@ -2010,11 +2075,54 @@ func _painel_lider(id: String, nome_lider: String) -> Dictionary:
 			linhas.append(["Estão no muro! Vai!", vermelho])
 	return {"titulo": "%s — %s" % [e.nome, nome_lider], "subtitulo": "Líder do assentamento", "linhas": linhas, "botoes": botoes}
 
+func _resumo_setor(e: Dictionary, k: int) -> String:
+	var p: Array[String] = []
+	if e.torres[k]:
+		p.append("torre" + (" c/ holofote" if e.holofotes[k] else ""))
+	if e.armadilhas[k] > 0:
+		p.append("estacas %d" % e.armadilhas[k])
+	if e.get("fossos", [false, false, false, false])[k]:
+		p.append("fosso")
+	if e.get("arames", [0, 0, 0, 0])[k] > 0:
+		p.append("arame %d" % e.arames[k])
+	return ", ".join(p) if not p.is_empty() else "nada"
+
+## Um setor do muro: escolha o que construir ali.
+func _painel_setor(id: String, k: int) -> Dictionary:
+	var e: Dictionary = defesa.obter(id)
+	defesa._garantir(e)
+	var sh := defesa.setor_da_horda(id)
+	var linhas: Array = []
+	linhas.append(["Setor %s: %s" % [Defesa.NOMES_SETOR[k], _resumo_setor(e, k)], Hud.DOURADO])
+	if k == sh:
+		linhas.append(["É por aqui que a horda costuma chegar (vem pela estrada, de trás).", Color(0.95, 0.45, 0.3)])
+	linhas.append(["Do muro para fora: arame colado no muro, estacas a 3 m, fosso a 7 m.", Color(0.7, 0.7, 0.68)])
+	linhas.append("Depósito do assentamento: %d sucata, %d peças · Seu estoque: %d sucata, %d peças, %d cordas, %d comida" % [e.estoque.sucata, e.estoque.pecas, estoque.get("sucata", 0), estoque.get("pecas", 0), estoque.get("cordame", 0), estoque.get("comida", 0)])
+	var botoes: Array = []
+	if not e.torres[k]:
+		botoes.append(_opcao_obra(id, e, "torre", k))
+	elif not e.holofotes[k]:
+		botoes.append(_opcao_obra(id, e, "holofote", k))
+	if e.armadilhas[k] < 36:
+		botoes.append(_opcao_obra(id, e, "armadilha", k))
+	if not e.fossos[k]:
+		botoes.append(_opcao_obra(id, e, "fosso", k))
+	if e.arames[k] < 80:
+		botoes.append(_opcao_obra(id, e, "arame", k))
+	botoes.append(["Voltar", func(): _abrir_painel(_painel_lider_atual); return "", true])
+	return {"titulo": "SETOR %s" % Defesa.NOMES_SETOR[k].to_upper(), "subtitulo": e.nome, "linhas": linhas, "botoes": botoes}
+
 func _opcao_obra(id: String, e: Dictionary, chave: String, alvo := -1) -> Array:
 	var c: Dictionary = Defesa.CUSTOS[chave]
 	var nome: String = c.nome
 	if chave == "armadilha":
-		nome = "Estacas no setor %s" % Defesa.NOMES_SETOR[alvo]
+		nome = "Estacas (+12 cargas)"
+	elif chave == "arame":
+		nome = "Arame farpado (+40 cargas)"
+	elif chave == "torre":
+		nome = "Torre de vigia"
+	elif chave == "holofote":
+		nome = "Holofote na torre"
 	return ["%s (%s, %s)" % [nome, _txt_custo(c.itens), _txt_horas(c.horas)], func(): return defesa.construir(id, chave, alvo), defesa.pode_pagar(e, c.itens)]
 
 func _txt_custo(itens: Dictionary) -> String:
@@ -4838,6 +4946,100 @@ func _capturar_r5() -> void:
 	get_tree().quit()
 
 ## Prints da etapa 4: assentamento, líder, preparação, ondas, brecha e vitória.
+## Prints da etapa 10: setor com fosso, arame e estacas; painel do setor; o chefe chegando à noite.
+func _capturar_defesa2() -> void:
+	comboio.set_physics_process(false)
+	var cam := Camera3D.new()
+	cam.far = 2500.0
+	cam.near = 0.05
+	add_child(cam)
+	hud.visible = false
+	jogador.visible = false
+	estoque.merge({"sucata": 300, "pecas": 80, "cordame": 12, "comida": 60, "agua": 60, "galoes_diesel": 3}, true)
+	var l := {}
+	for ll in mundo.lugares_da_regiao(0):
+		if ll.tipo == "assentamento":
+			l = ll
+	var id: String = l.id
+	defesa.z_horda = float(l.pos.z) - 3600.0
+	jogador.position = l.pos
+	mundo.atualizar(l.pos)
+	await get_tree().process_frame
+	var a := defesa.no_de(id)
+	var e: Dictionary = defesa.obter(id)
+	_limpar_zumbis_perto(a.global_position, 90.0)
+	defesa.ficar(id)
+	var sh := defesa.setor_da_horda(id)
+	for obra in ["fosso", "arame", "armadilha", "armadilha", "torre", "holofote"]:
+		defesa.construir(id, obra, sh)
+	defesa.construir(id, "chapas")
+	hora = 16.0
+	_atualizar_ceu()
+	a.redesenhar()
+	await get_tree().process_frame
+	var R := Assentamento.R
+	var ang: float = sh * PI * 0.5
+	var fora := a.global_de(Vector3(sin(ang + 0.35), 0, cos(ang + 0.35)) * (R + 16.0)) + Vector3(0, 9.0, 0)
+	var alvo := a.global_de(Vector3(sin(ang), 0, cos(ang)) * (R + 3.0))
+	_abrir_vista(fora, alvo)
+	cam.fov = 55.0
+	cam.look_at_from_position(fora, alvo, Vector3.UP)
+	cam.current = true
+	await _salvar("defesa_setor")
+	# painel do setor
+	hud.visible = true
+	_posar_jogador(a.global_de(Vector3(1.5, 0, -2.0)), a.global_position, -0.1, 0.4)
+	_atualizar_hud()
+	_lider_aberto = [id, e.lider]
+	_abrir_painel(_painel_setor.bind(id, sh))
+	await _salvar("defesa_painel_setor")
+	_fechar_janela()
+	_abrir_painel(_painel_lider_atual)
+	await _salvar("defesa_painel_lider")
+	_fechar_janela()
+	hud.visible = false
+	jogador.visible = false
+	# o chefe, ao anoitecer, chegando pelo fosso
+	hora = 18.9
+	_atualizar_ceu()
+	e.ondas = 2
+	e.fase = "entre_ondas"
+	defesa.iniciar_onda(id)
+	var cp0: Vector3 = a.global_de(Vector3(sin(ang), 0, cos(ang)) * (R + 7.0))
+	cp0.y = mundo.altura(cp0.x, cp0.z)
+	var chz := mundo.criar_zumbi(mundo, cp0, 0.0, 4242, "colosso")
+	chz.cerco = a
+	defesa.onda.chefe_no = chz
+	defesa.onda.vivos.append(chz)
+	for i in 12:
+		var q0: Vector3 = a.global_de(Vector3(sin(ang + randf_range(-0.5, 0.5)), 0, cos(ang + randf_range(-0.5, 0.5))) * (R + randf_range(4.0, 14.0)))
+		q0.y = mundo.altura(q0.x, q0.z)
+		var zz := mundo.criar_zumbi(mundo, q0, 0.0, 5000 + i)
+		defesa.onda.vivos.append(zz)
+	await get_tree().process_frame
+	var ch: Variant = defesa.onda.chefe_no
+	if ch and is_instance_valid(ch):
+		var cp: Vector3 = a.global_de(Vector3(sin(ang), 0, cos(ang)) * (R + 7.0))
+		cp.y = mundo.altura(cp.x, cp.z)
+		ch.global_position = cp
+		ch.rotation.y = a.global_rotation.y + ang + PI
+		for z in defesa.onda.vivos:
+			if is_instance_valid(z) and z != ch:
+				var q: Vector3 = a.global_de(Vector3(sin(ang + randf_range(-0.4, 0.4)), 0, cos(ang + randf_range(-0.4, 0.4))) * (R + randf_range(4.0, 12.0)))
+				q.y = mundo.altura(q.x, q.z)
+				z.global_position = q
+		for z in defesa.onda.vivos:
+			if is_instance_valid(z):
+				z.set_process(false)
+		var de := a.global_de(Vector3(sin(ang - 0.12), 0, cos(ang - 0.12)) * (R + 1.5)) + Vector3(0, 3.2, 0)
+		cam.look_at_from_position(de, cp + Vector3(0, 2.0, 0), Vector3.UP)
+		cam.current = true
+		hud.visible = true
+		_atualizar_hud()
+		await _salvar("defesa_chefe")
+	defesa.abortar()
+	get_tree().quit()
+
 func _capturar_defesa() -> void:
 	comboio.set_physics_process(false)
 	mundo.mat_capim.set_shader_parameter("tempo", 1.3)

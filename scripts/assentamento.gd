@@ -485,3 +485,53 @@ func _desenhar_armadilhas() -> void:
 				B.cyl(c, 0.06, 2.0, Vector3(s * 0.35, 0.55, 0.2), estaca, Vector3(55, 0, s * 25), 5, 0.01)
 			B.cyl(c, 0.07, 1.2, Vector3(0, 0.3, 0), estaca, Vector3(0, 0, 90), 5)
 		B.mesclar(no)
+	# fossos e arame farpado
+	var terra := _m("terra_fosso", Color(0.33, 0.24, 0.15))
+	var fundo := _m("fundo_fosso", Color(0.05, 0.035, 0.025))
+	var arame := _m("arame_farpado", Color(0.35, 0.35, 0.36), 0.5, 0.8)
+	var mourao := _m("casca", Color(0.4, 0.3, 0.2))
+	var tabua := _m("tabua_ponte", Color(0.42, 0.31, 0.19))
+	for k in 4:
+		var tem_fosso: bool = est.get("fossos", [false, false, false, false])[k]
+		var cargas_arame: int = est.get("arames", [0, 0, 0, 0])[k]
+		if not tem_fosso and cargas_arame <= 0:
+			continue
+		var no2 := Node3D.new()
+		no2.set_meta("nao_mesclar", true)
+		add_child(no2)
+		_arm.append(no2)
+		var n2 := 22
+		var rf := R + 6.7
+		for q in n2:
+			var a := k * PI * 0.5 - PI * 0.25 + (q + 0.5) / n2 * PI * 0.5
+			var no_portao := absf(wrapf(a, -PI, PI)) < 0.09
+			if tem_fosso:
+				var lf := Vector3(sin(a) * rf, 0, cos(a) * rf)
+				var c := Node3D.new()
+				c.position = Vector3(lf.x, _y(lf), lf.z)
+				c.rotation.y = a
+				no2.add_child(c)
+				if no_portao:
+					# passagem de tábuas por cima do fosso, no caminho do portão
+					for t in 5:
+						B.box(c, Vector3(2.5, 0.08, 0.32), Vector3(0, 0.05, -0.8 + t * 0.4), tabua)
+				else:
+					B.box(c, Vector3(2.5, 0.04, 2.2), Vector3(0, -0.01, 0), fundo)
+					for s2 in [-1.0, 1.0]:
+						B.sphere(c, 0.7, Vector3(0, 0.0, s2 * 1.5), terra, Vector3(2.0, 0.45, 0.75), 8)
+					# estacas no fundo
+					for t in 3:
+						B.cyl(c, 0.04, 0.6, Vector3(-0.8 + t * 0.8, 0.15, 0.0), mourao, Vector3(0, 0, (t - 1) * 15.0), 4, 0.005)
+			if cargas_arame > 0 and q % 2 == 0 and absf(wrapf(a, -PI, PI)) >= 0.12:
+				var ra := R + 1.4
+				var la := Vector3(sin(a) * ra, 0, cos(a) * ra)
+				var c2 := Node3D.new()
+				c2.position = Vector3(la.x, _y(la), la.z)
+				c2.rotation.y = a
+				no2.add_child(c2)
+				B.cyl(c2, 0.05, 1.1, Vector3(-1.1, 0.55, 0), mourao, Vector3.ZERO, 5)
+				for t in 5:
+					if cargas_arame < (t + 1) * 6:
+						break
+					B.cyl(c2, 0.38, 0.02, Vector3(-0.6 + t * 0.4, 0.42, 0), arame, Vector3(0, 0, 90), 10)
+		B.mesclar(no2)
