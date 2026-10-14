@@ -139,13 +139,13 @@ func _draw() -> void:
 			draw_line(c + Vector2(cos(a2), sin(a2)) * 8 * e, c + Vector2(cos(a2), sin(a2)) * 16 * e, Color(1, 0.9, 0.8, _t_acerto * 4.0), 2.0 * e)
 	if _banner_t > 0.0:
 		var alfa := clampf(minf(_banner_t, 6.0 - _banner_t) * 1.5, 0.0, 1.0)
-		var by := s.y * 0.2
+		var by := s.y * 0.2 + (60.0 * e if dirigindo else 0.0)
 		_texto(_banner_titulo.to_upper(), Vector2(0, by), int(40 * e), Color(0.96, 0.93, 0.85, alfa), HORIZONTAL_ALIGNMENT_CENTER, s.x)
 		draw_line(Vector2(s.x * 0.5 - 160 * e, by + 16 * e), Vector2(s.x * 0.5 + 160 * e, by + 16 * e), Color(DOURADO, alfa * 0.8), 2.0 * e)
 		_texto(_banner_sub, Vector2(0, by + 44 * e), int(18 * e), Color(DOURADO, alfa), HORIZONTAL_ALIGNMENT_CENTER, s.x)
 	if _aviso_t > 0.0:
 		var w2 := maxf(520.0 * e, _fonte().get_string_size(_aviso_txt, HORIZONTAL_ALIGNMENT_LEFT, -1, int(17 * e)).x + 40.0 * e)
-		var r2 := Rect2(Vector2(s.x * 0.5 - w2 * 0.5, 90 * e), Vector2(w2, 40 * e))
+		var r2 := Rect2(Vector2(s.x * 0.5 - w2 * 0.5, (170 if dirigindo else 90) * e), Vector2(w2, 40 * e))
 		_painel(r2)
 		_texto(_aviso_txt, r2.position + Vector2(0, 26) * e, int(17 * e), DOURADO, HORIZONTAL_ALIGNMENT_CENTER, w2)
 	if mensagem_radio != "" and interior:

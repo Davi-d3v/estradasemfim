@@ -90,6 +90,7 @@ var equip: Equipamento
 var tutorial: Tutorial
 var eventos: Eventos
 var clima: Clima
+var progresso: Progresso
 var horda_visivel: HordaVisivel
 var retrovisor: Retrovisor
 var _t_autosave := 0.0
@@ -126,6 +127,8 @@ const TABELAS := {
 	"torre": {"comida": [1, 2, 0.6], "agua": [1, 2, 0.6], "remedio": [1, 2, 0.4], "pecas": [0, 1, 0.3], "rifle": [1, 1, 0.15], "municao_rifle": [2, 6, 0.5], "sinalizador": [1, 2, 0.5]},
 	"carro_mata": {"sucata": [3, 8, 1.0], "pecas": [1, 2, 0.6], "galoes_diesel": [1, 1, 0.3], "remedio": [0, 1, 0.2], "sinalizador": [1, 1, 0.3], "pistola": [1, 1, 0.06], "municao_pistola": [3, 9, 0.35]},
 	"militar": {"municao_rifle": [6, 18, 0.9], "municao_pistola": [6, 16, 0.8], "cartucho": [3, 8, 0.5], "comida": [2, 6, 0.8], "agua": [2, 5, 0.7], "bandagem": [1, 4, 0.7], "remedio": [1, 2, 0.5], "rifle": [1, 1, 0.25], "sinalizador": [1, 3, 0.5], "galoes_diesel": [1, 2, 0.5], "chapa": [1, 2, 0.3]},
+	"deposito_diesel": {"galoes_diesel": [3, 6, 1.0], "pecas": [1, 3, 0.6], "sucata": [3, 8, 0.8], "molotov": [1, 3, 0.5]},
+	"hospital_campanha": {"remedio": [3, 6, 1.0], "bandagem": [3, 8, 1.0], "analgesico": [2, 5, 0.9], "agua": [2, 5, 0.7], "comida": [1, 4, 0.5]},
 	"serraria": {"sucata": [5, 12, 1.0], "pecas": [1, 4, 0.8], "eixo": [1, 1, 0.15], "galoes_diesel": [1, 2, 0.35], "machado": [1, 1, 0.35], "cordame": [1, 3, 0.5]},
 }
 var _frame_fechou := -10
@@ -191,6 +194,10 @@ func _ready() -> void:
 	clima = Clima.new()
 	clima.main = self
 	add_child(clima)
+	progresso = Progresso.new()
+	progresso.main = self
+	add_child(progresso)
+	progresso.registrar_no_mundo()
 	horda_visivel = HordaVisivel.new()
 	horda_visivel.main = self
 	add_child(horda_visivel)
@@ -215,6 +222,8 @@ func _ready() -> void:
 			_capturar_trailer()
 		elif "--eventos" in OS.get_cmdline_user_args():
 			_capturar_eventos()
+		elif "--progresso" in OS.get_cmdline_user_args():
+			_capturar_progresso()
 		elif "--clima" in OS.get_cmdline_user_args():
 			_capturar_clima()
 		elif "--perigo" in OS.get_cmdline_user_args():
@@ -243,6 +252,10 @@ func _ready() -> void:
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
 		_teste_recrutas()
+	elif "--teste-progresso" in OS.get_cmdline_user_args():
+		Jogo.modo = Jogo.MODO_INFINITO
+		jogando = true
+		_teste_progresso()
 	elif "--teste-clima" in OS.get_cmdline_user_args():
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
@@ -319,6 +332,54 @@ func _teste_salvar() -> void:
 	defesa.z_horda = -3333.0
 	var ok := Salvar.salvar(self)
 	print("TS salvo=", ok, " resumo=", Salvar.resumo())
+	get_tree().quit()
+
+## Teste do progresso: marco, prêmio, missões do rádio, prazo e diário.
+func _teste_progresso() -> void:
+	await get_tree().process_frame
+	print("TG objetivo inicial: ", progresso.objetivo())
+	# chegar na Zona Segura
+	var zm := progresso.z_marco(0)
+	comboio.posicionar(zm - 20.0, -0.5, 0.0)
+	jogador.position = comboio.pos + Vector3(3, 0, 0)
+	mundo.atualizar(comboio.pos)
+	await get_tree().process_frame
+	print("TG marco gerado: ", mundo.get_node_or_null("Chunk_%d" % int(floor(zm / WorldGen.TAM))) != null and mundo.find_child("Marco_0", true, false) != null,
+		" zumbis perto=", mundo.zumbis_vivos.filter(func(z): return is_instance_valid(z) and z.global_position.distance_to(comboio.pos) < 60.0).size())
+	progresso.atualizar(0.1)
+	print("TG painel premio: ", painel.visible, " titulo=", progresso._painel_premio().titulo)
+	var n0 := base.lista.size()
+	progresso._painel_premio().botoes[1][1].call()
+	await get_tree().process_frame
+	print("TG apos premio: marco_idx=", progresso.marco_idx, " recrutas ", n0, "->", base.lista.size(), " cartas=", progresso.cartas, " | ", hud.relatorio.replace("\n", " | "))
+	# missões
+	for tipo in ["diesel", "remedios", "militar", "sinal", "socorro"]:
+		var id := progresso.nova_missao(tipo)
+		var ms: Dictionary = progresso.missoes[id]
+		var alvo := mundo.ponto_estrada(ms.z, ms.lat)
+		comboio.posicionar(ms.z - 40.0, -0.5, 0.0)
+		jogador.position = alvo + Vector3(1.0, 0, 1.0)
+		jogador.position.y = mundo.altura(jogador.position.x, jogador.position.z)
+		mundo.atualizar(jogador.position)
+		await get_tree().process_frame
+		var no := mundo.find_child("Missao_%d" % id, true, false)
+		var zs := mundo.zumbis_vivos.filter(func(z): return is_instance_valid(z) and z.get_meta("missao", -1) == id)
+		if tipo == "socorro":
+			for z in zs:
+				z.ferir(9999.0)
+		else:
+			for v in mundo.vasculhaveis:
+				if is_instance_valid(v) and v.get_meta("chave") == "missao:%d" % id:
+					_vasculhar(v)
+		progresso.atualizar(0.1)
+		print("TG missao %s: construida=%s zumbis=%d estado=%s marcadores=%d | %s" % [tipo, str(no != null), zs.size(), ms.estado, marcadores.size(), hud.relatorio.replace("\n", " | ").substr(0, 140)])
+	var idp := progresso.nova_missao("socorro")
+	progresso.passar(20.0)
+	print("TG prazo: ", progresso.missoes[idp].estado)
+	print("TG diario: ", progresso.painel_diario().subtitulo, " objetivo=", progresso.objetivo())
+	var sv := progresso.salvar()
+	progresso.carregar(sv)
+	print("TG save/load marco_idx=", progresso.marco_idx, " missoes=", progresso.missoes.size())
 	get_tree().quit()
 
 ## Teste do clima: estados por estação e frenagem no seco, molhado e neve.
@@ -678,7 +739,7 @@ func _teste_defesa() -> void:
 
 ## Teclas novas (armas e barra rápida), criadas por código para não depender do project.godot.
 func _acoes_extras() -> void:
-	var teclas := {"salvar": KEY_F5, "recarregar": KEY_R, "criar": KEY_B, "slot_1": KEY_1, "slot_2": KEY_2, "slot_3": KEY_3, "slot_4": KEY_4,
+	var teclas := {"diario": KEY_J, "salvar": KEY_F5, "recarregar": KEY_R, "criar": KEY_B, "slot_1": KEY_1, "slot_2": KEY_2, "slot_3": KEY_3, "slot_4": KEY_4,
 		"slot_5": KEY_5, "slot_6": KEY_6, "slot_7": KEY_7, "slot_8": KEY_8, "slot_9": KEY_9}
 	for a in teclas:
 		if not InputMap.has_action(a):
@@ -890,6 +951,9 @@ func _process(dt: float) -> void:
 	comboio.aderencia_clima = clima.aderencia()
 	picape.ligar_farol(comboio.dirigindo and (eh_noite() or hora < 6.3 or hora > 18.6 or clima.neblina > 0.5 or clima.chuva > 0.6))
 	_avisar_faixa()
+	progresso.atualizar(dt)
+	if Input.is_action_just_pressed("diario") and not _janela_aberta():
+		_abrir_painel(progresso.painel_diario)
 	_sons_ambiente(dt)
 	eventos.atualizar(dt)
 	_t_autosave += dt
@@ -931,6 +995,8 @@ func _passar_tempo(h: float) -> void:
 		defesa.passar(h)
 	if clima:
 		clima.passar(h)
+	if progresso:
+		progresso.passar(h)
 	# inverno: o corpo gasta mais para se aquecer (mais ainda na neve, fora do abrigo)
 	var frio := 1.0
 	if clima and clima.estacao() == "Inverno":
@@ -1316,6 +1382,9 @@ func _vasculhar(v: Node3D) -> void:
 		if n > 0:
 			ganhos.append("%d %s" % [n, ITENS[item].nome.to_lower()])
 	mundo.vasculhados[chave] = true
+	var carta := progresso.talvez_carta(chave)
+	if carta != "":
+		ganhos.append(carta.to_lower())
 	hud.aviso("%s: %s" % [v.get_meta("nome"), ", ".join(ganhos) if not ganhos.is_empty() else "nada que coubesse na carga"])
 	if ev != "":
 		hud.relatorio = ev
@@ -1592,10 +1661,12 @@ func _atualizar_hud() -> void:
 	hud.defesa = defesa.info_hud()
 	hud.horda_txt = defesa.texto_horda()
 	hud.clima_txt = "%s · %s" % [clima.nome(), clima.estacao()]
+	hud.dirigindo = comboio.dirigindo
 	hud.mira = dentro != null or (jogador.visible and not comboio.dirigindo)
 	if comboio.dirigindo:
-		hud.objetivo = "Siga pela estrada"
-		hud.subobjetivo = "Odômetro: %.1f km" % (comboio.odometro / 1000.0)
+		var ob := progresso.objetivo()
+		hud.objetivo = ob[0]
+		hud.subobjetivo = ob[1]
 	else:
 		var la := mundo.lugar_em(jogador.position)
 		if not la.is_empty() and la.tipo == "assentamento":
@@ -2339,6 +2410,13 @@ const RUMORES := {
 ## Sintoniza o rádio: às vezes dá a localização de um reboque abandonado à frente (é raro).
 func ouvir_radio() -> String:
 	_t_radio = 3.5
+	# o rádio do trailer: marco anunciado ou uma meta nova
+	if progresso and _rng_radio.randf() < 0.45:
+		if progresso._ativas() < 2 and _rng_radio.randf() < 0.6:
+			var id := progresso.nova_missao()
+			var ms: Dictionary = progresso.missoes[id]
+			return Progresso.TIPOS_MISSAO[ms.tipo].radio % int(ms.z / 1000.0)
+		return String(Progresso.marco(progresso.marco_idx).radio)
 	var k := int(floor(comboio.pos.z / WorldGen.TAM)) + WorldGen.FRENTE + 3 + _rng_radio.randi_range(0, 10)
 	if mundo.pois_fixos.has(k) or _rng_radio.randf() < 0.65:
 		var gerais := [
@@ -2953,6 +3031,94 @@ func _capturar_trailer() -> void:
 			_abrir_painel(_painel_compartimento.bind(id))
 			await _salvar("trailer_painel_%s" % id)
 			_fechar_janela()
+	get_tree().quit()
+
+## Prints do progresso: Zona Segura, prêmio, missões do rádio e diário.
+func _capturar_progresso() -> void:
+	var cam := Camera3D.new()
+	cam.far = 900.0
+	add_child(cam)
+	hora = 16.8
+	_atualizar_ceu()
+	comboio.set_physics_process(false)
+	var zm := progresso.z_marco(0)
+	var p0 := mundo.ponto_estrada(zm - 45.0, -0.5)
+	var d0 := mundo.direcao(zm - 45.0)
+	comboio.posicionar_livre(p0, atan2(d0.x, d0.z), 0.0)
+	jogador.position = p0 + Vector3(3, 0, 0)
+	jogador.visible = false
+	mundo.atualizar(p0)
+	await get_tree().process_frame
+	_limpar_zumbis_perto(p0, 120.0)
+	for c in mundo.get_children():
+		if c.name.begins_with("Chunk"):
+			var mk := c.find_child("Marco_0", false, false)
+			if mk:
+				mk.visible = true
+	var alvo := mundo.ponto_estrada(zm + 6.0, 0.0) + Vector3(0, 3.0, 0)
+	var de := mundo.ponto_estrada(zm - 34.0, -2.5) + Vector3(0, 3.2, 0)
+	_abrir_vista(de, alvo)
+	cam.fov = 60.0
+	cam.look_at_from_position(de, alvo, Vector3.UP)
+	cam.current = true
+	hud.visible = false
+	await _salvar("progresso_zona_segura")
+	# dentro, olhando o acampamento
+	var zg: float = floor(zm / WorldGen.TAM) * WorldGen.TAM + 32.0
+	var de_in := mundo.ponto_estrada(zg + 3.0, 1.5) + Vector3(0, 3.0, 0)
+	cam.look_at_from_position(de_in, mundo.ponto_estrada(zg + 14.0, -9.0) + Vector3(0, 0.5, 0), Vector3.UP)
+	await _salvar("progresso_acampamento")
+	# painel do prêmio
+	hud.visible = true
+	cam.look_at_from_position(de, alvo, Vector3.UP)
+	progresso._chegou(0)
+	_atualizar_hud()
+	await _salvar("progresso_premio")
+	progresso._painel_premio().botoes[2][1].call()
+	await get_tree().process_frame
+	_fechar_janela()
+	# missão de socorro (cerco)
+	var id := progresso.nova_missao("socorro")
+	var ms: Dictionary = progresso.missoes[id]
+	var c2 := mundo.ponto_estrada(ms.z, ms.lat)
+	comboio.posicionar(ms.z - 30.0, -0.5, 0.0)
+	jogador.position = comboio.pos + Vector3(3, 0, 0)
+	mundo.atualizar(c2)
+	await get_tree().process_frame
+	for z in mundo.zumbis_vivos:
+		if is_instance_valid(z):
+			z.set_process(false)
+	var de3 := mundo.ponto_estrada(ms.z - 16.0, ms.lat * 0.25) + Vector3(0, 4.0, 0)
+	cam.look_at_from_position(de3, c2 + Vector3(0, 1.2, 0), Vector3.UP)
+	hud.visible = false
+	await _salvar("progresso_socorro")
+	# hospital de campanha
+	var id2 := progresso.nova_missao("remedios")
+	var ms2: Dictionary = progresso.missoes[id2]
+	var c3 := mundo.ponto_estrada(ms2.z, ms2.lat)
+	comboio.posicionar(ms2.z - 30.0, -0.5, 0.0)
+	jogador.position = comboio.pos + Vector3(3, 0, 0)
+	mundo.atualizar(c3)
+	await get_tree().process_frame
+	for z in mundo.zumbis_vivos:
+		if is_instance_valid(z):
+			z.set_process(false)
+	var de4 := mundo.ponto_estrada(ms2.z - 14.0, ms2.lat * 0.3) + Vector3(0, 3.5, 0)
+	cam.look_at_from_position(de4, c3 + Vector3(0, 1.0, 0), Vector3.UP)
+	await _salvar("progresso_hospital")
+	# diário e HUD dirigindo
+	hud.visible = true
+	progresso.cartas = [0, 1, 2, 3]
+	_abrir_painel(progresso.painel_diario)
+	await _salvar("progresso_diario")
+	_fechar_janela()
+	comboio.posicionar(ms.z - 200.0, -0.5, 0.0)
+	mundo.atualizar(comboio.pos)
+	_entrar_no_carro()
+	for i in 4:
+		await get_tree().process_frame
+	_atualizar_hud()
+	await _salvar("progresso_hud")
 	get_tree().quit()
 
 ## Prints do clima: chuva, tempestade (com relâmpago), neblina, neve e farol à noite.

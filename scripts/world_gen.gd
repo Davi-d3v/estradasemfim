@@ -65,6 +65,9 @@ var ninhos: Array = []
 var eventos_ativos := {}
 var eventos_feitos := {}
 var eventos_tipo := {}     # força o tipo (testes/prints)
+## Marcos e missões do rádio (Progresso): chunk -> índice/id.
+var marcos_k := {}
+var missoes_k := {}
 
 ## Os shaders do chão usam coordenadas do mundo; longe da origem o float perde precisão
 ## (fica quadriculado). Recentra a cada 2 km.
@@ -554,19 +557,22 @@ func _gerar_chunk(k: int) -> Node3D:
 	_arvores(n, z0, k)
 	if bio != "cidade" or k % 2 == 0:
 		_postes(n, z0, k)
-	if not perto_marco:
+	# marcos e missões do rádio precisam de espaço livre (nada de prédio por cima)
+	var livre := perto_de_marco(k) or missoes_k.has(k) or missoes_k.has(k - 1) or missoes_k.has(k + 1)
+	if not perto_marco and not livre:
 		_carros(n, z0, k)
-	match bio:
-		"cidade":
-			_predios(n, z0, k)
-		"industrial":
-			_galpoes(n, z0, k)
-		"alagado":
-			_agua_varzea(n, z0)
+	if not livre:
+		match bio:
+			"cidade":
+				_predios(n, z0, k)
+			"industrial":
+				_galpoes(n, z0, k)
+			"alagado":
+				_agua_varzea(n, z0)
 	_estradas_terra(n, z0, k)
-	if not perto_marco:
+	if not perto_marco and not livre:
 		_beira_estrada(n, z0, k, bio)
-	if not perto_marco and k > 1:
+	if not perto_marco and not livre and k > 1:
 		Apocalipse.chunk(n, z0, k, self, bio)
 	_placas_juncao(n, z0)
 	_lugares_no_chunk(n, z0)
@@ -599,7 +605,7 @@ func _gerar_chunk(k: int) -> Node3D:
 				_poi_reboque(n, z0, k, partes[1] if partes.size() > 1 else "")
 			else:
 				call("_poi_" + t, n, z0, k)
-	if gerar_zumbis and k != 0 and eventos_ativos.get(k, {}).get("tipo", "") not in ["saqueadores", "carona"]:
+	if gerar_zumbis and k != 0 and eventos_ativos.get(k, {}).get("tipo", "") not in ["saqueadores", "carona"] and not perto_de_marco(k):
 		_zumbis(n, z0, k)
 	if k > 0:
 		_animais(n, z0, k, bio)
@@ -1001,6 +1007,9 @@ func _areas_construidas(n: Node3D) -> Array:
 				var tc: Transform3D = t * (c as Node3D).transform
 				if c is Predio:
 					res.append([tc.affine_inverse(), c.largura * 0.5 + 3.0, c.profundidade * 0.5 + 3.0])
+				elif c.has_meta("area_livre"):
+					var a: Vector2 = c.get_meta("area_livre")
+					res.append([tc.affine_inverse(), a.x, a.y])
 				else:
 					pilha.append([c, tc])
 	return res
@@ -1770,6 +1779,23 @@ func _poi_posto(n: Node3D, z0: float, k: int) -> void:
 	for i in 18:
 		var e := B.box(p, Vector3(r.randf_range(0.2, 1.2), r.randf_range(0.05, 0.3), r.randf_range(0.2, 1.0)), Vector3(r.randf_range(-12, 12), 0.1, r.randf_range(-11, 11)), concreto if r.randf() < 0.6 else vermelho)
 		e.rotation_degrees = Vector3(r.randf_range(-15, 15), r.randf() * 360, r.randf_range(-15, 15))
+
+func _poi_marco(n: Node3D, z0: float, k: int) -> void:
+	Marcos.construir_marco(self, n, z0, k, int(marcos_k.get(k, 0)))
+
+func _poi_missao(n: Node3D, z0: float, k: int) -> void:
+	var id: int = missoes_k.get(k, -1)
+	var pg = get_parent().get("progresso")
+	if id < 0 or pg == null or not pg.missoes.has(id):
+		return
+	Marcos.construir_missao(self, n, z0, k, id, pg.missoes[id])
+
+## Perto de um marco não aparece zumbi (é a área protegida pelo muro).
+func perto_de_marco(k: int) -> bool:
+	for d in range(-2, 3):
+		if marcos_k.has(k + d):
+			return true
+	return false
 
 func _poi_evento(n: Node3D, z0: float, k: int) -> void:
 	Eventos.construir(self, n, z0, k)

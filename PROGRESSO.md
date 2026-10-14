@@ -41,9 +41,13 @@
   partículas, céu fechado, névoa, relâmpago + trovão, asfalto molhado com poças e neve no chão (shaders road/terrain/grass), vento forte na tempestade;
   pista lisa (Comboio.aderencia_clima: curva, freio e derrapagem), zumbis enxergam/escutam menos, horda +45% na tempestade, fome maior no inverno;
   faróis da picape (acendem sozinhos) que atraem zumbis à frente à noite; tempo/estação no HUD; salvo no jogo. Teste: --teste-clima; prints: --clima
-- [ ] 3. Rádio/Zona Segura/marcos  - [ ] 4. Combate com o comboio  - [ ] 5. Comércio/reputação/facções
+- [x] 3. Rádio, Zona Segura e marcos (scripts/progresso.gd + scripts/marcos.gd): marcos infinitos (Zona Segura km 40, Refinaria 95, Base Aérea 155,
+  Usina 220, Porto Seco 290, depois a cada ~72 km) com muro de contêineres, torres, acampamento e gente; ao chegar escolhe prêmio (reboque nível 3,
+  recruta especial ou conserto+suprimentos) e ganha uma peça do mistério; missões do rádio (depósito de diesel, hospital de campanha, comboio militar,
+  pedido de socorro com prazo e cerco, sinal estranho) com marcador; 16 cartas/fitas do mistério (saque 6%, marcos, sinais) no diário [J];
+  objetivo do HUD mostra próximo marco/missão; trechos de marco e missão sem prédios. Teste: --teste-progresso; prints: --progresso  - [ ] 4. Combate com o comboio  - [ ] 5. Comércio/reputação/facções
 - [ ] 6. Cachorro  - [ ] 7-11. Recrutas, comboio, exploração, defesa, sobrevivência  - [ ] 12. v0.8
 
 ## Próximos
-- seguir a rodada grande (etapa 3: rádio, Zona Segura e marcos)
+- seguir a rodada grande (etapa 4: combate com o comboio)
 - ouvir o retorno do teste no PC do Davi

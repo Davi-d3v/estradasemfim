@@ -57,6 +57,7 @@ static func salvar(m: Node) -> bool:
 	d.marcadores = Array(m.marcadores)
 	d.avisou_marco = m._avisou_marco.duplicate(true)
 	d.clima = m.clima.salvar()
+	d.progresso = m.progresso.salvar()
 	var j: Player = m.jogador
 	d.jogador = {"pos": j.global_position, "yaw": j.yaw, "vida": j.vida, "sede": j.sede, "fome": j.fome,
 		"estamina": j.estamina, "infeccao": j.infeccao, "dentro": m.dentro == m.trailer}
@@ -143,6 +144,8 @@ static func aplicar(m: Node) -> bool:
 	m._avisou_marco = d.get("avisou_marco", {})
 	if d.has("clima"):
 		m.clima.carregar(d.clima)
+	if d.has("progresso"):
+		m.progresso.carregar(d.progresso)
 	# mundo (antes de gerar os chunks de novo)
 	var w: WorldGen = m.mundo
 	for k in d.mundo:
