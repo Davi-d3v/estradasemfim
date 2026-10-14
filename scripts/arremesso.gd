@@ -55,6 +55,9 @@ func _process(dt: float) -> void:
 
 func _cair() -> void:
 	_no_chao = true
+	if tipo == "molotov":
+		Som.em("vidro_quebra", global_position, 0.0)
+		Som.em("fogo_whoosh", global_position, 2.0)
 	rotation = Vector3(0, 0, PI * 0.5 if tipo == "sinalizador" else 0.0)
 	if tipo == "molotov":
 		for c in get_children():

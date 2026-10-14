@@ -6,3 +6,7 @@ Modelos 3D prontos usados no jogo (todos CC0 / domínio público):
 - armas/*.glb (revolver, shotgun, sniper, smg...) — Ultimate Guns Pack, Quaternius (github.com/Karnak19/bagarre);
   armas/tool-*.glb — Survival Kit, Kenney (github.com/hakyong-tae/game-asset-library-3d)
 Licenças originais em licencas/.
+Sons:
+- sons/*.ogg — sintetizados para o jogo (tools/gerar_sons.py), sem licença de terceiros
+- sons/kenney/ — motor, impacto, derrapagem, passos e ambiente dos Starter Kits da Kenney (CC0;
+  github.com/KenneyNL/Starter-Kit-Racing, Starter-Kit-FPS, Starter-Kit-City-Builder)

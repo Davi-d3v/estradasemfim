@@ -24,6 +24,7 @@ var _t_ataque := 0.0
 var _fase := 0.0
 var _t_morto := 0.0
 var _gritou := false
+var _t_gemido := randf_range(1.0, 10.0)
 var _empurrao := Vector3.ZERO
 var _anim_ataque := 0.0
 var _rng := RandomNumberGenerator.new()
@@ -74,6 +75,7 @@ func ferir(dano: float, empurrao := Vector3.ZERO, origem := Vector3.ZERO) -> voi
 		return
 	vida -= dano
 	_empurrao = empurrao
+	Som.em("impacto_carne", global_position + Vector3(0, 1.1, 0), -2.0, 0.15)
 	if modelo and is_inside_tree():
 		var peito := global_position + Vector3(0, 1.15 * scale.x, 0)
 		Sangue.jorro(get_parent(), peito, empurrao if empurrao.length() > 0.1 else (peito - origem), clampf(dano / 40.0, 0.4, 1.8))
@@ -98,6 +100,7 @@ func ferir(dano: float, empurrao := Vector3.ZERO, origem := Vector3.ZERO) -> voi
 
 func morrer() -> void:
 	estado = Estado.MORTO
+	Som.em("zumbi_morte", global_position + Vector3(0, 1.4, 0), -3.0, 0.12)
 	_t_morto = 0.0
 	if modelo:
 		if tipo == "rastejante":
@@ -123,6 +126,11 @@ func _process(dt: float) -> void:
 	if dist_foco > (140.0 if cerco else 90.0):
 		return   # longe demais: congelado (economiza processamento)
 	_t_decisao -= dt
+	_t_gemido -= dt
+	if _t_gemido <= 0.0:
+		_t_gemido = _rng.randf_range(5.0, 14.0) if estado == Estado.VAGANDO else _rng.randf_range(2.5, 6.0)
+		if dist_foco < 40.0:
+			Som.em("zumbi_gemido", global_position + Vector3(0, 1.6, 0), -6.0 if estado == Estado.VAGANDO else -2.0, 0.15)
 	_t_ataque = maxf(0.0, _t_ataque - dt)
 	_anim_ataque = maxf(0.0, _anim_ataque - dt * 3.0)
 	if cerco and not is_instance_valid(cerco):
@@ -160,6 +168,7 @@ func _process(dt: float) -> void:
 				if _t_ataque <= 0.0:
 					_t_ataque = 1.3 if tipo != "brutamonte" else 1.9
 					_anim_ataque = 1.0
+					Som.em("zumbi_ataque", global_position + Vector3(0, 1.5, 0), 0.0, 0.12)
 					if modelo:
 						tocar("Zombie_Bite" if _rng.randf() < 0.4 else "Zombie_Scratch", 1.1 if tipo != "brutamonte" else 0.85)
 					main.call("zumbi_atacou", self, alvo)
@@ -303,6 +312,7 @@ func _perceber(main: Node) -> void:
 			estado = Estado.PERSEGUINDO
 			if tipo == "gritador" and not _gritou:
 				_gritou = true
+				Som.em("zumbi_grito", global_position + Vector3(0, 1.6, 0), 4.0, 0.06, 4.0)
 				main.call("ruido", global_position, 55.0, "grito")
 		return
 	if estado == Estado.PERSEGUINDO and d > visao * 1.8:

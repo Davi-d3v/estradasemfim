@@ -154,6 +154,7 @@ func atualizar_armadura(arm: Dictionary) -> void:
 func levar_dano(d: float) -> void:
 	vida = maxf(0.0, vida - d)
 	_t_dano = 1.0
+	Som.tela("dor", -2.0, 0.1)
 	tremer(clampf(d * 4.0, 0.25, 0.8))
 	if corpo.modelo and not mirando:
 		corpo.tocar(["Hit_Chest", "Hit_Stomach", "Hit_Shoulder_L", "Hit_Shoulder_R"][randi() % 4], 1.3, 0.05)
@@ -203,6 +204,7 @@ func _process(dt: float) -> void:
 		estamina = minf(1.0, estamina + dt * 0.05)
 		_vel_real = 0.0
 	_tremor_camera(dt)
+	_passos(dt)
 	if corpo.modelo:
 		corpo.vel_anim = _vel_real
 		corpo.agachado_anim = agachado
@@ -319,3 +321,21 @@ func _tremor_camera(dt: float) -> void:
 	var k := tremor * tremor
 	camera.h_offset = (randf() * 2.0 - 1.0) * 0.12 * k
 	camera.v_offset = (randf() * 2.0 - 1.0) * 0.09 * k
+
+var _t_passo := 0.0
+func _passos(dt: float) -> void:
+	if _vel_real < 0.4 or not visible:
+		_t_passo = 0.0
+		return
+	_t_passo -= dt
+	if _t_passo > 0.0:
+		return
+	_t_passo = clampf(1.1 / maxf(_vel_real, 0.5), 0.26, 0.6)
+	var sup := "grama"
+	if predio_atual:
+		sup = "madeira"
+	elif mundo and absf(position.x - mundo.centro_x(position.z)) < WorldGen.LARG_ESTRADA * 0.5 + 0.3:
+		sup = "asfalto"
+	elif mundo and mundo.floresta(position.x, position.z) > 0.5:
+		sup = "terra"
+	Som.em("passo_" + sup, global_position + Vector3(0, 0.1, 0), (-14.0 if agachado else -8.0) + (3.0 if _vel_real > 4.0 else 0.0), 0.1)

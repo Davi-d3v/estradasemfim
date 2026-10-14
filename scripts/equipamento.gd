@@ -44,6 +44,7 @@ func selecionar(id: String) -> void:
 		return
 	sel = id
 	_recarga_t = 0.0
+	Som.tela("troca_arma", -10.0)
 	var visual := id if eh_arma(id) else ("facao" if not main.jogador.corpo.modelo else "")
 	if main.jogador.corpo.arma != visual:
 		main.jogador.corpo.trocar_arma(visual)
@@ -180,6 +181,7 @@ func golpear() -> void:
 		return
 	_cd = a.cad + peso_armadura() * 0.5
 	_golpe_pendente = main.jogador.golpear(a.estamina + peso_armadura() * 0.05)
+	Som.em("golpe_ar_pesado" if sel in ["machado", "taco"] else "golpe_ar", main.jogador.global_position + Vector3(0, 1.3, 0), -4.0, 0.12)
 	main.ruido(main.jogador.global_position, a.ruido * 0.5)
 
 ## O dano do golpe sai no meio da animação (quando a lâmina passa na frente).
@@ -237,6 +239,7 @@ func atirar() -> void:
 	if _cd > 0.0 or _recarga_t > 0.0:
 		return
 	if pentes.get(sel, 0) <= 0:
+		Som.tela("vazio", -4.0)
 		if main.estoque.get(a.municao, 0) > 0:
 			recarregar()
 		else:
@@ -271,6 +274,7 @@ func atirar() -> void:
 	main.ruido(j.global_position, a.ruido, "tiro")
 	j.pitch = clampf(j.pitch + a.coice, -1.0, 0.6)
 	j.flash_tiro()
+	Som.em({"pistola": "tiro_pistola", "espingarda": "tiro_espingarda", "rifle": "tiro_rifle", "besta": "golpe_ar"}.get(sel, "tiro_pistola"), j.global_position + Vector3(0, 1.4, 0), 0.0 if sel != "besta" else -6.0, 0.05, 4.0)
 	j.tremer(0.25 + a.coice * 4.0)
 	if j.corpo.modelo:
 		j.corpo.tocar("Pistol_Shoot", 1.6 if sel == "pistola" else 1.1, 0.03)
@@ -328,6 +332,7 @@ func recarregar() -> void:
 		return
 	_recarga_t = a.recarga
 	main.ruido(main.jogador.global_position, 5.0)
+	Som.tela("recarga", -3.0)
 	var corpo: Humanoid = main.jogador.corpo
 	if corpo.modelo:
 		var dur := corpo.tem_anim("Pistol_Reload")
@@ -357,6 +362,7 @@ func consumir(id: String) -> void:
 	_uso_id = id
 	main.jogador.golpear(0.0, true)
 	var dur: float = main.jogador.tocar_acao(id)
+	Som.tela({"agua": "beber", "remedio": "beber", "bandagem": "enfaixar"}.get(id, "comer"), -4.0)
 	if dur > 0.0:
 		_uso_t = maxf(c.tempo, dur * 0.85)
 

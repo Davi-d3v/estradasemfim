@@ -237,6 +237,7 @@ func _lutar(dt: float) -> void:
 			if modelo:
 				tocar("Pistol_Shoot", 1.4, 0.04)
 			main.ruido(global_position, 38.0, "tiro")
+			Som.em("tiro_rifle", global_position + Vector3(0, 1.4, 0), -2.0, 0.05, 3.0)
 			var acerto := 0.8 - clampf((d - 10.0) / 40.0, 0.0, 0.4)
 			if assent and main.eh_noite() and not _iluminado(alvo.global_position):
 				acerto *= 0.45

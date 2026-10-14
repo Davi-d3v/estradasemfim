@@ -89,6 +89,7 @@ var cinzas: CPUParticles3D
 var equip: Equipamento
 var tutorial: Tutorial
 var _t_autosave := 0.0
+var _t_radio := 0.0
 var _compartimento_preso := false     # prints: deixa a porta aberta ao fechar o painel
 var criacao: Criacao
 var defesa: Defesa
@@ -176,6 +177,9 @@ func _ready() -> void:
 	painel = Painel.new()
 	painel.fechado.connect(_fechar_janela)
 	cl.add_child(painel)
+	var som := Som.new()
+	som.main = self
+	add_child(som)
 	tutorial = Tutorial.new()
 	tutorial.main = self
 	cl.add_child(tutorial)
@@ -536,6 +540,22 @@ func _acoes_extras() -> void:
 			eb.button_index = botoes[a]
 			InputMap.action_add_event(a, eb)
 
+## Loops de ambiente e motor, conforme lugar, hora e veículo.
+func _sons_ambiente(dt: float) -> void:
+	var noite := eh_noite()
+	var abrigado := dentro != null
+	Som.loop("vento", -30.0 if abrigado else (-24.0 if comboio.dirigindo else -16.0))
+	Som.loop("noite_grilos", (-20.0 if not abrigado else -30.0) if noite and not comboio.dirigindo else -80.0)
+	var v := absf(comboio.velocidade)
+	Som.loop("kenney/engine", (-8.0 if comboio.diesel > 0.0 else -80.0) if comboio.dirigindo else -80.0, 0.55 + clampf(v / 22.0, 0.0, 1.0) * 0.85, "Motor")
+	_t_radio = maxf(0.0, _t_radio - dt)
+	Som.loop("radio_estatica", -12.0 if _t_radio > 0.0 else -80.0)
+	if noite and randf() < dt * 0.01:
+		for an in mundo.animais:
+			if is_instance_valid(an) and an.tipo == "lobo" and an.global_position.distance_to(jogador.global_position) < 120.0:
+				Som.em("lobo_uivo", an.global_position + Vector3(0, 1.0, 0), 4.0, 0.1, 8.0)
+				break
+
 func _carregar_jogo() -> void:
 	if Salvar.preparar():
 		get_tree().reload_current_scene()
@@ -696,6 +716,7 @@ func _process(dt: float) -> void:
 	if not jogando or _morto:
 		return
 	_tempo += dt
+	_sons_ambiente(dt)
 	_t_autosave += dt
 	if _t_autosave > 600.0 and not comboio.dirigindo and defesa.onda.is_empty():
 		salvar_jogo(true)
@@ -901,6 +922,7 @@ func _combate(dt: float) -> void:
 				var vel := absf(comboio.velocidade)
 				var forte := vel > 7.0 or picape.nivel("parachoque") >= 3
 				z.ferir(400.0 if forte else 35.0, fr * vel * 0.8)
+				Som.em("kenney/impact", z.global_position + Vector3(0, 1.0, 0), 2.0, 0.1, 2.0)
 				if not z.vivo():
 					abates += 1
 				var desgaste := 0.04 * (vel / 15.0) / maxf(1.0, picape.nivel("parachoque"))
@@ -1575,6 +1597,7 @@ func _desengatar(indice: int) -> void:
 
 # ------------------------------------------------------------ primeira pessoa (trailer e reboques)
 func _entrar_em(v: Node3D) -> void:
+	Som.em("porta", v.global_position + Vector3(0, 1.2, 0), -6.0)
 	if v is Reboque and not v.tem_interior():
 		_abrir_painel(_painel_tanque.bind(v))
 		return
@@ -1725,6 +1748,7 @@ func _painel_estoque() -> Dictionary:
 
 # ------------------------------------------------------------ compartimentos do trailer
 func _abrir_compartimento(id: String) -> void:
+	Som.em("compartimento", trailer.global_transform * trailer.ponto_compartimento(id) + Vector3(0, 1.0, 0), -4.0)
 	trailer.abrir_compartimento(id, true)
 	_abrir_painel(_painel_compartimento.bind(id))
 
@@ -2102,6 +2126,7 @@ const RUMORES := {
 
 ## Sintoniza o rádio: às vezes dá a localização de um reboque abandonado à frente (é raro).
 func ouvir_radio() -> String:
+	_t_radio = 3.5
 	var k := int(floor(comboio.pos.z / WorldGen.TAM)) + WorldGen.FRENTE + 3 + _rng_radio.randi_range(0, 10)
 	if mundo.pois_fixos.has(k) or _rng_radio.randf() < 0.65:
 		var gerais := [

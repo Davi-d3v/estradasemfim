@@ -66,6 +66,7 @@ func ferir(dano: float, empurrao := Vector3.ZERO, origem := Vector3.ZERO) -> voi
 		return
 	vida -= dano
 	_empurrao = empurrao * 0.4
+	Som.em("impacto_carne", global_position + Vector3(0, 0.6, 0), -3.0, 0.15)
 	_t_reacao = 0.35
 	if is_inside_tree():
 		Sangue.jorro(get_parent(), global_position + Vector3(0, altura_alvo() * scale.x, 0), empurrao, 0.8)

@@ -63,6 +63,7 @@ func _cartao(titulo: String, texto: String, acao: Callable, destaque := false) -
 	b.add_theme_stylebox_override("hover", sh)
 	b.add_theme_stylebox_override("pressed", sh)
 	b.add_theme_stylebox_override("focus", sh)
+	b.pressed.connect(func(): Som.tela("clique_ui", -6.0))
 	b.pressed.connect(acao)
 	var v := VBoxContainer.new()
 	v.set_anchors_preset(Control.PRESET_FULL_RECT)
