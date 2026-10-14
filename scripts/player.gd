@@ -28,6 +28,7 @@ var _t_dano := 0.0
 var predio_atual: Predio = null
 var mirando := false
 var zoom := 40.0
+var binoculo := false        # olhando pelo binóculo (Exploracao)
 var _t_flash := 0.0
 var _flash_luz: OmniLight3D
 var _armadura_nos: Array = []
@@ -268,7 +269,8 @@ func _atualizar_predio(dt: float) -> void:
 		predio_atual = pr
 	# dentro de construções a câmera vai para os olhos (1ª pessoa), como no trailer
 	var alvo_cam := Vector3(-0.85, 0.25, -3.3) if not mirando else Vector3(-0.6, 0.12, -1.7)
-	camera.fov = lerpf(camera.fov, zoom if mirando else 55.0, minf(1.0, dt * 10.0)) if dt > 0.0 else camera.fov
+	var fov_alvo := 14.0 if binoculo else (zoom if mirando else 55.0)
+	camera.fov = lerpf(camera.fov, fov_alvo, minf(1.0, dt * 10.0)) if dt > 0.0 else camera.fov
 	pivo.position.y = 1.55
 	if pr:
 		pr.corte(pr.andar_em(pr.local(position).y))

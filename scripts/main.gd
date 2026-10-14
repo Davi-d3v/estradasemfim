@@ -47,6 +47,12 @@ const ITENS := {
 	"colete_couro": {"nome": "Coletes de couro", "um": "colete de couro", "vol": 3.0},
 	"calca_couro": {"nome": "Calças de couro", "um": "calça de couro", "vol": 2.5},
 	"bracadeiras": {"nome": "Braçadeiras de couro", "um": "par de braçadeiras", "vol": 1.0},
+	# exploração
+	"binoculo": {"nome": "Binóculos", "um": "binóculo", "vol": 1.0},
+	"lanterna": {"nome": "Lanternas", "um": "lanterna", "vol": 0.5},
+	"cartao_militar": {"nome": "Cartões de acesso militar", "um": "cartão de acesso militar", "vol": 0.05},
+	"chaves_presidio": {"nome": "Molhos de chaves do presídio", "um": "molho de chaves do presídio", "vol": 0.2},
+	"chave_cofre": {"nome": "Chaves de cofre", "um": "chave de cofre", "vol": 0.05},
 }
 ## Custo para construir um reboque na oficina móvel (além do projeto).
 const CUSTO_CONSTRUCAO := {"pneu": 2, "eixo": 1, "sucata": 60, "pecas": 15}
@@ -96,6 +102,7 @@ var combate_comboio: CombateComboio
 var comercio: Comercio
 var cachorro: Cachorro = null
 var comboio_extra: ComboioExtra
+var exploracao: Exploracao
 var horda_visivel: HordaVisivel
 var retrovisor: Retrovisor
 var _t_autosave := 0.0
@@ -122,18 +129,24 @@ const TABELAS := {
 	"estante": {"pecas": [0, 1, 0.3], "remedio": [0, 1, 0.15], "sucata": [0, 2, 0.4], "municao_pistola": [2, 6, 0.08], "sinalizador": [1, 1, 0.06]},
 	"armario": {"comida": [1, 4, 0.85], "agua": [0, 2, 0.5]},
 	"geladeira": {"comida": [0, 2, 0.4], "agua": [1, 3, 0.7]},
-	"gaveta": {"pecas": [0, 1, 0.35], "remedio": [0, 1, 0.25], "sucata": [1, 2, 0.4], "municao_pistola": [2, 6, 0.12], "pistola": [1, 1, 0.025], "analgesico": [1, 1, 0.15]},
+	"gaveta": {"pecas": [0, 1, 0.35], "remedio": [0, 1, 0.25], "sucata": [1, 2, 0.4], "municao_pistola": [2, 6, 0.12], "pistola": [1, 1, 0.025], "analgesico": [1, 1, 0.15], "lanterna": [1, 1, 0.08], "chave_cofre": [1, 1, 0.025]},
 	"guarda_roupa": {"sucata": [1, 3, 0.5], "remedio": [0, 1, 0.12], "galoes_diesel": [1, 1, 0.05], "tecido": [1, 4, 0.6], "cartucho": [2, 4, 0.06], "espingarda": [1, 1, 0.02]},
 	"banheiro": {"remedio": [1, 2, 0.6], "agua": [0, 1, 0.3], "bandagem": [1, 2, 0.4], "analgesico": [1, 1, 0.3]},
 	"prateleira": {"comida": [1, 4, 0.8], "agua": [1, 3, 0.6], "remedio": [0, 1, 0.15]},
 	"caixa": {"comida": [1, 5, 0.6], "sucata": [2, 6, 0.7], "pecas": [0, 2, 0.4], "pneu": [1, 1, 0.12], "sinalizador": [1, 1, 0.1], "garrafa": [1, 2, 0.3], "taco": [1, 1, 0.06]},
-	"cacador": {"comida": [2, 5, 0.9], "remedio": [0, 1, 0.3], "galoes_diesel": [1, 1, 0.25], "pecas": [0, 2, 0.4], "espingarda": [1, 1, 0.3], "cartucho": [3, 8, 0.8], "besta": [1, 1, 0.12], "virote": [3, 6, 0.4], "pele": [1, 2, 0.4]},
+	"cacador": {"binoculo": [1, 1, 0.15], "lanterna": [1, 1, 0.15], "comida": [2, 5, 0.9], "remedio": [0, 1, 0.3], "galoes_diesel": [1, 1, 0.25], "pecas": [0, 2, 0.4], "espingarda": [1, 1, 0.3], "cartucho": [3, 8, 0.8], "besta": [1, 1, 0.12], "virote": [3, 6, 0.4], "pele": [1, 2, 0.4]},
 	"acampamento": {"comida": [1, 3, 0.8], "agua": [1, 3, 0.8], "remedio": [0, 1, 0.3], "sucata": [1, 3, 0.5], "molotov": [1, 2, 0.3], "municao_pistola": [2, 6, 0.3], "bandagem": [1, 2, 0.4]},
-	"torre": {"comida": [1, 2, 0.6], "agua": [1, 2, 0.6], "remedio": [1, 2, 0.4], "pecas": [0, 1, 0.3], "rifle": [1, 1, 0.15], "municao_rifle": [2, 6, 0.5], "sinalizador": [1, 2, 0.5]},
+	"torre": {"comida": [1, 2, 0.6], "agua": [1, 2, 0.6], "remedio": [1, 2, 0.4], "pecas": [0, 1, 0.3], "rifle": [1, 1, 0.15], "municao_rifle": [2, 6, 0.5], "sinalizador": [1, 2, 0.5], "binoculo": [1, 1, 0.3], "lanterna": [1, 1, 0.3], "chaves_presidio": [1, 1, 0.05]},
 	"carro_mata": {"sucata": [3, 8, 1.0], "pecas": [1, 2, 0.6], "galoes_diesel": [1, 1, 0.3], "remedio": [0, 1, 0.2], "sinalizador": [1, 1, 0.3], "pistola": [1, 1, 0.06], "municao_pistola": [3, 9, 0.35]},
-	"militar": {"municao_rifle": [6, 18, 0.9], "municao_pistola": [6, 16, 0.8], "cartucho": [3, 8, 0.5], "comida": [2, 6, 0.8], "agua": [2, 5, 0.7], "bandagem": [1, 4, 0.7], "remedio": [1, 2, 0.5], "rifle": [1, 1, 0.25], "sinalizador": [1, 3, 0.5], "galoes_diesel": [1, 2, 0.5], "chapa": [1, 2, 0.3]},
+	"militar": {"cartao_militar": [1, 1, 0.07], "binoculo": [1, 1, 0.12], "lanterna": [1, 1, 0.2], "municao_rifle": [6, 18, 0.9], "municao_pistola": [6, 16, 0.8], "cartucho": [3, 8, 0.5], "comida": [2, 6, 0.8], "agua": [2, 5, 0.7], "bandagem": [1, 4, 0.7], "remedio": [1, 2, 0.5], "rifle": [1, 1, 0.25], "sinalizador": [1, 3, 0.5], "galoes_diesel": [1, 2, 0.5], "chapa": [1, 2, 0.3]},
 	"deposito_diesel": {"galoes_diesel": [3, 6, 1.0], "pecas": [1, 3, 0.6], "sucata": [3, 8, 0.8], "molotov": [1, 3, 0.5]},
 	"hospital_campanha": {"remedio": [3, 6, 1.0], "bandagem": [3, 8, 1.0], "analgesico": [2, 5, 0.9], "agua": [2, 5, 0.7], "comida": [1, 4, 0.5]},
+	"arsenal": {"rifle": [1, 2, 0.9], "municao_rifle": [20, 45, 1.0], "espingarda": [1, 1, 0.5], "cartucho": [10, 24, 0.9], "pistola": [1, 2, 0.6], "municao_pistola": [20, 40, 0.9], "sinalizador": [2, 4, 0.7], "molotov": [2, 4, 0.4], "binoculo": [1, 1, 0.5], "lanterna": [1, 1, 0.6]},
+	"almoxarifado": {"comida": [8, 16, 1.0], "agua": [6, 12, 1.0], "remedio": [2, 5, 0.9], "bandagem": [3, 8, 1.0], "tecido": [4, 10, 0.8], "lanterna": [1, 1, 0.5], "analgesico": [2, 4, 0.7]},
+	"armaria": {"espingarda": [1, 2, 0.9], "cartucho": [12, 30, 1.0], "pistola": [1, 2, 0.8], "municao_pistola": [20, 40, 1.0], "colete_couro": [1, 1, 0.3]},
+	"cofre": {"remedio": [3, 6, 0.9], "municao_rifle": [10, 25, 0.7], "galoes_diesel": [2, 3, 0.7], "binoculo": [1, 1, 0.4], "chaves_presidio": [1, 1, 0.3], "cartao_militar": [1, 1, 0.3]},
+	"esconderijo": {"comida": [2, 6, 0.9], "agua": [2, 5, 0.8], "remedio": [1, 2, 0.4], "municao_pistola": [4, 12, 0.4], "galoes_diesel": [1, 1, 0.3], "lanterna": [1, 1, 0.2], "bandagem": [1, 3, 0.5]},
+	"presidio": {"comida": [0, 2, 0.4], "tecido": [1, 3, 0.6], "sucata": [1, 4, 0.6], "taco": [1, 1, 0.1], "analgesico": [1, 2, 0.2], "chaves_presidio": [1, 1, 0.06]},
 	"serraria": {"sucata": [5, 12, 1.0], "pecas": [1, 4, 0.8], "eixo": [1, 1, 0.15], "galoes_diesel": [1, 2, 0.35], "machado": [1, 1, 0.35], "cordame": [1, 3, 0.5]},
 }
 var _frame_fechou := -10
@@ -216,6 +229,9 @@ func _ready() -> void:
 	comboio_extra = ComboioExtra.new()
 	comboio_extra.main = self
 	add_child(comboio_extra)
+	exploracao = Exploracao.new()
+	exploracao.main = self
+	add_child(exploracao)
 	horda_visivel = HordaVisivel.new()
 	horda_visivel.main = self
 	add_child(horda_visivel)
@@ -240,6 +256,8 @@ func _ready() -> void:
 			_capturar_trailer()
 		elif "--eventos" in OS.get_cmdline_user_args():
 			_capturar_eventos()
+		elif "--exploracao" in OS.get_cmdline_user_args():
+			_capturar_exploracao()
 		elif "--reboques-raros" in OS.get_cmdline_user_args():
 			_capturar_raros()
 		elif "--vida" in OS.get_cmdline_user_args():
@@ -280,6 +298,10 @@ func _ready() -> void:
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
 		_teste_recrutas()
+	elif "--teste-exploracao" in OS.get_cmdline_user_args():
+		Jogo.modo = Jogo.MODO_INFINITO
+		jogando = true
+		_teste_exploracao()
 	elif "--teste-reboques" in OS.get_cmdline_user_args():
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
@@ -380,6 +402,93 @@ func _teste_salvar() -> void:
 	defesa.z_horda = -3333.0
 	var ok := Salvar.salvar(self)
 	print("TS salvo=", ok, " resumo=", Salvar.resumo())
+	get_tree().quit()
+
+## Teste da etapa 9: lugares grandes, trancas, subsolo no escuro, binóculo e esconderijos.
+func _teste_exploracao() -> void:
+	await get_tree().process_frame
+	for ri in 30:
+		for l in mundo.lugares_da_regiao(ri):
+			if l.tipo in ["base_militar", "presidio", "shopping"]:
+				print("TX lugar: %s '%s' região %d km %.1f" % [l.tipo, l.nome, ri, l.pos.z / 1000.0])
+	for t in ["base_militar", "presidio", "shopping", "fazenda"]:
+		var l := _achar_lugar(t)
+		if l.is_empty():
+			for ri in range(12, 40):
+				for ll in mundo.lugares_da_regiao(ri):
+					if ll.tipo == t and l.is_empty():
+						l = ll
+		if l.is_empty():
+			print("TX %s: não encontrado" % t)
+			continue
+		jogador.position = l.pos + Vector3(0, 0, 0)
+		jogador.position.y = jogador.chao(jogador.position)
+		mundo.atualizar(l.pos)
+		await get_tree().process_frame
+		var tr: Array = mundo.vasculhaveis.filter(func(v): return is_instance_valid(v) and v.has_meta("tranca") and v.global_position.distance_to(l.pos) < 80.0)
+		var zs: int = mundo.zumbis_vivos.filter(func(z): return is_instance_valid(z) and z.global_position.distance_to(l.pos) < 70.0).size()
+		var ss: Array = mundo.subsolos.filter(func(x): return is_instance_valid(x) and x.global_position.distance_to(l.pos) < 80.0)
+		var est: int = mundo.estruturas.filter(func(x): return is_instance_valid(x) and x.global_position.distance_to(l.pos) < 80.0).size()
+		print("TX %s: trancas=%d zumbis=%d subsolos=%d predios=%d" % [t, tr.size(), zs, ss.size(), est])
+		if not tr.is_empty():
+			var v: Node3D = tr[0]
+			var pn := exploracao.painel_tranca(v)
+			print("TX   tranca: %s | %s" % [pn.titulo, pn.linhas[0]])
+			if t == "base_militar":
+				estoque.pe_de_cabra = 1
+				var z0 := mundo.zumbis_vivos.size()
+				var h0 := hora
+				pn.botoes[1][1].call()
+				await get_tree().process_frame
+				await get_tree().process_frame
+				print("TX   arrombou: horas %.1f -> %.1f, zumbis %d -> %d, aberto=%s, rifles=%d" % [h0, hora, z0, mundo.zumbis_vivos.size(), str(not exploracao.trancado(v)), estoque.get("rifle", 0)])
+			else:
+				estoque[v.get_meta("tranca")] = 1
+				pn.botoes[0][1].call()
+				await get_tree().process_frame
+				await get_tree().process_frame
+				print("TX   chave: aberto=%s vasculhado=%s" % [str(not exploracao.trancado(v)), str(mundo.vasculhados.has(v.get_meta("chave")))])
+		mundo.atualizar(l.pos)
+		await get_tree().process_frame
+		ss = mundo.subsolos.filter(func(x): return is_instance_valid(x) and x.global_position.distance_to(l.pos) < 80.0)
+		if not ss.is_empty():
+			var sb: Subsolo = ss[0]
+			for luz in [false, true]:
+				estoque.lanterna = 1 if luz else 0
+				jogador.vida = 1.0
+				jogador.infeccao = 0.0
+				_entrar_em(sb)
+				await get_tree().process_frame
+				var its: Array = fp.interativos.map(func(x): return x.id)
+				print("TX   %s (%s): ocupado=%s interativos=%s sol=%s amb=%.2f" % [sb.nome_exibicao(), "com lanterna" if luz else "no escuro", str(sb.ocupado), str(its), str(sol.visible), ambiente.ambient_light_energy])
+				if its.size() > 1:
+					_acao_interior(its[0])
+					await get_tree().process_frame
+					print("TX     vasculhou %s: vida %.2f infecção %.2f · %s" % [its[0], jogador.vida, jogador.infeccao, hud.relatorio.replace("\n", " ").substr(0, 90)])
+				_sair_de_dentro()
+				await get_tree().process_frame
+			print("TX   saiu: sol=%s amb=%.2f" % [str(sol.visible), ambiente.ambient_light_energy])
+	# binóculo
+	var lb := _achar_lugar("vila")
+	jogador.position = lb.pos + Vector3(0, 0, 40)
+	jogador.position.y = jogador.chao(jogador.position)
+	mundo.atualizar(jogador.position)
+	await get_tree().process_frame
+	jogador.yaw = atan2(lb.pos.x - jogador.position.x, lb.pos.z - jogador.position.z)
+	estoque.binoculo = 1
+	exploracao._alternar_zoom()
+	for i in 3:
+		await get_tree().process_frame
+	exploracao._observar()
+	print("TX binóculo: fov=%.0f marcados=%d texto='%s'" % [jogador.camera.fov, exploracao.marcados.size(), hud.binoculo_txt])
+	exploracao._alternar_zoom()
+	# pichações com esconderijo
+	var n_p := 0
+	var n_e := 0
+	for k in range(3, 400):
+		var r := RandomNumberGenerator.new()
+		r.seed = hash([mundo.semente, k, "apoc"])
+	print("TX esconderijos carregados: ", mundo.vasculhaveis.filter(func(v): return is_instance_valid(v) and String(v.get_meta("chave")).begins_with("esconderijo")).size())
 	get_tree().quit()
 
 ## Teste da etapa 8: reboques raros, desgaste, álcool, torreta, rádio e visual.
@@ -1102,7 +1211,7 @@ func _teste_defesa() -> void:
 
 ## Teclas novas (armas e barra rápida), criadas por código para não depender do project.godot.
 func _acoes_extras() -> void:
-	var teclas := {"diario": KEY_J, "salvar": KEY_F5, "recarregar": KEY_R, "criar": KEY_B, "slot_1": KEY_1, "slot_2": KEY_2, "slot_3": KEY_3, "slot_4": KEY_4,
+	var teclas := {"binoculo": KEY_Z, "diario": KEY_J, "salvar": KEY_F5, "recarregar": KEY_R, "criar": KEY_B, "slot_1": KEY_1, "slot_2": KEY_2, "slot_3": KEY_3, "slot_4": KEY_4,
 		"slot_5": KEY_5, "slot_6": KEY_6, "slot_7": KEY_7, "slot_8": KEY_8, "slot_9": KEY_9}
 	for a in teclas:
 		if not InputMap.has_action(a):
@@ -1294,6 +1403,12 @@ func _atualizar_ceu() -> void:
 	ambiente.ambient_light_energy = lerpf(1.1, 0.9, dia_f) * lerpf(1.0, 0.6, noite_f)
 	if trailer:
 		trailer.luz_interna = alt < 0.2
+	if dentro is Subsolo:
+		# lá embaixo não chega luz nenhuma
+		ambiente.ambient_light_energy = 0.02
+		ambiente.ambient_light_sky_contribution = 0.0
+		ambiente.fog_enabled = false
+		sol.visible = false
 
 
 # ------------------------------------------------------------ ciclo principal
@@ -1320,6 +1435,7 @@ func _process(dt: float) -> void:
 	_sons_ambiente(dt)
 	eventos.atualizar(dt)
 	comboio_extra.atualizar(dt)
+	exploracao.atualizar(dt)
 	_t_autosave += dt
 	if _t_autosave > 600.0 and not comboio.dirigindo and defesa.onda.is_empty():
 		salvar_jogo(true)
@@ -1331,7 +1447,7 @@ func _process(dt: float) -> void:
 	defesa.processar(dt)
 	base.atualizar_cena(dt)
 	_atualizar_ceu()
-	var foco := comboio.pos if (comboio.dirigindo or dentro != null) else jogador.position
+	var foco := _foco()
 	if comboio.dirigindo:
 		jogador.position = comboio.porta_motorista()
 	mundo.atualizar(foco)
@@ -1680,6 +1796,8 @@ func _acordar_apos_queda() -> void:
 
 # ------------------------------------------------------------ mapa: regiões, descobertas, acampamento
 func _foco() -> Vector3:
+	if dentro is Subsolo:
+		return dentro.global_position
 	if comboio and (comboio.dirigindo or dentro != null):
 		return comboio.pos
 	return jogador.position if jogador else Vector3.ZERO
@@ -2047,6 +2165,7 @@ func _atualizar_hud() -> void:
 	for z in mundo.zumbis_vivos:
 		if is_instance_valid(z) and z.vivo() and z.global_position.distance_to(f) < 60.0:
 			zp.append(z.global_position)
+	zp.append_array(exploracao.posicoes_marcadas())
 	hud.zumbis = zp
 	hud.infeccao = jogador.infeccao
 	hud.itens = equip.itens_hud()
@@ -2151,9 +2270,15 @@ func _interacao_a_pe() -> void:
 			add.call(c.global_position, 3.0, "interact", "[E] Desmontar carro (2 h)", _desmontar.bind(c))
 	for v in mundo.vasculhaveis:
 		if is_instance_valid(v) and not mundo.vasculhados.has(v.get_meta("chave")) and absf(v.global_position.y - p.y - 1.0) < 1.6:
-			add.call(v.global_position, 3.5, "interact", "[E] Vasculhar: %s (%s)" % [v.get_meta("nome"), _txt_horas(v.get_meta("horas"))], _vasculhar.bind(v))
+			if exploracao.trancado(v):
+				add.call(v.global_position, 3.5, "interact", "[E] %s (trancado)" % v.get_meta("nome"), _abrir_painel.bind(exploracao.painel_tranca.bind(v)))
+			else:
+				add.call(v.global_position, 3.5, "interact", "[E] Vasculhar: %s (%s)" % [v.get_meta("nome"), _txt_horas(v.get_meta("horas"))], _vasculhar.bind(v))
 	if cachorro and is_instance_valid(cachorro) and cachorro.vivo():
 		add.call(cachorro.global_position, 1.8, "interact", "[E] %s" % cachorro.nome, _abrir_painel.bind(cachorro.painel))
+	for ss in mundo.subsolos:
+		if is_instance_valid(ss):
+			add.call(ss.global_position, 2.0, "interact", "[E] Descer no %s%s" % [ss.nome_exibicao().to_lower(), "" if estoque.get("lanterna", 0) > 0 else " (escuro: sem lanterna)"], _entrar_em.bind(ss))
 	for ni in mundo.ninhos:
 		if is_instance_valid(ni) and not ni.queimado:
 			add.call(ni.global_position, 4.5, "interact", "[E] Queimar o ninho (%s)" % ("molotov" if estoque.get("molotov", 0) > 0 else "1 galão de diesel"), _queimar_ninho.bind(ni))
@@ -2300,6 +2425,8 @@ func _entrar_em(v: Node3D) -> void:
 		trailer.reconstruir()
 	dentro = v
 	fp.entrar(v, v.interior())
+	if v is Subsolo:
+		exploracao.entrar_subsolo()
 	hud.objetivo = "Dentro: " + v.nome_exibicao()
 	hud.subobjetivo = "Mire um objeto e aperte [E]   ·   [F] Sair"
 	jogador.visible = false
@@ -2310,6 +2437,8 @@ func _sair_de_dentro() -> void:
 	var v := dentro
 	dentro = null
 	fp.sair()
+	if v is Subsolo:
+		exploracao.sair_subsolo()
 	if v == trailer:
 		trailer.modo_interior = false
 		trailer.reconstruir()
@@ -2331,6 +2460,9 @@ func _interacao_interior() -> void:
 
 func _acao_interior(id: String) -> void:
 	if _janela_aberta():
+		return
+	if id.begins_with("sub:") and dentro is Subsolo:
+		exploracao.acao_subsolo(dentro, id)
 		return
 	match id:
 		"dormir":
@@ -3456,6 +3588,97 @@ func _capturar_trailer() -> void:
 			_abrir_painel(_painel_compartimento.bind(id))
 			await _salvar("trailer_painel_%s" % id)
 			_fechar_janela()
+	get_tree().quit()
+
+## Prints da etapa 9: os lugares grandes de cima, a tranca, o porão no escuro e com lanterna, o binóculo e uma pichação.
+func _capturar_exploracao() -> void:
+	comboio.set_physics_process(false)
+	var cam := Camera3D.new()
+	cam.far = 2500.0
+	cam.near = 0.05
+	add_child(cam)
+	hud.visible = false
+	jogador.visible = false
+	hora = 16.0
+	_atualizar_ceu()
+	for t in ["base_militar", "presidio", "shopping"]:
+		var l := _achar_lugar(t)
+		if l.is_empty():
+			continue
+		jogador.position = l.pos
+		comboio.posicionar_livre(l.pos + Vector3(120, 0, 0), 0.0, 0.0)
+		mundo.atualizar(l.pos)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var no: Node3D = mundo.lugares_ativos.get(l.id)
+		var fr := Vector3(0, 0, 1)
+		if no:
+			fr = no.global_transform.basis.z
+		var de: Vector3 = l.pos + fr * 62.0 + fr.cross(Vector3.UP) * 30.0 + Vector3(0, 38.0, 0)
+		_abrir_vista(de, l.pos)
+		cam.fov = 55.0
+		cam.look_at_from_position(de, l.pos + Vector3(0, 2.0, 0), Vector3.UP)
+		cam.current = true
+		await _salvar("explorar_%s" % t)
+		if t == "base_militar":
+			# a porta do paiol, com o painel da tranca
+			var tr: Array = mundo.vasculhaveis.filter(func(v): return is_instance_valid(v) and v.has_meta("tranca") and v.global_position.distance_to(l.pos) < 80.0)
+			if not tr.is_empty():
+				var v: Node3D = tr[0]
+				var fv: Vector3 = v.get_parent().global_transform.basis.z
+				_posar_jogador(v.global_position + fv * 2.6 - Vector3(0, 1.0, 0), v.global_position, -0.05, 0.3)
+				_limpar_zumbis_perto(v.global_position, 25.0)
+				hud.visible = true
+				estoque.pe_de_cabra = 1
+				_atualizar_hud()
+				_abrir_painel(exploracao.painel_tranca.bind(v))
+				await _salvar("explorar_tranca")
+				_fechar_janela()
+				hud.visible = false
+				jogador.visible = false
+			# o bunker: no escuro e com lanterna
+			var ss: Array = mundo.subsolos.filter(func(x): return is_instance_valid(x) and x.global_position.distance_to(l.pos) < 80.0)
+			if not ss.is_empty():
+				var sb: Subsolo = ss[0]
+				var fs := sb.global_position + Vector3(3.0, 1.8, 3.0)
+				cam.look_at_from_position(fs, sb.global_position + Vector3(0, 0.4, 0), Vector3.UP)
+				cam.current = true
+				await _salvar("explorar_bunker_fora")
+				for luz in [false, true]:
+					estoque.lanterna = 1 if luz else 0
+					_entrar_em(sb)
+					fp.pos_local = Vector3(0, sb.FUNDO, 4.0)
+					fp.yaw = PI
+					fp.pitch = -0.12
+					fp._atualizar_camera()
+					hud.visible = true
+					_atualizar_hud()
+					await _salvar("explorar_bunker_%s" % ("lanterna" if luz else "escuro"))
+					_sair_de_dentro()
+					hud.visible = false
+					jogador.visible = false
+	# binóculo: estrada aberta, zumbis lá na frente
+	var zb0 := 2400.0
+	var pv := mundo.ponto_estrada(zb0, 0.5)
+	mundo.atualizar(pv)
+	await get_tree().process_frame
+	_limpar_zumbis_perto(pv, 300.0)
+	var alvo_b := mundo.ponto_estrada(zb0 + 140.0, 0.0)
+	for i in 7:
+		var zp := mundo.ponto_estrada(zb0 + 130.0 + i * 4.0, -3.0 + (i % 3) * 3.0)
+		var zb := mundo.criar_zumbi(mundo, zp, PI, 900 + i, "brutamonte" if i == 3 else "comum")
+		zb.set_process(false)
+	_posar_jogador(pv, alvo_b + Vector3(0, 1.4, 0), -0.01, 0.0)
+	jogador.camera.current = true
+	estoque.binoculo = 1
+	hud.visible = true
+	exploracao._alternar_zoom()
+	for i in 20:
+		await get_tree().process_frame
+	exploracao._observar()
+	_atualizar_hud()
+	await _salvar("explorar_binoculo")
+	exploracao._alternar_zoom()
 	get_tree().quit()
 
 ## Prints da etapa 8: os 4 reboques raros, o comboio com nome e troféus, pneu furado e o rádio no mapa.

@@ -70,8 +70,16 @@
   depois do km) e como prêmio dos marcos; desgaste: motor perde condição com os km e engasga abaixo de 30%, pneus gastam e furam (muito mais na
   terra/mato) — pneu furado limita a 30 km/h e puxa a direção, troca com 1 pneu; cara do comboio: nome pintado no trailer, assinaturas dos
   recrutas veteranos, crânios de brutamonte no quebra-mato (até 4). Teste: --teste-reboques; prints: --reboques-raros
-- [ ] 9-11. Recrutas, comboio, exploração, defesa, sobrevivência  - [ ] 12. v0.8
+- [x] 9. Exploração (scripts/exploracao.gd + scripts/subsolo.gd): lugares grandes e raros, no máximo um por região a partir da 2ª — base militar
+  (muro de chapas, torres, sede de 2 andares, hangar com caminhões, paiol trancado, bunker), presídio (muralha com arame, guaritas, 2 blocos de
+  celas, almoxarifado e armaria trancados, zumbis de uniforme laranja) e shopping (estacionamento com carros, fachada e letreiro, farmácia,
+  caça e pesca, supermercado, cofre trancado); trancas abrem com cartão militar / chaves do presídio / chave de cofre (achados em outros lugares)
+  ou arrombando com pé de cabra (2 h, barulho que chama zumbis); porões (fazendas e cabanas) e bunkers em 1ª pessoa no escuro: sem lanterna
+  é quase breu e algo pode morder, com lanterna dá para ver (itens novos: lanterna, binóculo); binóculo [Z]: zoom e marca no mapa os zumbis à
+  vista por 1 minuto; pichações de sobreviventes na beira da estrada, algumas apontando um esconderijo de verdade no mato.
+  Corrigido: o mundo seguia o comboio quando o jogador estava num subsolo. Teste: --teste-exploracao; prints: --exploracao
+- [ ] 10-11. Recrutas, comboio, exploração, defesa, sobrevivência  - [ ] 12. v0.8
 
 ## Próximos
-- seguir a rodada grande (etapa 9: exploração)
+- seguir a rodada grande (etapa 10: defesa)
 - ouvir o retorno do teste no PC do Davi

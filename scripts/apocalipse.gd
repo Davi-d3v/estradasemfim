@@ -72,6 +72,8 @@ static func chunk(n: Node3D, z0: float, k: int, m: WorldGen, bio: String) -> voi
 		var lado6 := 1.0 if r.randf() < 0.5 else -1.0
 		var a9 := _pt(m, z0 + r.randf_range(10.0, WorldGen.TAM - 10.0), lado6 * (hw + 1.0))
 		_veiculo_oficial(n, a9[0], a9[1] + r.randf_range(-0.3, 0.3), r)
+	if k > 2 and r.randf() < 0.07:
+		Exploracao.pichacao(n, m, z0, k, r)
 	_mato_no_asfalto(n, m, z0, r)
 
 # ------------------------------------------------------------ peças

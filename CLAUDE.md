@@ -15,7 +15,7 @@ Projeto do Davi. Textos do jogo e conversa em **português**. Ele quer ver **pri
 - `scripts/main.gd` — jogo, HUD, interações, capturas de print (`--capturar`, flags extras), testes (`--teste`, `--teste-armas`, `--teste-recrutas`, `--teste-defesa`, `--teste-eventos`, `--teste-salvar`).
 - `scripts/world_gen.gd` mundo/estrada/vegetação; `lugares.gd` vilas e assentamentos; `predio.gd` prédios; `floresta.gd`; `apocalipse.gd`.
 - `trailer.gd`, `pickup.gd`, `reboque.gd`, `comboio.gd`, `oficina.gd`.
-- `humanoid.gd` (corpo), `player.gd`, `zumbi.gd`, `recruta.gd`, `animal.gd`, `equipamento.gd`, `armas.gd`, `criacao.gd`, `defesa.gd`, `assentamento.gd`, `eventos.gd` (eventos na estrada), `horda_visivel.gd`, `retrovisor.gd`, `salvar.gd`, `som.gd`.
+- `humanoid.gd` (corpo), `player.gd`, `zumbi.gd`, `recruta.gd`, `animal.gd`, `equipamento.gd`, `armas.gd`, `criacao.gd`, `defesa.gd`, `assentamento.gd`, `eventos.gd` (eventos na estrada), `horda_visivel.gd`, `retrovisor.gd`, `vida_recrutas.gd`, `comboio_extra.gd`, `exploracao.gd`, `subsolo.gd`, `cachorro.gd`, `salvar.gd`, `som.gd`.
 - `assets/` modelos CC0 (Quaternius: personagens com rosto + zumbis, Universal Animation Library, animais, armas; Kenney: ferramentas). Créditos em `assets/LEIA-ME.txt` e `assets/licencas/`.
 
 ## Como rodar (sem GPU)

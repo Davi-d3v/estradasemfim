@@ -33,6 +33,9 @@ const NOMES_REGIAO := {
 const NOMES_VILA := ["Esperança", "São Jorge", "Recanto", "Boa Vista", "Santa Luzia", "Porto Novo", "Cruzeiro",
 	"Água Clara", "Bom Retiro", "Pedra Branca", "Três Barras", "Alvorada"]
 const NOMES_FAZENDA := ["Santa Rita", "Três Irmãos", "Boa Sorte", "São Pedro", "Lagoa Seca", "Vista Alegre"]
+const NOMES_BASE := ["Quartel do 12º BI", "Base de Apoio Logístico", "Quartel do 5º BEC", "Base Militar Serra Alta"]
+const NOMES_PRESIDIO := ["Presídio Estadual de Itaúna", "Penitenciária do Vale", "Cadeia Pública de Ouro Branco"]
+const NOMES_SHOPPING := ["Shopping Rodovia", "Shopping Vale Verde", "Center Norte", "Shopping das Águas"]
 const NOMES_FERRO := ["Ferro-velho do Tião", "Sucatão Central", "Desmanche Rota 116", "Auto Peças Zé"]
 const NOMES_ASSENT := ["Assentamento Nova Canaã", "Refúgio São Miguel", "Comunidade Pedra Branca", "Forte Boa Esperança",
 	"Assentamento Rio Claro", "Colônia Santa Fé", "Reduto do Vale", "Assentamento Terra Firme", "Refúgio Bela Vista"]
@@ -151,8 +154,22 @@ func juncoes(i: int) -> Array:
 		z = 420.0    # a primeira fica logo no começo do jogo
 	var limite: float = float(marco(i).z) - 900.0
 	var n := 0
+	var teve_grande := false
 	while z < limite:
 		var tipo := _sortear(r, LUGARES[b])
+		# lugares grandes e raros: só a partir de certa região, e de vez em quando
+		var grande := r.randf()
+		if i >= 1 and grande < 0.2 and not teve_grande:
+			var op: Array = []
+			if b in ["rural", "serra", "industrial", "alagado"]:
+				op.append("base_militar")
+			if i >= 2 and b in ["rural", "industrial", "serra"]:
+				op.append("presidio")
+			if b in ["cidade", "industrial"]:
+				op.append("shopping")
+			if not op.is_empty():
+				tipo = op[r.randi() % op.size()]
+				teve_grande = true
 		var nome_lugar := ""
 		match tipo:
 			"vila":
@@ -161,6 +178,12 @@ func juncoes(i: int) -> Array:
 				nome_lugar = "Fazenda " + NOMES_FAZENDA[r.randi() % NOMES_FAZENDA.size()]
 			"ferro_velho":
 				nome_lugar = NOMES_FERRO[r.randi() % NOMES_FERRO.size()]
+			"base_militar":
+				nome_lugar = NOMES_BASE[r.randi() % NOMES_BASE.size()]
+			"presidio":
+				nome_lugar = NOMES_PRESIDIO[r.randi() % NOMES_PRESIDIO.size()]
+			"shopping":
+				nome_lugar = NOMES_SHOPPING[r.randi() % NOMES_SHOPPING.size()]
 		if i == 0 and n == 0:
 			tipo = "fazenda"
 			nome_lugar = "Fazenda Santa Rita"

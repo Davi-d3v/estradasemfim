@@ -49,7 +49,24 @@ static func construir(n: Node3D, f: Dictionary, m: WorldGen) -> Node3D:
 			_serraria(raiz, f, r, m)
 		"assentamento":
 			_assentamento(raiz, f, r, m)
+		"base_militar":
+			Exploracao.base_militar(raiz, f, r, m)
+		"presidio":
+			Exploracao.presidio(raiz, f, r, m)
+		"shopping":
+			Exploracao.shopping(raiz, f, r, m)
 	return raiz
+
+## Porão com alçapão (fazendas, cabanas).
+static func _porao(p: Node3D, pos: Vector3, m: WorldGen, chave: String) -> void:
+	var s := Subsolo.new()
+	s.tipo = "porao"
+	s.chave = chave
+	s.mundo = m
+	s.position = Vector3(pos.x, _altura_local(p, m, pos), pos.z)
+	s.set_meta("nao_mesclar", true)
+	p.add_child(s)
+	m.subsolos.append(s)
 
 # ------------------------------------------------------------ utilidades
 static func _altura_local(raiz: Node3D, m: WorldGen, local: Vector3) -> float:
@@ -412,6 +429,8 @@ static func _fazenda(p: Node3D, f: Dictionary, r: RandomNumberGenerator, m: Worl
 		for dz in [-0.8, 0.8]:
 			B.box(p, Vector3(0.15, 4.4, 0.15), Vector3(-4 + dx, 2.2, -14 + dz), madeira)
 	_vasculhavel(p, Vector3(-4, 1.0, -14), "Caixa d'água", "poco", 0.25, m, j.id + ":agua")
+	if r.randf() < 0.75:
+		_porao(p, Vector3(-11, 0, 12.5), m, j.id + ":porao")
 	# trator velho
 	var tr := Node3D.new()
 	tr.position = Vector3(2, 0, -16)
@@ -534,6 +553,8 @@ static func _cabana(p: Node3D, f: Dictionary, r: RandomNumberGenerator, m: World
 	B.box(p, Vector3(0.04, 0.6, 0.04), Vector3(3.2, 0.85, 2.0), B.mat(Color(0.5, 0.35, 0.2)), Vector3(0, 0, 25))
 	var lat := Texturas.material("tabuas", Color(0.4, 0.3, 0.2))
 	B.box(p, Vector3(1.2, 2.2, 1.2), Vector3(-5.0, 1.1, -3.0), lat)
+	if r.randf() < 0.5:
+		_porao(p, Vector3(-1.5, 0, 3.6), m, j.id + ":porao")
 	_zumbis_lugar(p, r.randi_range(0, 2), 7.0, r, m)
 
 static func _barraca_camp(p: Node3D, pos: Vector3, rot: float, cor: Color) -> void:

@@ -67,6 +67,8 @@ var eventos_feitos := {}
 var eventos_tipo := {}     # força o tipo (testes/prints)
 ## Túmulos de recrutas na beira da estrada: chunk -> [{pos, nome, dia}] (salvo).
 var tumulos := {}
+## Porões e bunkers carregados (Subsolo).
+var subsolos: Array = []
 ## Marcos e missões do rádio (Progresso): chunk -> índice/id.
 var marcos_k := {}
 var missoes_k := {}
@@ -258,7 +260,7 @@ func _features(i: int) -> Array:
 		var agua := agua_em(cpos.x, cpos.z)
 		y_c = maxf(y_c, agua + 0.5)
 		cpos.y = y_c
-		var raio := {"vila": 44.0, "fazenda": 36.0, "ferro_velho": 28.0, "assentamento": 54.0}[j.tipo] as float
+		var raio := {"vila": 44.0, "fazenda": 36.0, "ferro_velho": 28.0, "assentamento": 54.0, "base_militar": 50.0, "presidio": 48.0, "shopping": 50.0}[j.tipo] as float
 		var pts := _bezier(s0, c1, c2, cpos - (cpos - c2).normalized() * (raio - 4.0), elevacao(j.z) + 0.02, y_c, cpos, raio)
 		lista.append(_feat_estrada(pts, j.id))
 		var pl := {"tipo": "plato", "c": cpos, "raio": raio, "id": j.id, "juncao": j, "livre": Assentamento.R + 6.0 if j.tipo == "assentamento" else raio}
@@ -490,6 +492,7 @@ func atualizar(pos: Vector3) -> void:
 	reboques_soltos = reboques_soltos.filter(func(r): return is_instance_valid(r) and not r.is_queued_for_deletion() and not _na_fila(r))
 	estruturas = estruturas.filter(func(v): return is_instance_valid(v) and not v.is_queued_for_deletion() and not _na_fila(v))
 	vasculhaveis = vasculhaveis.filter(func(v): return is_instance_valid(v) and not v.is_queued_for_deletion() and not _na_fila(v))
+	subsolos = subsolos.filter(func(v): return is_instance_valid(v) and not v.is_queued_for_deletion() and not _na_fila(v))
 	npcs = npcs.filter(func(v): return is_instance_valid(v) and not v.is_queued_for_deletion() and not _na_fila(v))
 	zumbis_vivos = zumbis_vivos.filter(func(z): return is_instance_valid(z) and not z.is_queued_for_deletion() and not _na_fila(z))
 	ninhos = ninhos.filter(func(a): return is_instance_valid(a) and not a.is_queued_for_deletion() and not _na_fila(a))

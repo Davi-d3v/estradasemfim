@@ -21,6 +21,8 @@ var fora_estrada := false
 var re := false
 var estoque := {}
 var marcadores: Array[Vector3] = []
+var binoculo := false
+var binoculo_txt := ""
 var radar: Array = []          # torre de rádio: [{pos, cor, letra}]
 var mira := false
 var carga_usada := 0.0
@@ -105,12 +107,44 @@ func _texto(t: String, p: Vector2, tam: int, cor := Color(0.93, 0.92, 0.88), ali
 	draw_string(_fonte(), p + Vector2(1, 1), t, alinh, largura, tam, Color(0, 0, 0, 0.6))
 	draw_string(_fonte(), p, t, alinh, largura, tam, cor)
 
+## Vinheta do binóculo: dois círculos e o resto escuro.
+func _binoculo(s: Vector2, e: float) -> void:
+	var r := s.y * 0.36
+	var c1 := Vector2(s.x * 0.5 - r * 0.62, s.y * 0.5)
+	var c2 := Vector2(s.x * 0.5 + r * 0.62, s.y * 0.5)
+	var preto := Color(0, 0, 0, 0.94)
+	# preenche o que está fora dos dois círculos com faixas
+	var passo := 2.0
+	var y := 0.0
+	while y < s.y:
+		var xs: Array = []
+		for c in [c1, c2]:
+			var dy: float = y - c.y
+			if absf(dy) < r:
+				var dx := sqrt(r * r - dy * dy)
+				xs.append([c.x - dx, c.x + dx])
+		if xs.is_empty():
+			draw_rect(Rect2(0, y, s.x, passo), preto)
+		else:
+			var a: float = xs[0][0]
+			var b: float = xs[xs.size() - 1][1]
+			draw_rect(Rect2(0, y, a, passo), preto)
+			draw_rect(Rect2(b, y, s.x - b, passo), preto)
+			if xs.size() == 2 and xs[0][1] < xs[1][0]:
+				draw_rect(Rect2(xs[0][1], y, xs[1][0] - xs[0][1], passo), preto)
+		y += passo
+	draw_line(Vector2(s.x * 0.5 - 12 * e, s.y * 0.5), Vector2(s.x * 0.5 + 12 * e, s.y * 0.5), Color(1, 1, 1, 0.35), 1.5 * e)
+	draw_line(Vector2(s.x * 0.5, s.y * 0.5 - 12 * e), Vector2(s.x * 0.5, s.y * 0.5 + 12 * e), Color(1, 1, 1, 0.35), 1.5 * e)
+	_texto("BINÓCULO  ·  " + binoculo_txt + "  ·  [Z] baixar", Vector2(0, s.y * 0.9), int(16 * e), Color(0.95, 0.9, 0.75), HORIZONTAL_ALIGNMENT_CENTER, s.x)
+
 func _draw() -> void:
 	size = get_viewport_rect().size
 	var s := size
 	if s.y < 50:
 		return
 	var e := s.y / 900.0  # escala
+	if binoculo:
+		_binoculo(s, e)
 	_objetivo(e)
 	_relogio(s, e)
 	if not defesa.is_empty():
