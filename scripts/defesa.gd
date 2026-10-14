@@ -37,7 +37,8 @@ func em_combate() -> bool:
 
 func velocidade_horda() -> float:
 	## metros por hora de jogo
-	return (4000.0 + 900.0 * main.mundo.nivel_ameaca) / 24.0
+	# a horda engrossa e acelera conforme o comboio se afasta do começo
+	return (4000.0 + 900.0 * main.mundo.nivel_ameaca + 45.0 * maxf(0.0, main._foco().z / 1000.0)) / 24.0
 
 func horas_ate(z: float) -> float:
 	return maxf(0.0, (z - 250.0 - z_horda) / velocidade_horda())
@@ -637,4 +638,4 @@ func texto_horda() -> String:
 	var km: float = km_horda(main._foco().z)
 	if km < 0.0:
 		return ""
-	return "Horda %.1f km atrás" % km
+	return "Horda %.1f km atrás · %s" % [km, WorldGen.FAIXAS[main.mundo.faixa(main._foco().z)].nome]

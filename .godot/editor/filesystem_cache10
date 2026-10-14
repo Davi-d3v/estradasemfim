@@ -184,7 +184,7 @@ trailer_tras.png::CompressedTexture2D::4200760069143513754::1791933620::17919338
 trailer_tras_aberto.png::CompressedTexture2D::298773707861271373::1791933499::1791933818::1::::<><><>0<>0<>3ea4b60045d64ca4c7ec747ef4892aa0<>res://.godot/imported/trailer_tras_aberto.png-7b6fed13c0539e4b343fd5781c6e3290.ctex::
 ::res://scenes/::1791842836
 main.tscn::PackedScene::-1::1791823304::0::1::::<><><>0<>0<><>::res://scripts/main.gd
-::res://scripts/::1791982945
+::res://scripts/::1791983910
 animal.gd::GDScript::1691719281063188070::1791976551::0::1::::Animal<>Node3D<><>0<>0<><>::
 apocalipse.gd::GDScript::1354270410514729523::1791855278::0::1::::Apocalipse<>RefCounted<><>0<>0<><>::
 armas.gd::GDScript::8445563669593955703::1791854630::0::1::::Armas<>RefCounted<><>0<>0<><>::
@@ -194,7 +194,7 @@ base_recrutas.gd::GDScript::8217206268977073163::1791851310::0::1::::BaseRecruta
 build.gd::GDScript::6279191964008302805::1791856240::0::1::::B<>RefCounted<><>0<>0<><>::
 comboio.gd::GDScript::4340033944501107538::1791830084::0::1::::Comboio<>Node3D<><>0<>0<><>::
 criacao.gd::GDScript::4875925614553955000::1791855772::0::1::::Criacao<>RefCounted<><>0<>0<><>::
-defesa.gd::GDScript::7152694079333691566::1791978379::0::1::::Defesa<>Node<><>0<>0<><>::
+defesa.gd::GDScript::7152694079333691566::1791983930::0::1::::Defesa<>Node<><>0<>0<><>::
 equipamento.gd::GDScript::4081365514219942287::1791976551::0::1::::Equipamento<>Node<><>0<>0<><>::
 eventos.gd::GDScript::5029459443361810478::1791979801::0::1::::Eventos<>Node<><>0<>0<><>::
 floresta.gd::GDScript::2829633745170746851::1791855178::0::1::::Floresta<>RefCounted<><>0<>0<><>::
@@ -203,9 +203,10 @@ hud.gd::GDScript::1526720838971245082::1791855392::0::1::::Hud<>Control<><>0<>0<
 humanoid.gd::GDScript::4583134036289468853::1791935397::0::1::::Humanoid<>Node3D<><>0<>0<><>::
 jogo.gd::GDScript::2527065120667162082::1791975110::0::1::::Jogo<>RefCounted<><>0<>0<><>::
 lugares.gd::GDScript::4818060070082949917::1791934173::0::1::::Lugares<>RefCounted<><>0<>0<><>::
-main.gd::GDScript::772541204004651537::1791982959::0::1::::<>Node3D<><>0<>0<><>::
+main.gd::GDScript::772541204004651537::1791983930::0::1::::<>Node3D<><>0<>0<><>::
 menu.gd::GDScript::1089058145340150063::1791976591::0::1::::Menu<>Control<><>0<>0<><>::
 modelos.gd::GDScript::2530803293180947829::1791935303::0::1::::Modelos<>RefCounted<><>0<>0<><>::
+ninho.gd::GDScript::4238917839931530196::1791983930::0::1::::Ninho<>Node3D<><>0<>0<><>::
 oficina.gd::GDScript::1616878582553503854::1791826886::0::1::::Oficina<>Control<><>0<>0<><>::
 painel.gd::GDScript::8970349414843245971::1791826702::0::1::::Painel<>Control<><>0<>0<><>::
 personagem_u.gd::GDScript::5083355967410368049::1791932543::0::1::::PersonagemU<>RefCounted<><>0<>0<><>::
@@ -225,8 +226,8 @@ texturas.gd::GDScript::2192582983303732574::1791840044::0::1::::Texturas<>RefCou
 trailer.gd::GDScript::2751865612291631430::1791933355::0::1::::Trailer<>Node3D<><>0<>0<><>::
 tutorial.gd::GDScript::7133830235286269831::1791935731::0::1::::Tutorial<>Control<><>0<>0<><>::
 vila_extra.gd::GDScript::7916541138588656592::1791934173::0::1::::VilaExtra<>RefCounted<><>0<>0<><>::
-world_gen.gd::GDScript::6388570040669247267::1791982945::0::1::::WorldGen<>Node3D<><>0<>0<><>::
-zumbi.gd::GDScript::2609124479473413665::1791976551::0::1::::Zumbi<>Humanoid<><>0<>0<><>::
+world_gen.gd::GDScript::6388570040669247267::1791983930::0::1::::WorldGen<>Node3D<><>0<>0<><>::
+zumbi.gd::GDScript::2609124479473413665::1791983870::0::1::::Zumbi<>Humanoid<><>0<>0<><>::
 ::res://shaders/::1791848631
 agua.gdshader::Shader::1359358924043737043::1791829220::0::1::::<><><>0<>0<><>::
 dirt.gdshader::Shader::4376691293217091479::1791830547::0::1::::<><><>0<>0<><>::

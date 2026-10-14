@@ -59,6 +59,8 @@ var ruidos: Array = []
 var nivel_ameaca := 0.0
 ## Lugares (vilas, fazendas, ferro-velhos) já gerados como cena, por id.
 var lugares_ativos := {}
+## Ninhos de zumbis carregados (Ninho).
+var ninhos: Array = []
 ## Eventos na estrada (Eventos): ativos por chunk e já resolvidos (salvo).
 var eventos_ativos := {}
 var eventos_feitos := {}
@@ -485,6 +487,7 @@ func atualizar(pos: Vector3) -> void:
 	vasculhaveis = vasculhaveis.filter(func(v): return is_instance_valid(v) and not v.is_queued_for_deletion() and not _na_fila(v))
 	npcs = npcs.filter(func(v): return is_instance_valid(v) and not v.is_queued_for_deletion() and not _na_fila(v))
 	zumbis_vivos = zumbis_vivos.filter(func(z): return is_instance_valid(z) and not z.is_queued_for_deletion() and not _na_fila(z))
+	ninhos = ninhos.filter(func(a): return is_instance_valid(a) and not a.is_queued_for_deletion() and not _na_fila(a))
 	animais = animais.filter(func(a): return is_instance_valid(a) and not a.is_queued_for_deletion() and not _na_fila(a))
 	carros_soltos = carros_soltos.filter(func(c): return is_instance_valid(c) and not c.is_queued_for_deletion() and not _na_fila(c))
 	if _montanhas:
@@ -497,6 +500,34 @@ func _na_fila(n: Node) -> bool:
 			return true
 		p = p.get_parent()
 	return false
+
+# ------------------------------------------------------------ perigo pela distância
+## Faixas de perigo (km rodados): cada uma libera coisas piores na estrada.
+const FAIXAS := [
+	{"km": 0.0, "nome": "Estrada conhecida", "txt": ""},
+	{"km": 5.0, "nome": "Terra de ninguém", "txt": "Corredores e gritadores ficam comuns. Os postos começam a rarear."},
+	{"km": 15.0, "nome": "Zona vermelha", "txt": "Brutamontes e ninhos de zumbis aparecem perto da estrada."},
+	{"km": 30.0, "nome": "Zona morta", "txt": "Zumbis blindados, de capacete e colete: tiro comum quase não passa."},
+	{"km": 50.0, "nome": "Sertão perdido", "txt": "Diesel quase não existe mais. Bandos maiores, cidades tomadas."},
+	{"km": 80.0, "nome": "Fim do mapa", "txt": "Ninguém que veio até aqui voltou para contar."},
+]
+var noite := false   # o main atualiza (zumbis gerados à noite são outros)
+
+## Perigo num ponto da estrada: sobe com a distância e com os assentamentos defendidos.
+func perigo(z: float) -> float:
+	return maxf(0.0, z / 1000.0) / 6.0 + nivel_ameaca
+
+func faixa(z: float) -> int:
+	var km := z / 1000.0
+	var f := 0
+	for i in FAIXAS.size():
+		if km >= FAIXAS[i].km:
+			f = i
+	return f
+
+## 1.0 perto do começo, cai até 0.25 bem longe: postos e galões ficam raros.
+func fartura_diesel(z: float) -> float:
+	return clampf(1.0 - z / 1000.0 / 90.0, 0.25, 1.0)
 
 func _rng_chunk(k: int, salt := 0) -> RandomNumberGenerator:
 	var r := RandomNumberGenerator.new()
@@ -551,7 +582,7 @@ func _gerar_chunk(k: int) -> Node3D:
 	if tipo == "" and not perto_marco:
 		var r := _rng_chunk(k, 99)
 		var sorte := r.randf()
-		if sorte < 0.14 and bio != "cidade":
+		if sorte < 0.14 * fartura_diesel(z0) and bio != "cidade":
 			tipo = "posto"
 		elif sorte < 0.2:
 			tipo = "placa"
@@ -1806,27 +1837,59 @@ func _poi_vazio(_n: Node3D, _z0: float, _k: int) -> void:
 # ------------------------------------------------------------ zumbis
 func _zumbis(n: Node3D, z0: float, k: int) -> void:
 	var r := _rng_chunk(k, 5)
-	for i in r.randi_range(0, 3):
+	var extra := mini(int(perigo(z0) * 0.6), 6)
+	if bioma_em(z0 + TAM * 0.5) == "cidade" and faixa(z0) >= 2:
+		extra += 3   # cidades tomadas
+	if noite:
+		extra += 1
+	for i in r.randi_range(0, 3 + extra):
 		var z := z0 + r.randf() * TAM
 		var lat := r.randf_range(-25, 25)
 		var p := ponto_estrada(z, lat)
 		p.y = altura(p.x, z) if absf(lat) > 5.0 else elevacao(z) + 0.06
 		criar_zumbi(n, p, r.randf() * TAU, r.randi())
+	# ninho: monte de corpos que solta zumbis até ser queimado
+	if faixa(z0) >= 2 and r.randf() < 0.04 + 0.012 * faixa(z0):
+		var lado := -1.0 if r.randf() < 0.5 else 1.0
+		var zn := z0 + r.randf_range(10.0, TAM - 10.0)
+		var pn := ponto_estrada(zn, lado * r.randf_range(14.0, 26.0))
+		pn.y = altura(pn.x, pn.z)
+		if not perto_de_feature(pn.x, pn.z, 10.0):
+			var ni := Ninho.new()
+			ni.mundo = self
+			ni.chave = "ninho:%d" % k
+			ni.position = pn
+			ni.rotation.y = r.randf() * TAU
+			ni.set_meta("nao_mesclar", true)
+			n.add_child(ni)
 
-func sortear_tipo_zumbi(r: RandomNumberGenerator) -> String:
-	var a := nivel_ameaca + absf(r.randf()) * 0.0
+## Tipo de zumbi conforme o perigo do lugar (e a hora: de noite vêm os corredores).
+func sortear_tipo_zumbi(r: RandomNumberGenerator, z := 0.0) -> String:
+	var a := perigo(z)
+	var f := faixa(z)
 	var x := r.randf()
-	var especiais := clampf(0.12 + a * 0.05, 0.12, 0.5)
+	var especiais := clampf(0.1 + a * 0.05, 0.1, 0.6)
+	if noite:
+		especiais = minf(0.75, especiais + 0.15)
 	if x > especiais:
 		return "comum"
-	var y := r.randf()
-	if y < 0.4:
-		return "corredor"
-	if y < 0.62:
-		return "rastejante"
-	if y < 0.82:
-		return "gritador"
-	return "brutamonte"
+	# pesos por tipo; os mais perigosos só depois de certa faixa
+	var pesos := {"corredor": 3.0 + (3.0 if noite else 0.0), "rastejante": 1.5}
+	if f >= 1:
+		pesos["gritador"] = 1.6
+	if f >= 2:
+		pesos["brutamonte"] = 1.0 + 0.3 * (f - 2)
+	if f >= 3:
+		pesos["blindado"] = 1.2 + 0.4 * (f - 3)
+	var tot := 0.0
+	for k in pesos:
+		tot += pesos[k]
+	var y := r.randf() * tot
+	for k in pesos:
+		y -= pesos[k]
+		if y <= 0.0:
+			return k
+	return "comum"
 
 func criar_zumbi(n: Node3D, p: Vector3, rot_y: float, sem: int, tipo := "") -> Zumbi:
 	var r := RandomNumberGenerator.new()
@@ -1838,7 +1901,7 @@ func criar_zumbi(n: Node3D, p: Vector3, rot_y: float, sem: int, tipo := "") -> Z
 	z.pele = peles[r.randi() % peles.size()]
 	z.camisa = Color.from_hsv(r.randf(), r.randf_range(0.1, 0.4), r.randf_range(0.12, 0.35))
 	z.calca = Color.from_hsv(r.randf(), r.randf_range(0.1, 0.3), r.randf_range(0.1, 0.25))
-	z.configurar(tipo if tipo != "" else sortear_tipo_zumbi(r))
+	z.configurar(tipo if tipo != "" else sortear_tipo_zumbi(r, p.z))
 	z.position = p
 	z.rotation.y = rot_y
 	n.add_child(z)

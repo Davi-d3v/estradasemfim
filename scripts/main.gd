@@ -211,6 +211,8 @@ func _ready() -> void:
 			_capturar_trailer()
 		elif "--eventos" in OS.get_cmdline_user_args():
 			_capturar_eventos()
+		elif "--perigo" in OS.get_cmdline_user_args():
+			_capturar_perigo()
 		elif "--horda" in OS.get_cmdline_user_args():
 			_capturar_horda()
 		elif "--modelos" in OS.get_cmdline_user_args():
@@ -235,6 +237,10 @@ func _ready() -> void:
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
 		_teste_recrutas()
+	elif "--teste-perigo" in OS.get_cmdline_user_args():
+		Jogo.modo = Jogo.MODO_INFINITO
+		jogando = true
+		_teste_perigo()
 	elif "--teste-eventos" in OS.get_cmdline_user_args():
 		Jogo.modo = Jogo.MODO_INFINITO
 		jogando = true
@@ -303,6 +309,49 @@ func _teste_salvar() -> void:
 	defesa.z_horda = -3333.0
 	var ok := Salvar.salvar(self)
 	print("TS salvo=", ok, " resumo=", Salvar.resumo())
+	get_tree().quit()
+
+## Teste do perigo pela distância: tipos de zumbi, ninhos, diesel e avisos.
+func _teste_perigo() -> void:
+	await get_tree().process_frame
+	var r := RandomNumberGenerator.new()
+	for km in [0.0, 6.0, 16.0, 32.0, 55.0, 90.0]:
+		for nt in [false, true]:
+			mundo.noite = nt
+			var cont := {}
+			for i in 2000:
+				var t := mundo.sortear_tipo_zumbi(r, km * 1000.0)
+				cont[t] = cont.get(t, 0) + 1
+			print("TP km=%d noite=%s faixa=%s perigo=%.1f diesel=%.2f tipos=%s" % [km, str(nt), WorldGen.FAIXAS[mundo.faixa(km * 1000.0)].nome, mundo.perigo(km * 1000.0), mundo.fartura_diesel(km * 1000.0), str(cont)])
+	mundo.noite = false
+	# ninhos gerados ao andar pela zona vermelha
+	var achou: Ninho = null
+	var total := 0
+	for zz in range(16000, 40000, 400):
+		comboio.posicionar(float(zz), -0.5, 0.0)
+		jogador.position = comboio.pos
+		mundo.atualizar(comboio.pos)
+		await get_tree().process_frame
+		total = maxi(total, mundo.ninhos.size())
+		if achou == null and not mundo.ninhos.is_empty():
+			achou = mundo.ninhos[0]
+	print("TP ninhos vistos (máx simultâneos)=", total, " achou=", achou != null)
+	if achou:
+		jogador.position = achou.global_position + Vector3(3, 0, 0)
+		var vivos0 := mundo.zumbis_vivos.size()
+		achou._t = 0.0
+		await get_tree().process_frame
+		await get_tree().process_frame
+		print("TP ninho soltou zumbi: ", mundo.zumbis_vivos.size() > vivos0)
+		estoque.galoes_diesel = 1
+		estoque.molotov = 0
+		_queimar_ninho(achou)
+		print("TP queimou: ", achou.queimado, " galoes=", estoque.galoes_diesel, " | ", hud.relatorio.replace("\n", " | "))
+	# blindado aguenta tiro
+	var zb := mundo.criar_zumbi(mundo, jogador.position + Vector3(0, 0, 8), 0.0, 1, "blindado")
+	zb.ferir(30.0)
+	print("TP blindado vida apos tiro 30: ", zb.vida, " / 150")
+	print("TP avisos=", _avisou_marco.keys().filter(func(k): return str(k).begins_with("faixa")))
 	get_tree().quit()
 
 ## Teste dos eventos na estrada: cada tipo dispara e cada escolha tem efeito.
@@ -782,6 +831,8 @@ func _process(dt: float) -> void:
 	if not jogando or _morto:
 		return
 	_tempo += dt
+	mundo.noite = eh_noite()
+	_avisar_faixa()
 	_sons_ambiente(dt)
 	eventos.atualizar(dt)
 	_t_autosave += dt
@@ -1006,7 +1057,7 @@ func _combate(dt: float) -> void:
 			var seg := seguranca_local()
 			var chance = 0.45 + seg[0]
 			if seg[0] > -1.0 and randf() < chance and _foco().distance_to(trailer.global_position) < 60.0:
-				_grupo_noturno(randi_range(2, 4 + int(mundo.nivel_ameaca)) + base.n("vigia"))
+				_grupo_noturno(randi_range(2, 4 + int(mundo.perigo(_foco().z) * 0.7)) + base.n("vigia"))
 	# morte
 	if jogador.vida <= 0.0:
 		_morrer("Os zumbis te pegaram.")
@@ -1019,7 +1070,7 @@ func _grupo_noturno(n: int) -> void:
 	for i in n:
 		var p := centro + Vector3(randf_range(-5, 5), 0, randf_range(-5, 5))
 		p.y = mundo.altura(p.x, p.z)
-		var z := mundo.criar_zumbi(mundo, p, a + PI, randi())
+		var z := mundo.criar_zumbi(mundo, p, a + PI, randi(), "corredor" if randf() < 0.25 + 0.06 * mundo.faixa(p.z) else "")
 		z.estado = Zumbi.Estado.INVESTIGANDO
 		z.alvo_pos = trailer.global_position
 	var vig := base.presentes("vigia")
@@ -1154,6 +1205,29 @@ func _verificar_mapa(p: Vector3) -> void:
 			conhecidos[l.id] = {"nome": l.nome, "tipo": l.tipo, "pos": l.pos, "regiao": ri}
 			hud.aviso("Descoberto: %s" % l.nome)
 
+## Aviso ao entrar numa faixa de perigo nova (uma vez por jogo).
+func _avisar_faixa() -> void:
+	var f := mundo.faixa(_foco().z)
+	var chave := "faixa%d" % f
+	if f == 0 or _avisou_marco.has(chave):
+		return
+	_avisou_marco[chave] = true
+	var fx: Dictionary = WorldGen.FAIXAS[f]
+	hud.banner(fx.nome.to_upper(), "km %d · %s" % [int(fx.km), fx.txt])
+	Som.tela("radio_estatica", -10.0)
+
+func _queimar_ninho(ni: Ninho) -> void:
+	if estoque.get("molotov", 0) > 0:
+		estoque.molotov -= 1
+	elif estoque.get("galoes_diesel", 0) > 0:
+		estoque.galoes_diesel -= 1
+	else:
+		hud.aviso("Precisa de um molotov ou de um galão de diesel para queimar o ninho.")
+		return
+	hud.relatorio = ni.queimar(self)
+	hud.relatorio_titulo = "Ninho queimado"
+	hud.relatorio_t = 7.0
+
 func _vasculhar(v: Node3D) -> void:
 	var chave: String = v.get_meta("chave")
 	var tab_nome: String = v.get_meta("tabela")
@@ -1167,9 +1241,11 @@ func _vasculhar(v: Node3D) -> void:
 	r.seed = hash(chave)
 	var ev := trabalhar(v.get_meta("horas"))
 	var ganhos: Array[String] = []
+	var fartura := mundo.fartura_diesel(v.global_position.z)
 	for item in tabela:
 		var t: Array = tabela[item]
-		if r.randf() > t[2]:
+		var chance: float = t[2] * (fartura if item == "galoes_diesel" else 1.0)
+		if r.randf() > chance:
 			continue
 		var n := adicionar(item, r.randi_range(t[0], t[1]))
 		if n > 0:
@@ -1536,6 +1612,9 @@ func _interacao_a_pe() -> void:
 	for v in mundo.vasculhaveis:
 		if is_instance_valid(v) and not mundo.vasculhados.has(v.get_meta("chave")) and absf(v.global_position.y - p.y - 1.0) < 1.6:
 			add.call(v.global_position, 3.5, "interact", "[E] Vasculhar: %s (%s)" % [v.get_meta("nome"), _txt_horas(v.get_meta("horas"))], _vasculhar.bind(v))
+	for ni in mundo.ninhos:
+		if is_instance_valid(ni) and not ni.queimado:
+			add.call(ni.global_position, 4.5, "interact", "[E] Queimar o ninho (%s)" % ("molotov" if estoque.get("molotov", 0) > 0 else "1 galão de diesel"), _queimar_ninho.bind(ni))
 	for an in mundo.animais:
 		if is_instance_valid(an) and not an.vivo() and not an.esfolado:
 			add.call(an.global_position, 2.2, "interact", "[E] Esfolar %s (30 min)" % an.info().nome, _esfolar.bind(an))
@@ -2808,6 +2887,74 @@ func _capturar_trailer() -> void:
 			_abrir_painel(_painel_compartimento.bind(id))
 			await _salvar("trailer_painel_%s" % id)
 			_fechar_janela()
+	get_tree().quit()
+
+## Prints da etapa de perigo: zumbis novos, ninho (inteiro e queimando) e aviso de faixa.
+func _capturar_perigo() -> void:
+	var cam := Camera3D.new()
+	cam.far = 900.0
+	add_child(cam)
+	hora = 16.0
+	_atualizar_ceu()
+	comboio.set_physics_process(false)
+	var z0 := 33000.0
+	var p0 := mundo.ponto_estrada(z0, -0.5)
+	comboio.posicionar(z0, -0.5, 0.0)
+	jogador.position = p0
+	mundo.atualizar(p0)
+	await get_tree().process_frame
+	_limpar_zumbis_perto(p0, 120.0)
+	hud.visible = false
+	jogador.visible = false
+	# fila de zumbis: comum, corredor, gritador, brutamonte, blindado
+	var tipos := ["comum", "corredor", "gritador", "brutamonte", "blindado"]
+	var base_p := mundo.ponto_estrada(z0 + 20.0, 0.0)
+	var d := mundo.direcao(z0)
+	var lado := Vector3(d.z, 0, -d.x)
+	for i in tipos.size():
+		var q := base_p + lado * (-4.0 + i * 2.0)
+		q.y = mundo.elevacao(z0 + 20.0) + 0.06
+		var zb := mundo.criar_zumbi(mundo, q, atan2(-d.x, -d.z), 40 + i, tipos[i])
+		zb.set_process(false)
+	await get_tree().process_frame
+	var de := base_p - d * 5.5 + Vector3(0, 1.6, 0)
+	cam.fov = 55.0
+	cam.look_at_from_position(de, base_p + Vector3(0, 1.0, 0), Vector3.UP)
+	cam.current = true
+	await _salvar("perigo_zumbis")
+	# ninho
+	var ni := Ninho.new()
+	ni.mundo = mundo
+	ni.chave = "ninho:print"
+	var pn := mundo.ponto_estrada(z0 + 60.0, 14.0)
+	pn.y = mundo.altura(pn.x, pn.z)
+	ni.position = pn
+	mundo.add_child(ni)
+	await get_tree().process_frame
+	_limpar_zumbis_perto(pn, 30.0)
+	ni.visible = true
+	var de2 := pn + (p0 - pn).normalized() * 9.0 + Vector3(0, 3.0, 0)
+	de2.y = mundo.altura(de2.x, de2.z) + 3.0
+	_abrir_vista(de2, pn)
+	cam.look_at_from_position(de2, pn + Vector3(0, 0.8, 0), Vector3.UP)
+	await _salvar("perigo_ninho")
+	ni.queimar(self)
+	hora = 19.6
+	_atualizar_ceu()
+	for zz in mundo.zumbis_vivos:
+		if is_instance_valid(zz):
+			zz.set_process(false)
+	await _salvar("perigo_ninho_fogo")
+	# aviso de faixa
+	hora = 16.0
+	_atualizar_ceu()
+	hud.visible = true
+	var dv := mundo.ponto_estrada(z0 + 8.0, 3.0) + Vector3(0, 1.8, 0)
+	cam.look_at_from_position(dv, mundo.ponto_estrada(z0 + 40.0, 0.0) + Vector3(0, 1.5, 0), Vector3.UP)
+	_avisou_marco.erase("faixa3")
+	_avisar_faixa()
+	_atualizar_hud()
+	await _salvar("perigo_aviso")
 	get_tree().quit()
 
 ## Prints da horda visível (--horda): de longe, de perto e pelo retrovisor.

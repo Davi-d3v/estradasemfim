@@ -32,6 +32,14 @@
   - retrovisor do lado do motorista no alto da tela enquanto dirige
   - prints: ./capturar.sh --horda (e --horda --alto, vista de cima)
 
+## 14/10 — rodada grande (12 etapas, nessa ordem)
+- [x] 1. Dificuldade pela distância: WorldGen.perigo(z) (km/6 + assentamentos defendidos) e 6 faixas (FAIXAS) com aviso na tela;
+  tipos de zumbi liberados por faixa (gritador 5 km, brutamonte 15 km, blindado 30 km), mais corredores à noite, mais zumbis por trecho e cidades tomadas;
+  zumbi blindado (capacete + colete, segura tiro fraco); ninhos (scripts/ninho.gd) que soltam zumbis até serem queimados (molotov ou galão);
+  diesel raro longe (fartura_diesel: postos e galões); horda acelera com a distância. Teste: --teste-perigo; prints: --perigo
+- [ ] 2. Clima e noite  - [ ] 3. Rádio/Zona Segura/marcos  - [ ] 4. Combate com o comboio  - [ ] 5. Comércio/reputação/facções
+- [ ] 6. Cachorro  - [ ] 7-11. Recrutas, comboio, exploração, defesa, sobrevivência  - [ ] 12. v0.8
+
 ## Próximos
-- build Windows novo (v0.7) com as 4 etapas
+- seguir a rodada grande (etapa 2: clima e noite)
 - ouvir o retorno do teste no PC do Davi

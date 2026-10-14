@@ -10,6 +10,7 @@ const TIPOS := {
 	"corredor": {"vida": 40.0, "vel_vagar": 0.9, "vel_correr": 4.6, "dano": 7.0, "dano_veic": 0.008, "escala": 0.95},
 	"brutamonte": {"vida": 220.0, "vel_vagar": 0.5, "vel_correr": 1.6, "dano": 22.0, "dano_veic": 0.045, "escala": 1.35},
 	"gritador": {"vida": 45.0, "vel_vagar": 0.7, "vel_correr": 2.4, "dano": 6.0, "dano_veic": 0.006, "escala": 0.95},
+	"blindado": {"vida": 150.0, "vel_vagar": 0.55, "vel_correr": 1.9, "dano": 13.0, "dano_veic": 0.02, "escala": 1.05},
 	"rastejante": {"vida": 35.0, "vel_vagar": 0.4, "vel_correr": 1.4, "dano": 12.0, "dano_veic": 0.004, "escala": 1.0},
 }
 
@@ -44,6 +45,8 @@ func configurar(t: String) -> void:
 			cores = {"Skin": Color(0.62, 0.6, 0.55), "Clothes": Color(0.55, 0.52, 0.48)}
 		"corredor":
 			cores = {"Clothes": Color(0.4, 0.12, 0.1)}
+		"blindado":
+			cores = {"roupa": Color(0.36, 0.4, 0.3)}
 	match t:
 		"brutamonte":
 			camisa = Color(0.18, 0.16, 0.15)
@@ -61,6 +64,8 @@ func _ready() -> void:
 	_rng.seed = semente
 	_rumo = rotation.y
 	super._ready()
+	if tipo == "blindado" and modelo:
+		_equipar_blindado()
 	_t_decisao = _rng.randf_range(0.0, 3.0)
 
 func vivo() -> bool:
@@ -69,10 +74,29 @@ func vivo() -> bool:
 func info() -> Dictionary:
 	return TIPOS[tipo]
 
+## Capacete e colete de soldado (zumbi blindado: segura tiro e golpe fraco).
+func _equipar_blindado() -> void:
+	var verde := Modelos.mat(Color(0.26, 0.3, 0.2), 0.75)
+	if cabeca_a:
+		B.sphere(cabeca_a, 0.118, Vector3(0, 0.15, -0.005), verde, Vector3(1.04, 0.66, 1.12))
+		B.cyl(cabeca_a, 0.128, 0.018, Vector3(0, 0.135, -0.005), verde, Vector3.ZERO, 14)
+	if costas:
+		var colete := Modelos.mat(Color(0.2, 0.22, 0.17), 0.85)
+		# placas na frente e nas costas do peito (osso spine_03: +Y sobe, +Z frente)
+		B.box(costas, Vector3(0.3, 0.3, 0.04), Vector3(0, 0.0, 0.13), colete)
+		B.box(costas, Vector3(0.3, 0.3, 0.04), Vector3(0, 0.0, -0.12), colete)
+		for s in [-1.0, 1.0]:
+			B.box(costas, Vector3(0.04, 0.24, 0.24), Vector3(s * 0.155, 0.0, 0.005), colete)
+
 ## Recebe dano. empurrao = direção do golpe (para recuar).
 func ferir(dano: float, empurrao := Vector3.ZERO, origem := Vector3.ZERO) -> void:
 	if not vivo():
 		return
+	if tipo == "blindado":
+		# colete e capacete: só tiro forte (rifle, espingarda de perto) ou golpe pesado passa bem
+		dano *= 0.4 if dano < 60.0 else 0.85
+		if dano < 25.0:
+			Som.em("impacto_metal", global_position + Vector3(0, 1.3, 0), -6.0, 0.2)
 	vida -= dano
 	_empurrao = empurrao
 	Som.em("impacto_carne", global_position + Vector3(0, 1.1, 0), -2.0, 0.15)
