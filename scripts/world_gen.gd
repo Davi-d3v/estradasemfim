@@ -8,6 +8,8 @@ const LARG_ESTRADA := 8.0
 const ALCANCE_X := 300.0
 const PASSO_TERRENO := 4.0
 const ATRAS := 3
+## Trechos extras mantidos atrás (a horda visível pede mais para não andar no vazio).
+var atras_extra := 0
 const FRENTE := 7
 
 @export var semente := 2026
@@ -461,7 +463,7 @@ func lugar_em(p: Vector3) -> Dictionary:
 func atualizar(pos: Vector3) -> void:
 	var k := int(floor(pos.z / TAM))
 	var desejados := {}
-	for i in range(k - ATRAS, k + FRENTE + 1):
+	for i in range(k - ATRAS - atras_extra, k + FRENTE + 1):
 		desejados[i] = true
 		if not _chunks.has(i):
 			_chunks[i] = _gerar_chunk(i)

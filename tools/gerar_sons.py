@@ -325,4 +325,22 @@ def uivo(d=3.0):
 
 salvar('lobo_uivo', uivo(), 0.5)
 salvar('clique_ui', clique(2200, 0.03), 0.3)
+
+# ------------------------------------------------------------ horda (loop)
+def horda(d=14.0):
+    n = int(SR * d)
+    x = np.zeros(n + SR * 3)
+    for i in range(46):
+        g = gemido(i) * rng.uniform(0.25, 1.0)
+        a = rng.integers(0, n)
+        x[a:a + len(g)] += g[: len(x) - a]
+    x = x[:n] + np.concatenate([x[n:], np.zeros(2 * n - len(x))])[:n]   # o que passou do fim volta no começo
+    # arrastar de pés: ruído grave pulsando
+    passos = lp(ruido(d), 220) * (0.6 + 0.4 * np.abs(np.sin(2 * np.pi * 0.9 * t(d))))
+    ronco = lp(np.cumsum(ruido(d)) * 0.002, 90)
+    x = lp(x, 2600) * 0.8 + norm(passos, 0.35) + norm(ronco, 0.3)
+    x = reverb(x, 1.8, 0.45, 1800)[:n]
+    return loop_suave(x, 1.0)
+
+salvar('horda', horda(), 0.75, 3)
 print('ok', len(os.listdir(OUT)))

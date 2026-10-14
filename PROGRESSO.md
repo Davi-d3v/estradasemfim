@@ -25,8 +25,13 @@
   - acidente: ônibus tombado (procurar sobreviventes: recruta ferido + remédios ou 6 zumbis / saquear malas / seguir)
   - comboio militar: caminhões com carga "militar" para vasculhar, arame farpado e zumbis fardados
   - resultado salvo em mundo.eventos_feitos; teste: --teste-eventos; prints: ./capturar.sh --eventos
-- [ ] 4. Horda visível
+- [x] 4. Horda visível (scripts/horda_visivel.gd + scripts/retrovisor.gd):
+  - 1200 vultos animados (MultiMesh + shader de passada) na estrada e nos campos, a partir de 1,6 km; nuvem de poeira escura por cima (sem névoa, aparece de longe)
+  - coro de gemidos (assets/sons/horda.ogg, gerado em tools/gerar_sons.py) que cresce com a proximidade
+  - mundo mantém até 6 trechos extras atrás (WorldGen.atras_extra) para a horda não andar no vazio
+  - retrovisor do lado do motorista no alto da tela enquanto dirige
+  - prints: ./capturar.sh --horda (e --horda --alto, vista de cima)
 
 ## Próximos
-- horda visível (massa de zumbis atrás do comboio, no retrovisor)
+- build Windows novo (v0.7) com as 4 etapas
 - ouvir o retorno do teste no PC do Davi

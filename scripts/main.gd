@@ -89,6 +89,8 @@ var cinzas: CPUParticles3D
 var equip: Equipamento
 var tutorial: Tutorial
 var eventos: Eventos
+var horda_visivel: HordaVisivel
+var retrovisor: Retrovisor
 var _t_autosave := 0.0
 var _t_radio := 0.0
 var _compartimento_preso := false     # prints: deixa a porta aberta ao fechar o painel
@@ -185,6 +187,12 @@ func _ready() -> void:
 	eventos = Eventos.new()
 	eventos.main = self
 	add_child(eventos)
+	horda_visivel = HordaVisivel.new()
+	horda_visivel.main = self
+	add_child(horda_visivel)
+	retrovisor = Retrovisor.new()
+	retrovisor.main = self
+	cl.add_child(retrovisor)
 	tutorial = Tutorial.new()
 	tutorial.main = self
 	cl.add_child(tutorial)
@@ -203,6 +211,8 @@ func _ready() -> void:
 			_capturar_trailer()
 		elif "--eventos" in OS.get_cmdline_user_args():
 			_capturar_eventos()
+		elif "--horda" in OS.get_cmdline_user_args():
+			_capturar_horda()
 		elif "--modelos" in OS.get_cmdline_user_args():
 			_capturar_modelos()
 		elif "--rodada5" in OS.get_cmdline_user_args():
@@ -2798,6 +2808,57 @@ func _capturar_trailer() -> void:
 			_abrir_painel(_painel_compartimento.bind(id))
 			await _salvar("trailer_painel_%s" % id)
 			_fechar_janela()
+	get_tree().quit()
+
+## Prints da horda visível (--horda): de longe, de perto e pelo retrovisor.
+func _capturar_horda() -> void:
+	var cam := Camera3D.new()
+	cam.far = 2500.0
+	add_child(cam)
+	hora = 17.2
+	_atualizar_ceu()
+	var z0 := 1500.0
+	var p0 := mundo.ponto_estrada(z0, -0.5)
+	var d0 := mundo.direcao(z0)
+	comboio.posicionar_livre(p0, atan2(d0.x, d0.z), 0.0)
+	comboio.set_physics_process(false)
+	mundo.atualizar(p0)
+	await get_tree().process_frame
+	_limpar_zumbis_perto(p0, 400.0)
+	hud.visible = false
+	jogador.visible = false
+	jogador.position = p0 + Vector3(2.5, 0, -6.0)
+	if "--alto" in OS.get_cmdline_user_args():
+		defesa.z_horda = z0 - 200.0
+		await get_tree().process_frame
+		var de2 := mundo.ponto_estrada(z0 - 20.0, 30.0) + Vector3(0, 45.0, 0)
+		var al2 := mundo.ponto_estrada(z0 - 300.0, 0.0)
+		cam.fov = 60.0
+		cam.look_at_from_position(de2, al2, Vector3.UP)
+		cam.current = true
+		await _salvar("horda_alto")
+		get_tree().quit()
+		return
+	for v in [[420.0, "horda_longe", 7.0, 4.5], [110.0, "horda_perto", 3.0, 2.0]]:
+		defesa.z_horda = z0 - v[0]
+		await get_tree().process_frame
+		var zc: float = z0 - 12.0
+		var de: Vector3 = mundo.ponto_estrada(zc, v[2]) + Vector3(0, v[3], 0)
+		var alvo: Vector3 = mundo.ponto_estrada(defesa.z_horda - 40.0, 0.0) + Vector3(0, 1.0, 0)
+		_abrir_vista(de, alvo)
+		cam.fov = 55.0
+		cam.look_at_from_position(de, alvo, Vector3.UP)
+		cam.current = true
+		await _salvar(v[1])
+	# dirigindo: a horda no retrovisor
+	defesa.z_horda = z0 - 170.0
+	hud.visible = true
+	_entrar_no_carro()
+	comboio.set_physics_process(true)
+	for i in 10:
+		await get_tree().process_frame
+	_atualizar_hud()
+	await _salvar("horda_retrovisor")
 	get_tree().quit()
 
 ## Prints dos eventos na estrada (--eventos): cena de cada tipo e o painel de escolha.
