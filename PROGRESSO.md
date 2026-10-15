@@ -125,7 +125,7 @@
 - [x] Frutas, pães e toco escaneados foram testados e retirados (o Davi achou estranho no jogo).
 - [x] Escritas (Label3D) nas paredes das casas trocadas por pichações do GraffitiSet (80% das casas, 1 a 3 cada).
   Prints: --refino --so=casa|sacos ; antes/depois em prints/antes_depois_*.png
-- [x] v0.12 para Windows (sem frutas/toco, pichações no lugar das escritas)
+- [x] v0.13 para Windows: pichações só em pano de parede inteiro (Predio._panos_livres), do tamanho que cabe, fora da frente
 
 ## Próximos
 - ouvir o retorno do Davi sobre a v0.9

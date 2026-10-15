@@ -348,7 +348,7 @@ painel.gd::GDScript::8970349414843245971::1791826702::0::1::::Painel<>Control<><
 personagem_u.gd::GDScript::5083355967410368049::1791932543::0::1::::PersonagemU<>RefCounted<><>0<>0<><>::
 pickup.gd::GDScript::3993441045969869425::1792024033::0::1::::Pickup<>Node3D<><>0<>0<><>::
 player.gd::GDScript::6216641937152151830::1792022938::0::1::::Player<>Node3D<><>0<>0<><>::
-predio.gd::GDScript::1527078118754371646::1792071354::0::1::::Predio<>Node3D<><>0<>0<><>::
+predio.gd::GDScript::1527078118754371646::1792072317::0::1::::Predio<>Node3D<><>0<>0<><>::
 primeira_pessoa.gd::GDScript::2555932582544592735::1791827623::0::1::::PrimeiraPessoa<>Node3D<><>0<>0<><>::
 progresso.gd::GDScript::8362426870744369989::1791997189::0::1::::Progresso<>Node<><>0<>0<><>::
 reboque.gd::GDScript::1461424573803316306::1792012029::0::1::::Reboque<>Node3D<><>0<>0<><>::

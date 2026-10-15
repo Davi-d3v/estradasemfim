@@ -108,6 +108,7 @@ func construir() -> void:
 		c.queue_free()
 	andar_nos.clear()
 	paredes.clear()
+	_panos_livres.clear()
 	escadas.clear()
 	furos.clear()
 	comodos.clear()
@@ -227,6 +228,22 @@ func _laje(no: Node3D, y: float, furo: Rect2, m: Material) -> void:
 		if q.size.x > 0.01 and q.size.y > 0.01:
 			B.box(no, Vector3(q.size.x, 0.14, q.size.y), Vector3(q.get_center().x, y - 0.07, q.get_center().y), m)
 
+var _panos_livres: Array = []   # [{a, b, n}] trechos de parede externa sem aberturas
+
+func _panos_cheios(aberturas: Array, comp: float) -> Array:
+	var r: Array = []
+	var pos := 0.35                      # longe do pilar do canto
+	var ord := aberturas.duplicate()
+	ord.sort_custom(func(p, q): return p[0] < q[0])
+	for ab in ord:
+		var ini: float = ab[0] - ab[1] * 0.5 - 0.15
+		if ini - pos > 0.9:
+			r.append([pos, ini])
+		pos = maxf(pos, ab[0] + ab[1] * 0.5 + 0.15)
+	if comp - 0.35 - pos > 0.9:
+		r.append([pos, comp - 0.35])
+	return r
+
 ## Paredes externas com janelas e a porta da frente (térreo).
 func _paredes_ext(no: Node3D, k: int, y0: float, ext: Material, interno: Material, segs: Array) -> void:
 	var hw := largura * 0.5
@@ -326,6 +343,10 @@ func _paredes_ext(no: Node3D, k: int, y0: float, ext: Material, interno: Materia
 			pos = fim
 		for sg in segs_lado:
 			segs.append([a + dir * sg[0], a + dir * sg[1]])
+		# panos de parede inteiros (sem porta nem janela) no térreo: onde cabe pichação
+		if k == 0 and not lado.frente:
+			for sg in _panos_cheios(aberturas, comp):
+				_panos_livres.append({"a": a + dir * sg[0], "b": a + dir * sg[1], "n": Vector3(-dir.y, 0, dir.x)})
 
 ## Pano de parede entre dois pontos (face externa e interna com materiais diferentes).
 func _pano(no: Node3D, a: Vector2, b: Vector2, y_a: float, y_b: float, ext: Material, interno: Material) -> void:
@@ -607,16 +628,17 @@ func _fachada(cor_ext: Color) -> void:
 		B.box(no, Vector3(0.3, 0.5, 0.8), Vector3(hw + 0.15, 2.2, profundidade * 0.15), _m("esmalte", Color(0.85, 0.85, 0.82)))
 		for q in 4:
 			B.box(no, Vector3(0.02, 0.4, 0.04), Vector3(hw + 0.31, 2.2, profundidade * 0.15 - 0.3 + q * 0.2), _m("metal", Color(0.3, 0.3, 0.3), 0.5, 0.5))
-	# pichações de verdade (tags) nas paredes de fora
-	if _rng.randf() < 0.8:
-		for q in _rng.randi_range(1, 3):
-			var lado := 0 if _rng.randf() < 0.25 else 1 + _rng.randi() % 2   # mais nas laterais (sem porta)
-			var larg := _rng.randf_range(1.0, 2.0)
-			var y := _rng.randf_range(0.7, 1.5)
-			match lado:
-				0:
-					Grafite.colar(no, Vector3(_rng.randf_range(-largura * 0.35, largura * 0.35), y, hd + 0.02), Vector3.BACK, larg, _rng)
-				1:
-					Grafite.colar(no, Vector3(hw + 0.02, y, _rng.randf_range(-profundidade * 0.35, profundidade * 0.35)), Vector3.RIGHT, larg, _rng)
-				_:
-					Grafite.colar(no, Vector3(-hw - 0.02, y, _rng.randf_range(-profundidade * 0.35, profundidade * 0.35)), Vector3.LEFT, larg, _rng)
+	# pichações de verdade (tags) só em pano de parede inteiro, do tamanho que cabe
+	if _rng.randf() < 0.8 and not _panos_livres.is_empty():
+		var panos := _panos_livres.duplicate()
+		for q in mini(_rng.randi_range(1, 3), panos.size()):
+			var pn: Dictionary = panos.pop_at(_rng.randi() % panos.size())
+			var comp_p: float = (pn.a as Vector2).distance_to(pn.b)
+			var larg := minf(_rng.randf_range(1.0, 2.0), comp_p - 0.3)
+			if larg < 0.6:
+				continue
+			var t := _rng.randf_range(larg * 0.5 + 0.15, comp_p - larg * 0.5 - 0.15) / comp_p
+			var c2: Vector2 = (pn.a as Vector2).lerp(pn.b, t)
+			var nn: Vector3 = pn.n
+			var base := c2 + Vector2(nn.x, nn.z) * (ESP * 0.5 + 0.02)
+			Grafite.colar(no, Vector3(base.x, _rng.randf_range(1.05, 1.45), base.y), nn, larg, _rng)
