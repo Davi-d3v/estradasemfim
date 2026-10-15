@@ -23,6 +23,9 @@ CONTROLES
 
 O tutorial aparece no primeiro jogo. Enter pula um passo; Backspace encerra.
 
+NOVIDADES v0.16
+  - Só árvores de verdade: abetos, árvores de copa, pinheirinhos e arbustos (Poly Haven) na mata e na beira da estrada.
+
 NOVIDADES v0.15
   - Plantas de verdade (Poly Haven): samambaias, capim, tronco caído, folhas secas, pinheiros e vasos nos quintais.
 
