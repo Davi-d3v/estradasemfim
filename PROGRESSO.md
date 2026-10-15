@@ -143,5 +143,12 @@
   Prints: --refino --so=plantas
 - [x] v0.15 para Windows
 
+## Rodada v0.16 (só árvores com modelo)
+- [x] Árvores feitas em código saíram: mata, beira da estrada e vilas usam só modelos da Poly Haven (Floresta.MODELOS):
+  abeto (fir_tree_01) como árvore principal, pachira ampliada como árvore de copa, pinheirinhos e arbustos (didelta).
+  tools/reduzir_arvore.py sorteia pedaços inteiros da folhagem (milhões de triângulos -> ~5-7 mil) e amplia um pouco
+  cada pedaço; Godot gera os níveis de detalhe. Fluidez: 0 quadros > 100 ms.
+- [x] v0.16 para Windows
+
 ## Próximos
 - ouvir o retorno do Davi sobre a v0.9

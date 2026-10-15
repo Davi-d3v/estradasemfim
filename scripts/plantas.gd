@@ -106,7 +106,7 @@ static func trecho(m: WorldGen, n: Node3D, z0: float, k: int, bio: String) -> vo
 
 ## Pinheiro (árvore inteira) para a mata.
 static func pinheiro(n: Node3D, p: Vector3, r: RandomNumberGenerator) -> bool:
-	var m := malha("pinheiro_c" if r.randf() < 0.6 else "pinheiro_b")
+	var m := malha("arv_abeto_c" if r.randf() < 0.6 else "arv_abeto_b")
 	if m == null:
 		return false
 	var mi := MeshInstance3D.new()

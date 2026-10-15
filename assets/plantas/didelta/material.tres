@@ -1,0 +1,15 @@
+[gd_resource type="StandardMaterial3D" load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/plantas/didelta/cor.jpg" id="1_7jfs7"]
+[ext_resource type="Texture2D" path="res://assets/plantas/didelta/normal.jpg" id="2_d4qie"]
+
+[resource]
+cull_mode = 2
+diffuse_mode = 2
+albedo_texture = ExtResource("1_7jfs7")
+roughness = 0.9
+normal_enabled = true
+normal_texture = ExtResource("2_d4qie")
+backlight_enabled = true
+backlight = Color(0.2, 0.25, 0.12, 1)
+texture_filter = 5

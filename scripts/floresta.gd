@@ -56,9 +56,33 @@ static func _cartao(p: Node3D, pos: Vector3, tam: Vector2, rot: Vector3, m: Mate
 	mi.rotation = rot
 	p.add_child(mi)
 
-static func malha(tipo: String) -> ArrayMesh:
+## Árvores e arbustos são modelos da Poly Haven (assets/plantas/arv_*.res).
+## "tipo:variante" escolhe a variante (ex.: "folhosa:b").
+const MODELOS := {
+	"pinheiro": ["arv_abeto_b", "arv_abeto_c"],
+	"eucalipto": ["arv_abeto_c", "arv_abeto_b"],
+	"folhosa": ["arv_pachira_d", "arv_abeto_c", "arv_pachira_a", "arv_abeto_b", "arv_pachira_c"],
+	"jeriva": ["arv_pachira_d", "arv_pachira_a"],
+	"taquara": ["arv_pinheirinho_a", "arv_pinheirinho_b", "arv_pinheirinho_c"],
+	"pinheirinho": ["arv_pinheirinho_a", "arv_pinheirinho_b", "arv_pinheirinho_c"],
+	"arbusto": ["arv_arbusto_medium", "arv_arbusto_large", "arv_arbusto_small"],
+	"arbusto_seco": ["arv_arbusto_small", "arv_arbusto_medium"],
+}
+
+static func variantes(tipo: String) -> int:
+	return MODELOS[tipo].size() if MODELOS.has(tipo) else 1
+
+static func malha(tipo: String) -> Mesh:
 	if malhas.has(tipo):
 		return malhas[tipo]
+	var partes := tipo.split(":")
+	if MODELOS.has(partes[0]):
+		var lista: Array = MODELOS[partes[0]]
+		var v := int(partes[1]) if partes.size() > 1 else 0
+		var m := Plantas.malha(lista[v % lista.size()])
+		if m:
+			malhas[tipo] = m
+			return m
 	var r := RandomNumberGenerator.new()
 	r.seed = hash(tipo)
 	var raiz := Node3D.new()

@@ -1,0 +1,11 @@
+[gd_resource type="StandardMaterial3D" load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/plantas/pinheirinho_casca/cor.jpg" id="1_hpv7k"]
+[ext_resource type="Texture2D" path="res://assets/plantas/pinheirinho_casca/normal.jpg" id="2_j60xw"]
+
+[resource]
+albedo_texture = ExtResource("1_hpv7k")
+roughness = 0.9
+normal_enabled = true
+normal_texture = ExtResource("2_j60xw")
+texture_filter = 5

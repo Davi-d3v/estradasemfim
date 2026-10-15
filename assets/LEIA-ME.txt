@@ -21,4 +21,7 @@ Modelos KayKit RPG Tools Bits 1.0 (Kay Lousberg, www.kaylousberg.com, CC0) em ka
 Plantas Poly Haven (CC0, polyhaven.com), enviadas pelo Davi em .blend e convertidas sem Blender
 (tools/blend_para_obj.py lê o .blend direto; tools/montar_plantas.gd monta malhas com LOD) em plantas/:
 fern_02 (samambaias), grass_medium_01 (capim verde e seco), dead_tree_trunk_02 (tronco caído),
-dry_quiver_leaf (folhas secas), potted_plant_02 (vaso), fir_tree_01 (pinheiros). tree_small_02 ainda não usada.
+dry_quiver_leaf (folhas secas), potted_plant_02 (vaso), fir_tree_01 (abetos).
+Árvores (glTF, reduzidas por tools/reduzir_arvore.py e montadas por tools/montar_arvores.gd): fir_tree_01 (abeto,
+principal árvore da mata), pachira_aquatica_01 (árvore de copa, ampliada 4x), pine_sapling_small (pinheirinhos),
+didelta_spinosa (arbustos). pine_sapling_medium ficou de fora (agulhas em geometria, ralas demais reduzidas).

@@ -1,0 +1,11 @@
+[gd_resource type="StandardMaterial3D" load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/plantas/pachira_casca/cor.jpg" id="1_h8ak3"]
+[ext_resource type="Texture2D" path="res://assets/plantas/pachira_casca/normal.jpg" id="2_blxd7"]
+
+[resource]
+albedo_texture = ExtResource("1_h8ak3")
+roughness = 0.9
+normal_enabled = true
+normal_texture = ExtResource("2_blxd7")
+texture_filter = 5

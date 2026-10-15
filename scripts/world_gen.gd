@@ -1111,22 +1111,15 @@ func _arvores(n: Node3D, z0: float, k: int) -> void:
 			if perto_de_feature(x, z, 7.0):
 				continue
 			var y := altura(x, z)
-			match bio:
-				"serra":
-					if not (r.randf() < 0.3 and Plantas.pinheiro(n, Vector3(x, y - 0.1, z), r)):
-						_araucaria(n, Vector3(x, y - 0.2, z), r)
-				"alagado":
-					_arvore_morta(n, Vector3(x, y - 0.2, z), r)
-				_:
-					if not (r.randf() < 0.3 and Plantas.pinheiro(n, Vector3(x, y - 0.1, z), r)):
-						_arvore(n, Vector3(x, y - 0.2, z), r)
+			var tipo_a: String = {"serra": "pinheiro", "alagado": "folhosa"}.get(bio, "folhosa" if r.randf() < 0.5 else "pinheiro")
+			_arvore_modelo(n, Vector3(x, y - 0.12, z), "%s:%d" % [tipo_a, r.randi() % Floresta.variantes(tipo_a)], r)
 	# arbustos baixos
 	for i in int(r.randi_range(4, 10) * clampf(fator, 0.3, 1.5)):
 		var z := z0 + r.randf() * TAM
 		var x := centro_x(z) + (1.0 if r.randf() > 0.5 else -1.0) * r.randf_range(8, 50)
 		if perto_de_feature(x, z, 4.0):
 			continue
-		B.sphere(n, r.randf_range(0.5, 1.2), Vector3(x, altura(x, z), z), B.mat(Color(0.13, 0.15, 0.07), 1.0, 0.0, "arbusto"), Vector3(1.3, 0.7, 1.1), 8)
+		_arvore_modelo(n, Vector3(x, altura(x, z) - 0.05, z), "arbusto:%d" % (r.randi() % 3), r, 0.8, 1.3)
 	if bio == "alagado":
 		# taboas na beira d'água
 		for i in 14:
@@ -1136,6 +1129,20 @@ func _arvores(n: Node3D, z0: float, k: int) -> void:
 			if absf(y - agua_em(x, z)) < 0.5:
 				for q in 5:
 					B.cyl(n, 0.015, 1.6, Vector3(x + r.randf_range(-0.4, 0.4), y + 0.8, z + r.randf_range(-0.4, 0.4)), B.mat(Color(0.3, 0.33, 0.15), 0.9, 0.0, "taboa"), Vector3(r.randf_range(-8, 8), 0, r.randf_range(-8, 8)), 4)
+
+## Árvore (modelo) solta na beira da estrada.
+func _arvore_modelo(n: Node3D, p: Vector3, tipo: String, r: RandomNumberGenerator, e0 := 0.85, e1 := 1.2) -> void:
+	var m := Floresta.malha(tipo)
+	if m == null:
+		return
+	var mi := MeshInstance3D.new()
+	mi.mesh = m
+	mi.position = p
+	mi.rotation.y = r.randf() * TAU
+	mi.scale = Vector3.ONE * r.randf_range(e0, e1)
+	mi.visibility_range_end = 420.0
+	mi.set_meta("nao_mesclar", true)
+	n.add_child(mi)
 
 func _araucaria(n: Node3D, p: Vector3, r: RandomNumberGenerator) -> void:
 	var t := Node3D.new()
@@ -1399,9 +1406,12 @@ func _mata(n: Node3D, z0: float, k: int, areas: Array = []) -> void:
 							tipo = "eucalipto" if sorte < 0.3 else ("pinheiro" if sorte < 0.55 else "folhosa")
 						"alagado":
 							tipo = "folhosa"
-					var esc := r.randf_range(0.75, 1.3)
-					var t := Transform3D(Basis(Vector3.UP, r.randf() * TAU).scaled(Vector3(esc, esc * r.randf_range(0.9, 1.15), esc)), Vector3(px, y - 0.15, pz))
-					add.call(tipo, t, Color(1, 1, 1) * r.randf_range(0.8, 1.15))
+					var esc := r.randf_range(0.8, 1.2)
+					var t := Transform3D(Basis(Vector3.UP, r.randf() * TAU).scaled(Vector3(esc, esc * r.randf_range(0.9, 1.1), esc)), Vector3(px, y - 0.15, pz))
+					if r.randf() < 0.3:
+						# modelos pesam mais: menos troncos, e no lugar um pinheirinho ou arbusto
+						tipo = "pinheirinho" if r.randf() < 0.5 else "arbusto"
+					add.call("%s:%d" % [tipo, r.randi() % Floresta.variantes(tipo)], t, Color(1, 1, 1) * r.randf_range(0.85, 1.1))
 					# sub-bosque em volta
 					for q in r.randi_range(1, 3):
 						var sx := px + r.randf_range(-2.5, 2.5)
@@ -1409,6 +1419,8 @@ func _mata(n: Node3D, z0: float, k: int, areas: Array = []) -> void:
 						var tipo_s: String = ["samambaia", "samambaia", "arbusto", "arbusto", "toco", "pedra", "tronco_caido", "cogumelos", "capim_alto", "samambaia"][r.randi() % 10]
 						if tipo_s == "tronco_caido" and r.randf() < 0.6:
 							tipo_s = "samambaia"
+						if Floresta.MODELOS.has(tipo_s):
+							tipo_s = "%s:%d" % [tipo_s, r.randi() % Floresta.variantes(tipo_s)]
 						var es := r.randf_range(0.7, 1.4)
 						var ts := Transform3D(Basis(Vector3.UP, r.randf() * TAU).scaled(Vector3.ONE * es), Vector3(sx, altura(sx, sz) - 0.05, sz))
 						add.call(tipo_s, ts, Color(1, 1, 1) * r.randf_range(0.75, 1.2))
@@ -1427,6 +1439,8 @@ func _mata(n: Node3D, z0: float, k: int, areas: Array = []) -> void:
 					elif so < 0.5 and bio in ["rural", "alagado"]:
 						tc = "jeriva"
 					var ec := r.randf_range(0.7, 1.3)
+					if Floresta.MODELOS.has(tc):
+						tc = "%s:%d" % [tc, r.randi() % Floresta.variantes(tc)]
 					add.call(tc, Transform3D(Basis(Vector3.UP, r.randf() * TAU).scaled(Vector3.ONE * ec), Vector3(px, yc - 0.05, pz)), Color(1, 1, 1) * r.randf_range(0.8, 1.15))
 			z += passo
 		x += passo
@@ -1443,7 +1457,7 @@ func _mata(n: Node3D, z0: float, k: int, areas: Array = []) -> void:
 		var mmi := MultiMeshInstance3D.new()
 		mmi.multimesh = mm
 		mmi.set_meta("nao_mesclar", true)
-		if tipo in ["samambaia", "arbusto", "pedra", "toco", "capim_alto", "flores", "cogumelos", "arbusto_seco"]:
+		if tipo.split(":")[0] in ["samambaia", "arbusto", "pedra", "toco", "capim_alto", "flores", "cogumelos", "arbusto_seco", "pinheirinho"]:
 			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			mmi.visibility_range_end = 110.0
 		n.add_child(mmi)

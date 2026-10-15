@@ -4466,7 +4466,7 @@ func _capturar_refino() -> void:
 				cam.look_at_from_position(de, alvo, Vector3.UP)
 				await _salvar("plantas_tronco")
 				n_ok += 1
-			var pn := _achar_malha("pinheiro", pc, 60.0)
+			var pn := _achar_malha("arv_abeto", pc, 60.0)
 			if pn and n_ok == 1:
 				var alvo2: Vector3 = pn.global_position + Vector3(0, 5.0, 0)
 				var de2: Vector3 = pn.global_position + (Vector3(pc.x, pn.global_position.y, pc.z) - pn.global_position).normalized() * 16.0 + Vector3(0, 2.0, 0)
