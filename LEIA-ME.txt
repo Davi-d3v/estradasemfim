@@ -9,6 +9,7 @@ Se abrir uma tela preta ou fechar sozinho, crie um atalho e adicione no final do
 
 CONTROLES
   W A S D ........ andar          Shift ...... correr       Ctrl ...... agachar
+  Espaço (a pé) .. pular
   Mouse .......... olhar          Botão esq. . golpear/atirar/usar
   Botão dir. ..... mirar          R .......... recarregar
   1-9 / roda ..... barra rápida   E .......... interagir / entrar / vasculhar
@@ -21,6 +22,13 @@ CONTROLES
   Z .............. binóculo       J .......... diário (cartas e fitas)
 
 O tutorial aparece no primeiro jogo. Enter pula um passo; Backspace encerra.
+
+NOVIDADES v0.10 (refino)
+  - Pular com Espaço (a pé).
+  - Fogo de verdade (chamas, brasas, fumaça), portão do acampamento que abre quando você chega.
+  - Casas com relevo: tijolo, telha colonial, reboco caindo, barro no pé da parede.
+  - Cabine da picape com relógios que funcionam e bagunça de estrada; trailer por dentro bem mais vivo.
+  - Sacos de corpos e manchas na estrada redesenhados (nada mais de "modelos pretos").
 
 NOVIDADES v0.9 (pedidos do Davi)
   - Sem engasgo ao carregar o mapa: a estrada é gerada aos poucos enquanto você dirige.
