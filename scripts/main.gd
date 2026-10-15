@@ -4382,6 +4382,43 @@ func _capturar_refino() -> void:
 	await get_tree().process_frame
 	_limpar_zumbis_perto(ct, 90.0)
 	var bt := trailer.global_transform.basis
+	# 1d) plantas da Poly Haven: beira da estrada, mata, tronco caído, pinheiro
+	if so == "plantas":
+		hora = 10.0
+		_atualizar_ceu()
+		var n_ok := 0
+		for zz in range(10, 60):
+			var zc := zz * WorldGen.TAM + 30.0
+			var pc := mundo.ponto_estrada(zc, 0.0)
+			mundo.atualizar(pc)
+			await get_tree().process_frame
+			var tr_m := _achar_malha("tronco_morto", pc, 45.0)
+			if tr_m and n_ok == 0:
+				var alvo: Vector3 = tr_m.global_position + Vector3(0, 0.4, 0)
+				var de: Vector3 = alvo + (Vector3(pc.x, alvo.y, pc.z) - alvo).normalized() * 5.0 + Vector3(0, 1.4, 0)
+				_abrir_vista(de, alvo)
+				cam.fov = 60.0
+				cam.current = true
+				cam.look_at_from_position(de, alvo, Vector3.UP)
+				await _salvar("plantas_tronco")
+				n_ok += 1
+			var pn := _achar_malha("pinheiro", pc, 60.0)
+			if pn and n_ok == 1:
+				var alvo2: Vector3 = pn.global_position + Vector3(0, 5.0, 0)
+				var de2: Vector3 = pn.global_position + (Vector3(pc.x, pn.global_position.y, pc.z) - pn.global_position).normalized() * 16.0 + Vector3(0, 2.0, 0)
+				_abrir_vista(de2, alvo2)
+				cam.look_at_from_position(de2, alvo2, Vector3.UP)
+				await _salvar("plantas_pinheiro")
+				n_ok += 1
+			if n_ok == 2:
+				var de3 := mundo.ponto_estrada(zc, WorldGen.LARG_ESTRADA * 0.5 + 0.5) + Vector3(0, 1.5, 0)
+				var al3 := mundo.ponto_estrada(zc + 12.0, WorldGen.LARG_ESTRADA * 0.5 + 9.0) + Vector3(0, 0.3, 0)
+				_abrir_vista(de3, al3)
+				cam.look_at_from_position(de3, al3, Vector3.UP)
+				await _salvar("plantas_beira")
+				break
+		get_tree().quit()
+		return
 	# 1c) oficina e acampamento com as ferramentas do KayKit
 	if so == "kit":
 		hora = 16.0

@@ -1,0 +1,11 @@
+[gd_resource type="StandardMaterial3D" load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/plantas/pinheiro_tronco_b/cor.jpg" id="1_cjovx"]
+[ext_resource type="Texture2D" path="res://assets/plantas/pinheiro_tronco_b/normal.jpg" id="2_j2oav"]
+
+[resource]
+albedo_texture = ExtResource("1_cjovx")
+roughness = 0.85
+normal_enabled = true
+normal_texture = ExtResource("2_j2oav")
+texture_filter = 5

@@ -135,5 +135,13 @@
   balde e lampião. Prints: --refino --so=kit
 - [x] v0.14 para Windows
 
+## Rodada v0.15 (plantas da Poly Haven enviadas pelo Davi)
+- [x] Conversor de .blend sem Blender (tools/blend_para_obj.py: zstd/gzip, SDNA, malhas antigas e novas) e
+  tools/montar_plantas.gd (materiais com recorte de folha, LOD automático).
+- [x] Plantas.trecho (scripts/plantas.gd): samambaias na mata, tufos de capim verde/seco na beira da estrada,
+  tronco caído com folhas secas; 30% das árvores viram pinheiros; vasos de planta de verdade nos quintais.
+  Prints: --refino --so=plantas
+- [x] v0.15 para Windows
+
 ## Próximos
 - ouvir o retorno do Davi sobre a v0.9

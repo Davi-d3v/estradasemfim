@@ -1,0 +1,11 @@
+[gd_resource type="StandardMaterial3D" load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/plantas/pinheiro_casca/cor.jpg" id="1_8hkto"]
+[ext_resource type="Texture2D" path="res://assets/plantas/pinheiro_casca/normal.jpg" id="2_errwx"]
+
+[resource]
+albedo_texture = ExtResource("1_8hkto")
+roughness = 0.85
+normal_enabled = true
+normal_texture = ExtResource("2_errwx")
+texture_filter = 5

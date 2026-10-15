@@ -797,6 +797,7 @@ func _etapa_chunk(ctx: Dictionary, etapa: int) -> bool:
 			_terreno(n, z0)
 		1:
 			_capim(n, z0, k)
+			Plantas.trecho(self, n, z0, k, bio)
 		2:
 			_arvores(n, z0, k)
 			if bio != "cidade" or k % 2 == 0:
@@ -1112,11 +1113,13 @@ func _arvores(n: Node3D, z0: float, k: int) -> void:
 			var y := altura(x, z)
 			match bio:
 				"serra":
-					_araucaria(n, Vector3(x, y - 0.2, z), r)
+					if not (r.randf() < 0.3 and Plantas.pinheiro(n, Vector3(x, y - 0.1, z), r)):
+						_araucaria(n, Vector3(x, y - 0.2, z), r)
 				"alagado":
 					_arvore_morta(n, Vector3(x, y - 0.2, z), r)
 				_:
-					_arvore(n, Vector3(x, y - 0.2, z), r)
+					if not (r.randf() < 0.3 and Plantas.pinheiro(n, Vector3(x, y - 0.1, z), r)):
+						_arvore(n, Vector3(x, y - 0.2, z), r)
 	# arbustos baixos
 	for i in int(r.randi_range(4, 10) * clampf(fator, 0.3, 1.5)):
 		var z := z0 + r.randf() * TAM

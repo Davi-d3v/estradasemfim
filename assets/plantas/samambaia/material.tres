@@ -1,0 +1,15 @@
+[gd_resource type="StandardMaterial3D" load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/plantas/samambaia/cor.png" id="1_6wy5a"]
+
+[resource]
+transparency = 2
+alpha_scissor_threshold = 0.4
+alpha_antialiasing_mode = 0
+cull_mode = 2
+diffuse_mode = 2
+albedo_texture = ExtResource("1_6wy5a")
+roughness = 0.85
+backlight_enabled = true
+backlight = Color(0.25, 0.3, 0.15, 1)
+texture_filter = 5

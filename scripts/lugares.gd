@@ -853,8 +853,9 @@ static func _casa_viva(p: Node3D, pos: Vector3, rot_y: float, larg: float, prof:
 		var vp := Vector3(r.randf_range(-hw, hw), 0, hd + r.randf_range(0.5, 2.6))
 		if absf(vp.x - porta_x) < 1.0:
 			continue
-		B.cyl(ref, 0.2, 0.35, vp + Vector3(0, 0.17, 0), vaso, Vector3.ZERO, 8, 0.26)
-		B.sphere(ref, 0.3, vp + Vector3(0, 0.55, 0), folha, Vector3(1, 0.8 + r.randf() * 0.6, 1), 6)
+		if not Plantas.vaso(ref, vp, r):
+			B.cyl(ref, 0.2, 0.35, vp + Vector3(0, 0.17, 0), vaso, Vector3.ZERO, 8, 0.26)
+			B.sphere(ref, 0.3, vp + Vector3(0, 0.55, 0), folha, Vector3(1, 0.8 + r.randf() * 0.6, 1), 6)
 	var lado_s := -1.0 if r.randf() < 0.5 else 1.0
 	if r.randf() < 0.7:
 		B.cyl(ref, 0.18, 0.55, Vector3(lado_s * (hw + 0.3), 0.3, -hd + 1.0), B.mat(Color(0.75, 0.15, 0.1), 0.5, 0.4, "botijao"), Vector3.ZERO, 10)
