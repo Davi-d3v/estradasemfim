@@ -29,9 +29,15 @@ static func chunk(n: Node3D, z0: float, k: int, m: WorldGen, bio: String) -> voi
 	for i in r.randi_range(3, 7):
 		var a := _pt(m, z0 + r.randf() * WorldGen.TAM, r.randf_range(-hw + 0.5, hw - 0.5))
 		var cor: Color = [Color(0.22, 0.05, 0.04), Color(0.05, 0.05, 0.05), Color(0.12, 0.1, 0.08), Color(0.3, 0.06, 0.05)][r.randi() % 4]
-		var mk := B.box(n, Vector3(r.randf_range(0.6, 2.2), 0.012, r.randf_range(0.5, 1.8)), a[0] + Vector3(0, 0.01, 0), B.mat(cor, 0.6, 0.0, "mancha_%d" % (r.randi() % 4)))
+		var mk := MeshInstance3D.new()
+		var pm := PlaneMesh.new()
+		pm.size = Vector2(r.randf_range(0.8, 2.6), r.randf_range(0.7, 2.2))
+		mk.mesh = pm
+		mk.material_override = _mat_mancha(cor)
+		mk.position = a[0] + Vector3(0, 0.015, 0)
 		mk.rotation.y = r.randf() * TAU
 		mk.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		n.add_child(mk)
 	for i in r.randi_range(4, 10):
 		var a2 := _pt(m, z0 + r.randf() * WorldGen.TAM, r.randf_range(-hw - 2.5, hw + 2.5))
 		_lixo(n, a2[0], r)
@@ -43,7 +49,8 @@ static func chunk(n: Node3D, z0: float, k: int, m: WorldGen, bio: String) -> voi
 		var a4 := _pt(m, z0 + r.randf() * WorldGen.TAM, lado * (hw + 2.6))
 		_placa_oficial(n, a4[0], a4[1] + (PI * 0.5 if lado > 0 else -PI * 0.5) + PI, PLACAS[r.randi() % PLACAS.size()], r)
 	if r.randf() < 0.12:
-		var a5 := _pt(m, z0 + r.randf_range(8.0, WorldGen.TAM - 8.0), r.randf_range(-hw, hw))
+		var lado5 := 1.0 if r.randf() < 0.5 else -1.0
+		var a5 := _pt(m, z0 + r.randf_range(8.0, WorldGen.TAM - 8.0), lado5 * (hw + 1.6))
 		_sacos_corpos(n, a5[0], a5[1], r)
 	if r.randf() < 0.12:
 		var lado2 := 1.0 if r.randf() < 0.5 else -1.0
@@ -132,22 +139,47 @@ static func _placa_oficial(n: Node3D, p: Vector3, rot: float, txt: String, r: Ra
 	for q in r.randi_range(0, 5):
 		B.box(pl, Vector3(0.04, 0.04, 0.05), Vector3(r.randf_range(-1, 1), 1.95 + r.randf_range(-0.45, 0.45), 0.0), B.mat(Color(0.05, 0.05, 0.05), 0.9))
 
+## Mancha no asfalto com borda irregular e transparência (sangue seco, óleo, queimado).
+static var _manchas := {}
+static func _mat_mancha(cor: Color) -> StandardMaterial3D:
+	var k := cor.to_html()
+	if _manchas.has(k):
+		return _manchas[k]
+	Fogo._texturas()
+	var m := StandardMaterial3D.new()
+	m.albedo_texture = Fogo._tex_fumaca
+	m.albedo_color = Color(cor.r, cor.g, cor.b, 0.92)
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_DEPTH_PRE_PASS
+	m.roughness = 0.35 if cor.r > 0.2 else 0.7
+	m.metallic_specular = 0.6
+	_manchas[k] = m
+	return m
+
 static func _sacos_corpos(n: Node3D, p: Vector3, rot: float, r: RandomNumberGenerator) -> void:
-	var saco := B.mat(Color(0.08, 0.09, 0.08), 0.35, 0.0, "saco_corpo")
+	# sacos de vinil cinza-azulado (não preto chapado), com zíper, cabeça e pés marcando o volume
+	var saco := B.mat(Color(0.2, 0.22, 0.26), 0.3, 0.05, "saco_corpo")
+	var ziper := B.mat(Color(0.55, 0.55, 0.52), 0.4, 0.6, "ziper_saco")
 	var amarelo := B.mat(Color(0.85, 0.7, 0.1), 0.6, 0.0, "fita_amarela")
 	var dir := Vector3(sin(rot), 0, cos(rot))
 	var lado := Vector3(dir.z, 0, -dir.x)
-	for i in r.randi_range(3, 7):
-		var q := p + lado * (i * 0.75 - 2.0) + dir * r.randf_range(-0.2, 0.2)
-		var s := B.capsule(n, 0.25, 1.8, q + Vector3(0, 0.18, 0), saco, Vector3(90, 0, 0))
-		s.rotation.y = rot + r.randf_range(-0.15, 0.15)
-		s.scale = Vector3(1.0, 1.0, 0.6)
-		var etq := B.box(n, Vector3(0.12, 0.01, 0.08), q + Vector3(0, 0.33, 0), amarelo)
-		etq.rotation.y = rot
+	for i in r.randi_range(3, 6):
+		var q := p + dir * (i * 0.8 - 2.0) + lado * r.randf_range(-0.15, 0.15)
+		var no := Node3D.new()
+		no.position = q
+		no.rotation.y = rot + PI * 0.5 + r.randf_range(-0.12, 0.12)   # deitados lado a lado, de través
+		n.add_child(no)
+		var corpo := B.capsule(no, 0.27, 1.85, Vector3(0, 0.13, 0), saco, Vector3(90, 0, 0))
+		corpo.scale = Vector3(1.0, 1.0, 0.48)
+		B.sphere(no, 0.14, Vector3(0, 0.2, 0.72), saco, Vector3(1, 0.7, 1), 8)          # cabeça
+		for sx in [-0.09, 0.09]:
+			B.sphere(no, 0.07, Vector3(sx, 0.2, -0.82), saco, Vector3(1, 0.8, 1.2), 6)  # pés
+		B.box(no, Vector3(0.015, 0.012, 1.55), Vector3(0, 0.265, 0.02), ziper)
+		B.box(no, Vector3(0.1, 0.012, 0.07), Vector3(0.12, 0.26, 0.62), amarelo)
 	# cone e fita de isolamento
 	for sx in [-1.0, 1.0]:
-		var c = p + lado * sx * 3.2
-		B.cyl(n, 0.0, 0.7, c + Vector3(0, 0.35, 0), B.mat(Color(0.95, 0.4, 0.1), 0.6, 0.0, "cone"), Vector3.ZERO, 8, 0.18)
+		var c = p + dir * sx * 3.0 + lado * 0.6
+		B.cyl(n, 0.18, 0.7, c + Vector3(0, 0.35, 0), B.mat(Color(0.95, 0.4, 0.1), 0.6, 0.0, "cone"), Vector3.ZERO, 8, 0.015)
+		B.box(n, Vector3(0.42, 0.04, 0.42), c + Vector3(0, 0.02, 0), B.mat(Color(0.95, 0.4, 0.1), 0.6, 0.0, "cone"))
 
 static func _carro_queimado(n: Node3D, p: Vector3, rot: float, r: RandomNumberGenerator) -> void:
 	var c := Node3D.new()

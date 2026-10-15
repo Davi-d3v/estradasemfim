@@ -106,7 +106,7 @@ func _ready() -> void:
 		var lat := r.randfn(0.0, largura * 0.55)
 		_base.append([lat, atras + r.randf_range(-3, 3), r.randf_range(0.95, 1.15), r.randf_range(-0.5, 0.5)])
 		# roupas sujas e desbotadas (não preto puro: de longe, com a névoa, viram gente)
-		var tons := [Color(0.24, 0.22, 0.2), Color(0.3, 0.27, 0.22), Color(0.2, 0.23, 0.26), Color(0.32, 0.2, 0.17), Color(0.22, 0.26, 0.2), Color(0.36, 0.33, 0.28)]
+		var tons := [Color(0.13, 0.12, 0.11), Color(0.17, 0.15, 0.12), Color(0.11, 0.13, 0.15), Color(0.18, 0.11, 0.09), Color(0.12, 0.15, 0.11), Color(0.2, 0.18, 0.15)]
 		mm.set_instance_color(i, tons[r.randi() % tons.size()])
 		mm.set_instance_custom_data(i, Color(r.randf(), r.randf(), 0, 0))
 	# poeira levantada pela multidão

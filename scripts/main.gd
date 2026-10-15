@@ -4462,8 +4462,8 @@ func _capturar_refino() -> void:
 	if so == "" or so == "pulo":
 		hora = 11.0
 		_atualizar_ceu()
-		var pp := ct + bt.x * 5.0 - bt.z * 6.0
-		_posar_jogador(pp, pp + bt.z * 10.0, -0.1, 0.0)
+		var pp := ct - bt.z * 9.0 + bt.x * 1.0
+		_posar_jogador(pp, pp - bt.z * 10.0, -0.1, 0.0)
 		jogador.set_process(true)
 		jogador.no_ar = 0.55
 		jogador._vy = 0.4
@@ -4471,12 +4471,30 @@ func _capturar_refino() -> void:
 		for f in 8:
 			jogador.no_ar = 0.55
 			await get_tree().process_frame
-		var de5 := jogador.global_position + bt.x * 3.8 + bt.z * 1.2 + Vector3(0, 0.6, 0)
+		var de5 := jogador.global_position + bt.x * 3.2 - bt.z * 2.5 + Vector3(0, 0.9, 0)
 		cam.look_at_from_position(de5, jogador.global_position + Vector3(0, 1.0, 0), Vector3.UP)
 		cam.current = true
 		jogador.set_process(false)
 		await _salvar("refino_pulo")
 		jogador.visible = false
+	# 5b) sacos de corpos no acostamento (antes eram vultos pretos)
+	if so == "" or so == "sacos":
+		hora = 9.5
+		_atualizar_ceu()
+		var zs := comboio.pos.z + 25.0
+		var hw := WorldGen.LARG_ESTRADA * 0.5
+		var ps := mundo.ponto_estrada(zs, hw + 1.6)
+		ps.y = jogador.chao(ps)
+		var rr := RandomNumberGenerator.new()
+		rr.seed = 77
+		var d := mundo.direcao(zs)
+		Apocalipse._sacos_corpos(mundo, ps, atan2(d.x, d.z), rr)
+		var de7 := mundo.ponto_estrada(zs - 5.0, -0.5) + Vector3(0, 1.7, 0)
+		_abrir_vista(de7, ps)
+		cam.fov = 55.0
+		cam.current = true
+		cam.look_at_from_position(de7, ps + Vector3(0, 0.2, 0), Vector3.UP)
+		await _salvar("refino_sacos")
 	# 6) a horda de longe e chegando
 	if so == "" or so == "horda":
 		hora = 16.8

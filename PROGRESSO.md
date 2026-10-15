@@ -105,5 +105,17 @@
   Teste: --teste-fisica; prints: --acampamento
 - [x] v0.9 para Windows (branch versoes: EstradaSemFim_Windows_v0.9.zip)
 
+## Rodada v0.10 (refino visual, retorno do Davi sobre a v0.9)
+- [x] Pulo [Espaço a pé] com animação e fôlego.
+- [x] "Modelos pretos" na estrada: sacos de corpos viraram vinil cinza com zíper, cabeça e pés, no acostamento, com cones;
+  manchas no asfalto com borda irregular; vultos da horda somem perto (pontilhado < 70 m).
+- [x] Fogo de partículas (scripts/fogo.gd): chamas em 2 camadas, brasas, fumaça, carvão pulsando; lenha em pirâmide, pedras com fuligem.
+- [x] Portão do acampamento: mourões com ponta, trave com placa pendurada por correntes, folha com travessa em Z que abre sozinha.
+- [x] Casas: shader com relevo procedural (rejunte, frestas, telhas coloniais), reboco caindo com tijolo baiano, barro e escorridos.
+- [x] Cabine da picape: ponteiros, odômetro, pedais, maçanetas, capa de bolinhas, cinto, rack de espingarda, trinca no vidro, luz.
+- [x] Trailer: colcha de retalhos, cortinas, tapete, prateleira, lampião, varal, casaco, fotos, calendário, galão, botas.
+  Prints: --refino [--so=casa|fogo|cabine|trailer|pulo|sacos|horda]
+- [x] v0.10 para Windows
+
 ## Próximos
 - ouvir o retorno do Davi sobre a v0.9
