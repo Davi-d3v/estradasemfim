@@ -456,7 +456,7 @@ humanoid.gd::GDScript::4583134036289468853::1791935397::0::1::::Humanoid<>Node3D
 jogo.gd::GDScript::2527065120667162082::1791975110::0::1::::Jogo<>RefCounted<><>0<>0<><>::
 kit.gd::GDScript::3710703852685283069::1792072747::0::1::::Kit<>RefCounted<><>0<>0<><>::
 lugares.gd::GDScript::4818060070082949917::1792087769::0::1::::Lugares<>RefCounted<><>0<>0<><>::
-main.gd::GDScript::772541204004651537::1792087793::0::1::::<>Node3D<><>0<>0<><>::
+main.gd::GDScript::772541204004651537::1792088769::0::1::::<>Node3D<><>0<>0<><>::
 marcos.gd::GDScript::4375351685686744535::1791986321::0::1::::Marcos<>RefCounted<><>0<>0<><>::
 menu.gd::GDScript::1089058145340150063::1792022966::0::1::::Menu<>Control<><>0<>0<><>::
 modelos.gd::GDScript::2530803293180947829::1792022932::0::1::::Modelos<>RefCounted<><>0<>0<><>::
