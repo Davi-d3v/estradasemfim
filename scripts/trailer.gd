@@ -344,12 +344,12 @@ func _interior() -> void:
 	var r := _root
 	var hz := COMPRIMENTO * 0.5
 	var hw := LARGURA * 0.5 - 0.035
-	var parede := B.mat(Color(0.62, 0.6, 0.56), 0.85, 0.0, "int_parede")
-	var madeira := B.mat(Color(0.45, 0.3, 0.18), 0.7, 0.0, "int_madeira")
+	var parede := Texturas.material("madeira_movel", Color(0.72, 0.62, 0.5), 0.8, 0.0, 0.25)
+	var madeira := Texturas.material("tabuas", Color(0.45, 0.3, 0.18), 0.7, 0.0, 0.2)
 	var escuro := B.mat(Color(0.12, 0.12, 0.13), 0.7, 0.2, "int_escuro")
 	var t := 0.03
 	# piso e teto
-	B.box(r, Vector3(LARGURA - 0.1, t, COMPRIMENTO - 0.1), Vector3(0, BASE_Y + 0.04, 0), B.mat(Color(0.2, 0.18, 0.16), 0.9, 0.0, "int_piso"))
+	B.box(r, Vector3(LARGURA - 0.1, t, COMPRIMENTO - 0.1), Vector3(0, BASE_Y + 0.04, 0), Texturas.material("piso_madeira", Color(0.32, 0.24, 0.17), 0.85, 0.0, 0.5))
 	B.box(r, Vector3(LARGURA - 0.1, t, COMPRIMENTO - 0.85), Vector3(0, TOPO_Y - 0.04, -0.05), B.mat(Color(0.82, 0.8, 0.75), 0.9, 0.0, "int_teto"))
 	# laterais com vão das janelas (y 1.69..1.95)
 	for s in [-1.0, 1.0]:
@@ -417,8 +417,93 @@ func _interior() -> void:
 	# lado de dentro da porta
 	B.box(r, Vector3(0.02, 0.9, 0.72), Vector3(hw - 0.02, 1.32, 0.35), B.mat(Color(0.3, 0.3, 0.3), 0.6, 0.3))
 	B.box(r, Vector3(0.05, 0.03, 0.14), Vector3(hw - 0.05, 1.3, 0.62), escuro)
+	_interior_detalhes(r, hz, hw, escuro)
 	# faixa de LED no teto
 	B.box(r, Vector3(0.02, 0.01, 1.8), Vector3(0, TOPO_Y - 0.06, -0.2), B.emissive(Color(1.0, 0.15, 0.08) if luz_vermelha else Color(1.0, 0.8, 0.55), 0.7 if luz_interna else 0.0))
+
+## Vida dentro do trailer: colcha de retalhos, cortinas, tapete, prateleira com latas,
+## lampião pendurado, varal de meias, casaco no gancho, fotos em volta do mapa,
+## calendário riscado, galão d'água, botas e munição no chão.
+func _interior_detalhes(r: Node3D, hz: float, hw: float, escuro: Material) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	var by := BASE_Y
+	# colcha de retalhos por cima do cobertor
+	var cores := [Color(0.55, 0.2, 0.16), Color(0.25, 0.35, 0.5), Color(0.75, 0.65, 0.4), Color(0.3, 0.42, 0.28), Color(0.6, 0.55, 0.5), Color(0.45, 0.25, 0.4)]
+	for i in 4:
+		for j in 5:
+			var c: Color = cores[(i * 3 + j * 2 + rng.randi() % 2) % cores.size()]
+			B.box(r, Vector3((LARGURA - 0.16) / 4.0 - 0.006, 0.012, 0.22), Vector3(-(LARGURA - 0.16) * 0.5 + (i + 0.5) * (LARGURA - 0.16) / 4.0, by + 0.565, -0.85 + j * 0.225), Texturas.material("tecido", c, 0.95))
+	# cortinas nas janelas de cima da cama (franzidas dos lados)
+	var cort := Texturas.material("tecido", Color(0.72, 0.62, 0.42), 0.95)
+	for sx in [-1.0, 1.0]:
+		for zz in [[-1.7, -1.26], [-0.74, -0.26]]:
+			for lado in [0, 1]:
+				var z0: float = zz[lado]
+				for k in 3:
+					B.box(r, Vector3(0.025, 0.32, 0.05), Vector3(sx * (hw - 0.04), 1.81, z0 + (0.03 + k * 0.04) * (1.0 if lado == 0 else -1.0)), cort, Vector3(0, k * 25.0, 0))
+			B.cyl(r, 0.006, zz[1] - zz[0] + 0.1, Vector3(sx * (hw - 0.04), 1.98, (zz[0] + zz[1]) * 0.5), escuro, Vector3(90, 0, 0), 4)
+	# tapete no corredor
+	B.box(r, Vector3(0.9, 0.008, 0.6), Vector3(0.0, by + 0.06, 0.6), Texturas.material("tecido", Color(0.5, 0.18, 0.14), 0.95))
+	B.box(r, Vector3(0.8, 0.009, 0.5), Vector3(0.0, by + 0.061, 0.6), Texturas.material("tecido", Color(0.7, 0.55, 0.3), 0.95))
+	B.box(r, Vector3(0.66, 0.01, 0.36), Vector3(0.0, by + 0.062, 0.6), Texturas.material("tecido", Color(0.5, 0.18, 0.14), 0.95))
+	# prateleira em cima da cama (lado esquerdo) com latas, pote de moedas e um ursinho
+	B.box(r, Vector3(0.18, 0.02, 1.2), Vector3(-hw + 0.1, 1.58, -0.85), Texturas.material("tabuas", Color(0.45, 0.3, 0.18), 0.7, 0.0, 0.2))
+	for i in 7:
+		var cor_l: Color = [Color(0.75, 0.15, 0.1), Color(0.85, 0.75, 0.2), Color(0.2, 0.45, 0.25)][i % 3]
+		B.cyl(r, 0.035, 0.1, Vector3(-hw + 0.09, 1.64, -1.35 + i * 0.075), B.mat(cor_l, 0.5, 0.4), Vector3.ZERO, 10)
+	B.cyl(r, 0.045, 0.12, Vector3(-hw + 0.09, 1.65, -0.72), B.mat(Color(0.7, 0.8, 0.85), 0.1, 0.1, "vidro_pote"), Vector3.ZERO, 10)
+	var urso := B.mat(Color(0.55, 0.38, 0.22), 0.95, 0.0, "pelucia")
+	B.sphere(r, 0.06, Vector3(-hw + 0.1, 1.65, -0.45), urso, Vector3(1, 1.1, 0.9), 8)
+	B.sphere(r, 0.045, Vector3(-hw + 0.1, 1.75, -0.45), urso, Vector3.ONE, 8)
+	for sz in [-0.03, 0.03]:
+		B.sphere(r, 0.016, Vector3(-hw + 0.1, 1.79, -0.45 + sz), urso, Vector3.ONE, 6)
+	# lampião pendurado no gancho do teto (luz quente)
+	B.cyl(r, 0.004, 0.18, Vector3(0.0, TOPO_Y - 0.14, 0.6), escuro, Vector3.ZERO, 4)
+	B.cyl(r, 0.045, 0.1, Vector3(0.0, TOPO_Y - 0.28, 0.6), B.emissive(Color(1.0, 0.72, 0.35), 1.6), Vector3.ZERO, 10)
+	B.cyl(r, 0.055, 0.025, Vector3(0.0, TOPO_Y - 0.22, 0.6), escuro, Vector3.ZERO, 10)
+	B.cyl(r, 0.05, 0.02, Vector3(0.0, TOPO_Y - 0.34, 0.6), escuro, Vector3.ZERO, 10)
+	# varal com meias e uma camiseta
+	B.cyl(r, 0.003, 1.1, Vector3(0.0, TOPO_Y - 0.1, -0.9), escuro, Vector3(90, 0, 0), 4)
+	for i in 4:
+		var cm := B.box(r, Vector3(0.06, 0.18, 0.02), Vector3(-0.02 + (i % 2) * 0.04, TOPO_Y - 0.2, -1.3 + i * 0.2), Texturas.material("tecido", [Color(0.85, 0.85, 0.82), Color(0.25, 0.25, 0.28)][i % 2], 0.95))
+		cm.rotation_degrees.y = 90
+	B.box(r, Vector3(0.36, 0.3, 0.012), Vector3(0.0, TOPO_Y - 0.26, -0.45), Texturas.material("tecido", Color(0.3, 0.38, 0.5), 0.95), Vector3(0, 90, 0))
+	# casaco e chapéu no gancho perto da porta
+	B.box(r, Vector3(0.03, 0.03, 0.1), Vector3(hw - 0.03, 1.62, 0.92), escuro)
+	B.box(r, Vector3(0.1, 0.55, 0.32), Vector3(hw - 0.08, 1.33, 0.92), Texturas.material("tecido", Color(0.35, 0.3, 0.2), 0.95), Vector3(0, 0, -3))
+	B.cyl(r, 0.13, 0.02, Vector3(hw - 0.1, 1.66, 0.92), Texturas.material("tecido", Color(0.4, 0.28, 0.16), 0.95), Vector3(0, 0, 80), 12)
+	# fotos em volta do mapa
+	for i in 5:
+		var fz := -0.35 + (i - 2) * 0.13
+		var fy := 1.5 if i % 2 == 0 else 1.06
+		B.box(r, Vector3(0.004, 0.09, 0.075), Vector3(hw - 0.025, fy, fz), B.mat(Color(0.95, 0.95, 0.93), 0.8))
+		B.box(r, Vector3(0.005, 0.065, 0.065), Vector3(hw - 0.026, fy + 0.008, fz), B.mat(Color.from_hsv(rng.randf(), 0.35, 0.5), 0.6), Vector3(rng.randf_range(-6, 6), 0, 0))
+	# calendário riscado
+	var cal := Label3D.new()
+	cal.text = "OUTUBRO\n×  ×  ×  ×  ×  ×  ×\n×  ×  ×  ×  ×  ×  ×\n×  ×  ×  ×"
+	cal.font_size = 24
+	cal.pixel_size = 0.0012
+	cal.modulate = Color(0.25, 0.08, 0.06)
+	cal.outline_size = 0
+	cal.shaded = true
+	cal.position = Vector3(-hw + 0.03, 1.32, 0.75)
+	cal.rotation.y = PI * 0.5
+	r.add_child(cal)
+	B.box(r, Vector3(0.004, 0.22, 0.2), Vector3(-hw + 0.025, 1.32, 0.75), B.mat(Color(0.95, 0.94, 0.9), 0.9))
+	# chão: galão d'água, botas e caixa de munição
+	B.box(r, Vector3(0.24, 0.36, 0.24), Vector3(-0.55, by + 0.24, 1.05), B.mat(Color(0.3, 0.5, 0.75), 0.2, 0.0, "galao_agua"))
+	B.cyl(r, 0.035, 0.06, Vector3(-0.55, by + 0.45, 1.05), B.mat(Color(0.15, 0.25, 0.6), 0.5), Vector3.ZERO, 8)
+	var bota := B.mat(Color(0.22, 0.15, 0.1), 0.8, 0.0, "bota")
+	for k in 2:
+		B.box(r, Vector3(0.1, 0.22, 0.12), Vector3(0.35 + k * 0.12, by + 0.17, 0.35), bota)
+		B.box(r, Vector3(0.1, 0.07, 0.28), Vector3(0.35 + k * 0.12, by + 0.09, 0.42), bota)
+	B.box(r, Vector3(0.28, 0.16, 0.14), Vector3(0.45, by + 0.14, 1.0), B.mat(Color(0.25, 0.3, 0.18), 0.6, 0.3, "caixa_municao"))
+	B.box(r, Vector3(0.06, 0.03, 0.1), Vector3(0.45, by + 0.235, 1.0), escuro)
+	# vasinho com uma muda na prateleira alta
+	B.cyl(r, 0.05, 0.08, Vector3(-0.2, 1.63, hz - 0.25), B.mat(Color(0.6, 0.32, 0.2), 0.9), Vector3.ZERO, 10, 0.06)
+	for k in 5:
+		B.sphere(r, 0.03, Vector3(-0.2 + sin(k * 1.3) * 0.03, 1.71 + k * 0.012, hz - 0.25 + cos(k * 1.3) * 0.03), B.mat(Color(0.25, 0.5, 0.2), 0.8), Vector3(1, 0.5, 1), 6)
 
 func _vidro() -> StandardMaterial3D:
 	if modo_interior:

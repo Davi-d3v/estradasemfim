@@ -286,6 +286,8 @@ func _ready() -> void:
 			_capturar_cachorro()
 		elif "--acampamento" in OS.get_cmdline_user_args():
 			_capturar_acampamento()
+		elif "--refino" in OS.get_cmdline_user_args():
+			_capturar_refino()
 		elif "--comercio" in OS.get_cmdline_user_args():
 			_capturar_comercio()
 		elif "--comboio-combate" in OS.get_cmdline_user_args():
@@ -754,6 +756,23 @@ func _teste_fisica() -> void:
 	_alternar_acampamento()
 	await get_tree().process_frame
 	print("TF desmontado: obstáculos extra = %d" % mundo.obstaculos_extra.size())
+	# 5) pulo
+	jogador.global_position = trailer.global_transform * Vector3(4.0, 0, 0)
+	jogador.camera.current = true
+	jogador.set_process(true)
+	jogador.estamina = 1.0
+	await get_tree().process_frame
+	Input.action_press("pular")
+	await get_tree().process_frame
+	Input.action_release("pular")
+	var alt_max := 0.0
+	var t_ar := 0.0
+	for f in 120:
+		await get_tree().process_frame
+		alt_max = maxf(alt_max, jogador.no_ar)
+		if jogador.no_ar > 0.0:
+			t_ar += get_process_delta_time()
+	print("TF pulo: altura máx %.2f m, %.2f s no ar, no chão de novo=%s" % [alt_max, t_ar, jogador.no_ar == 0.0])
 	get_tree().quit()
 
 func _perimetro(a: PackedVector2Array) -> float:
@@ -4303,6 +4322,175 @@ func _capturar_vida() -> void:
 	_abrir_vista(de3, tp)
 	cam.look_at_from_position(de3, tp + Vector3(0, 0.6, 0), Vector3.UP)
 	await _salvar("vida_tumulo")
+	get_tree().quit()
+
+## Prints da rodada de refino: casas com relevo, fogo e portão, cabine da picape,
+## interior do trailer, pulo e a horda de longe.
+func _capturar_refino() -> void:
+	var cam := Camera3D.new()
+	cam.far = 2500.0
+	add_child(cam)
+	comboio.set_physics_process(false)
+	hud.visible = false
+	jogador.visible = false
+	var so: String = ""
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--so="):
+			so = a.substr(5)
+	# 1) casas de uma vila, de dia
+	if so == "" or so == "casa":
+		hora = 10.2
+		_atualizar_ceu()
+		var achou := false
+		for reg_i in 6:
+			for l in mundo.lugares_da_regiao(reg_i):
+				if achou or not (l.tipo in ["vila", "assentamento", "cidade"]):
+					continue
+				jogador.position = l.pos
+				mundo.atualizar(l.pos)
+				await get_tree().process_frame
+				var casas: Array = mundo.estruturas.filter(func(x): return is_instance_valid(x) and x is Predio and x.global_position.distance_to(l.pos) < 90.0)
+				if casas.is_empty():
+					continue
+				achou = true
+				_limpar_zumbis_perto(l.pos, 90.0)
+				var n := 0
+				for pr in casas.slice(0, 2):
+					var fr: Vector3 = pr.global_transform.basis.z
+					var lado: Vector3 = pr.global_transform.basis.x
+					var c: Vector3 = pr.global_position + Vector3(0, 1.6, 0)
+					var de: Vector3 = c + fr * (pr.profundidade * 0.5 + 5.5) + lado * (pr.largura * 0.5 + 1.5) + Vector3(0, 0.3, 0)
+					_abrir_vista(de, c)
+					cam.fov = 60.0
+					cam.current = true
+					cam.look_at_from_position(de, c, Vector3.UP)
+					await _salvar("refino_casa_%d" % n)
+					var de2: Vector3 = pr.global_position + fr * (pr.profundidade * 0.5 + 1.6) + lado * 0.6 + Vector3(0, 1.4, 0)
+					var al2: Vector3 = pr.global_position + fr * (pr.profundidade * 0.5) - lado * 1.0 + Vector3(0, 1.0, 0)
+					_abrir_vista(de2, al2)
+					cam.look_at_from_position(de2, al2, Vector3.UP)
+					await _salvar("refino_parede_%d" % n)
+					n += 1
+		if not achou:
+			print("refino: nenhuma casa achada")
+	# comboio parado na estrada para o resto
+	var z := 14 * WorldGen.TAM + 20.0
+	comboio.posicionar(z, -0.5, 0.0)
+	var ct := trailer.global_position
+	jogador.position = ct + trailer.global_transform.basis.x * 3.0
+	mundo.atualizar(ct)
+	await get_tree().process_frame
+	_limpar_zumbis_perto(ct, 90.0)
+	var bt := trailer.global_transform.basis
+	# 2) fogo e portão ao entardecer
+	if so == "" or so == "fogo":
+		hora = 18.9
+		_atualizar_ceu()
+		_alternar_acampamento()
+		var ac: Acampamento = acampamento
+		for f in 40:
+			await get_tree().process_frame
+		var f0 := ac.fogueira
+		var de := f0 + bt.z * 1.6 - bt.x * 1.2 + Vector3(0, 1.0, 0)
+		_abrir_vista(de, f0)
+		cam.fov = 55.0
+		cam.current = true
+		cam.look_at_from_position(de, f0 + Vector3(0, 0.45, 0), Vector3.UP)
+		await _salvar("refino_fogo")
+		var pc := (ac.portao_a + ac.portao_b) * 0.5
+		var pc3 := Vector3(pc.x, ac.fogueira.y, pc.y)
+		var fora := pc3 + (pc3 - ct).normalized() * 6.0 + Vector3(0, 1.7, 0)
+		fora.y = jogador.chao(fora) + 1.7
+		_abrir_vista(fora, pc3)
+		cam.look_at_from_position(fora, pc3 + Vector3(0, 1.2, 0), Vector3.UP)
+		await _salvar("refino_portao_fechado")
+		# o jogador chega e o portão abre
+		_posar_jogador(pc3 + (ct - pc3).normalized() * 1.2, pc3 + (pc3 - ct), -0.05, 0.0)
+		cam.current = true
+		for f in 90:
+			await get_tree().process_frame
+		await _salvar("refino_portao_aberto")
+		jogador.visible = false
+		_alternar_acampamento()
+	# 3) cabine da picape
+	if so == "" or so == "cabine":
+		hora = 15.5
+		_atualizar_ceu()
+		comboio.diesel = 52.0
+		picape.modo_cabine = true
+		picape.reconstruir()
+		await get_tree().process_frame
+		var cb: Node3D = picape._corpo
+		var olho: Vector3 = cb.global_transform * (Pickup.ASSENTO + Vector3(-0.05, 0.02, -0.1))
+		var alvo: Vector3 = cb.global_transform * Vector3(0.05, 1.2, 1.0)
+		_abrir_vista(olho, alvo)
+		cam.fov = 70.0
+		cam.near = 0.02
+		cam.current = true
+		cam.look_at_from_position(olho, alvo, Vector3.UP)
+		await _salvar("refino_cabine")
+		var alvo2: Vector3 = cb.global_transform * Vector3(-0.6, 1.1, 0.3)
+		cam.look_at_from_position(olho, alvo2, Vector3.UP)
+		await _salvar("refino_cabine_lado")
+		picape.modo_cabine = false
+		picape.reconstruir()
+		cam.near = 0.05
+	# 4) dentro do trailer
+	if so == "" or so == "trailer":
+		hora = 20.5
+		_atualizar_ceu()
+		trailer.modo_interior = true
+		trailer.reconstruir()
+		await get_tree().process_frame
+		var rt: Node3D = trailer._root
+		var olho: Vector3 = rt.global_transform * Vector3(0.35, Trailer.BASE_Y + 1.0, 0.95)
+		var alvo: Vector3 = rt.global_transform * Vector3(-0.1, Trailer.BASE_Y + 0.5, -1.0)
+		_abrir_vista(olho, alvo)
+		cam.fov = 78.0
+		cam.near = 0.02
+		cam.current = true
+		cam.look_at_from_position(olho, alvo, Vector3.UP)
+		await _salvar("refino_trailer")
+		var alvo2: Vector3 = rt.global_transform * Vector3(-0.3, Trailer.BASE_Y + 0.7, 1.6)
+		var olho2: Vector3 = rt.global_transform * Vector3(0.2, Trailer.BASE_Y + 1.0, -0.2)
+		cam.look_at_from_position(olho2, alvo2, Vector3.UP)
+		await _salvar("refino_trailer_frente")
+		trailer.modo_interior = false
+		trailer.reconstruir()
+		cam.near = 0.05
+	# 5) pulo
+	if so == "" or so == "pulo":
+		hora = 11.0
+		_atualizar_ceu()
+		var pp := ct + bt.x * 5.0 - bt.z * 6.0
+		_posar_jogador(pp, pp + bt.z * 10.0, -0.1, 0.0)
+		jogador.set_process(true)
+		jogador.no_ar = 0.55
+		jogador._vy = 0.4
+		jogador.corpo.loop("Jump_Loop")
+		for f in 8:
+			jogador.no_ar = 0.55
+			await get_tree().process_frame
+		var de5 := jogador.global_position + bt.x * 3.8 + bt.z * 1.2 + Vector3(0, 0.6, 0)
+		cam.look_at_from_position(de5, jogador.global_position + Vector3(0, 1.0, 0), Vector3.UP)
+		cam.current = true
+		jogador.set_process(false)
+		await _salvar("refino_pulo")
+		jogador.visible = false
+	# 6) a horda de longe e chegando
+	if so == "" or so == "horda":
+		hora = 16.8
+		_atualizar_ceu()
+		for dist in [[320.0, "refino_horda_longe"], [150.0, "refino_horda_perto"]]:
+			defesa.z_horda = comboio.pos.z - dist[0]
+			await get_tree().process_frame
+			var de6 := mundo.ponto_estrada(comboio.pos.z - 14.0, 3.0) + Vector3(0, 2.2, 0)
+			var al6 := mundo.ponto_estrada(defesa.z_horda - 30.0, 0.0) + Vector3(0, 1.0, 0)
+			_abrir_vista(de6, al6)
+			cam.fov = 55.0
+			cam.current = true
+			cam.look_at_from_position(de6, al6, Vector3.UP)
+			await _salvar(dist[1])
 	get_tree().quit()
 
 ## Prints do acampamento novo: cerca grande com portão, fogueira e a roda de cadeiras.

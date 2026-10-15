@@ -22,7 +22,9 @@ const SHADER := """
 shader_type spatial;
 render_mode cull_back, diffuse_lambert;
 uniform float tempo;
+uniform float some_perto = 70.0;   // abaixo disso o vulto some (perto, quem aparece são zumbis de verdade)
 varying float v_alt;
+varying float v_dist;
 void vertex() {
 	float fase = INSTANCE_CUSTOM.r * 6.2831;
 	float ritmo = 2.6 + INSTANCE_CUSTOM.g * 1.6;
@@ -34,8 +36,13 @@ void vertex() {
 	VERTEX.x += sin(tempo * ritmo * 0.5 + fase) * tronco * 0.12;
 	VERTEX.y += abs(s) * 0.05;
 	v_alt = VERTEX.y;
+	v_dist = length((MODELVIEW_MATRIX * vec4(VERTEX, 1.0)).xyz);
 }
 void fragment() {
+	// some aos poucos (pontilhado) quando chega perto da câmera
+	float f = clamp((v_dist - some_perto) / 45.0, 0.0, 1.0);
+	float pont = fract(sin(dot(floor(FRAGCOORD.xy), vec2(12.9898, 78.233))) * 43758.5453);
+	if (pont > f) { discard; }
 	vec3 c = COLOR.rgb;
 	c *= mix(0.7, 1.0, clamp(v_alt / 1.7, 0.0, 1.0));
 	ALBEDO = c;
@@ -98,7 +105,8 @@ func _ready() -> void:
 		var largura := 7.0 + atras * 0.22
 		var lat := r.randfn(0.0, largura * 0.55)
 		_base.append([lat, atras + r.randf_range(-3, 3), r.randf_range(0.95, 1.15), r.randf_range(-0.5, 0.5)])
-		var tons := [Color(0.07, 0.065, 0.06), Color(0.1, 0.09, 0.075), Color(0.06, 0.065, 0.07), Color(0.12, 0.07, 0.06), Color(0.08, 0.09, 0.07)]
+		# roupas sujas e desbotadas (não preto puro: de longe, com a névoa, viram gente)
+		var tons := [Color(0.24, 0.22, 0.2), Color(0.3, 0.27, 0.22), Color(0.2, 0.23, 0.26), Color(0.32, 0.2, 0.17), Color(0.22, 0.26, 0.2), Color(0.36, 0.33, 0.28)]
 		mm.set_instance_color(i, tons[r.randi() % tons.size()])
 		mm.set_instance_custom_data(i, Color(r.randf(), r.randf(), 0, 0))
 	# poeira levantada pela multidão

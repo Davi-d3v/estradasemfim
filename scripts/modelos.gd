@@ -9,7 +9,7 @@ const LOOPS := ["Idle", "Idle_LookAround", "Idle_Talking", "Idle_Tired", "Idle_F
 	"Jog_Fwd", "Sprint", "Crouch_Idle", "Crouch_Fwd", "Crawl_Fwd", "Crawl_Idle", "Pistol_Idle", "Pistol_Aim_Neutral",
 	"Pistol_Aim_Down", "Pistol_Aim_Up", "Fixing_Kneeling", "GroundSit_Idle", "Sitting_Idle", "Sitting_Talking", "Sitting_Nodding", "Sitting_Idle02", "Sitting_Idle03",
 	"Zombie_Idle", "Zombie_Walk_Fwd", "Zombie_Run_Fwd", "Farm_Harvest", "Farm_Watering", "Mining", "TreeChopping",
-	"Walk_Carry", "Sword_Idle", "Driving", "Crying", "Idle_Lantern", "Idle_TalkingPhone", "Idle_Rail", "Consume"]
+	"Walk_Carry", "Sword_Idle", "Driving", "Crying", "Idle_Lantern", "Idle_TalkingPhone", "Idle_Rail", "Consume", "Jump_Loop"]
 
 const PELES := [Color(1.0, 1.0, 1.0), Color(0.92, 0.85, 0.8), Color(0.78, 0.66, 0.58), Color(0.62, 0.5, 0.42), Color(0.48, 0.38, 0.32), Color(1.0, 0.94, 0.9)]
 const CABELOS := [Color(0.16, 0.11, 0.07), Color(0.08, 0.06, 0.05), Color(0.3, 0.2, 0.12), Color(0.5, 0.38, 0.24), Color(0.62, 0.6, 0.58), Color(0.42, 0.22, 0.12)]

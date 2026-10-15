@@ -54,6 +54,8 @@ var _corpo: Node3D
 func _process(_dt: float) -> void:
 	for m in _pinturas:
 		B.atualizar_pintura(m, self)
+	if modo_cabine:
+		_atualizar_ponteiros()
 
 func _ready() -> void:
 	reconstruir()
@@ -488,3 +490,137 @@ func _cabine(b: Node3D) -> void:
 		qs.rotation_degrees.x = 12
 	B.cyl(b, 0.003, 0.18, Vector3(0, 1.62, 0.62), painel, Vector3.ZERO, 4)
 	B.sphere(b, 0.015, Vector3(0, 1.52, 0.62), B.mat(Color(0.6, 0.45, 0.2), 0.4, 0.5))
+	_cabine_detalhes(b, painel, forro, metal)
+
+## Detalhes de dentro da cabine: relógios com ponteiro de verdade, pedais, portas com
+## maçaneta e manivela, porta-luvas, bancos de tecido com capa, cinto, rack de
+## espingarda no vidro de trás e a bagunça de quem vive na estrada.
+var _ponteiros := {}
+
+func _cabine_detalhes(b: Node3D, painel: Material, forro: Material, metal: Material) -> void:
+	_ponteiros.clear()
+	var tecido := Texturas.material("tecido", Color(0.32, 0.26, 0.2), 0.95)
+	var capa := Texturas.material("tecido", Color(0.55, 0.42, 0.25), 0.95)   # capa de bolinhas de madeira (motorista)
+	var borracha := B.mat(Color(0.05, 0.05, 0.05), 0.95, 0.0, "cab_borracha")
+	var cromo := B.mat(Color(0.75, 0.75, 0.75), 0.2, 0.9, "cab_cromo")
+	var papel := B.mat(Color(0.86, 0.82, 0.7), 0.95, 0.0, "cab_papel")
+	# bancos de tecido por cima dos antigos, com costura e encosto de cabeça
+	for x in [0.43, -0.43]:
+		B.box(b, Vector3(0.5, 0.05, 0.48), Vector3(x, 1.04, 0.3), tecido)
+		var enc := B.box(b, Vector3(0.48, 0.56, 0.04), Vector3(x, 1.3, 0.09), tecido)
+		enc.rotation_degrees.x = -10
+		for k in 3:
+			var cs := B.box(b, Vector3(0.46, 0.008, 0.045), Vector3(x, 1.12 + k * 0.15, 0.115 - k * 0.025), B.mat(Color(0.2, 0.16, 0.12), 0.95))
+			cs.rotation_degrees.x = -10
+		# cinto de segurança atravessado
+		var cinto := B.box(b, Vector3(0.05, 0.7, 0.01), Vector3(x + signf(x) * 0.05, 1.33, 0.12), borracha)
+		cinto.rotation_degrees = Vector3(-10, 0, 35.0 * signf(x))
+	# capa de bolinhas no banco do motorista (o clássico do caminhoneiro)
+	for i in 6:
+		for j in 4:
+			B.sphere(b, 0.022, Vector3(0.43 - 0.17 + i * 0.068, 1.1 + j * 0.13, 0.135 - j * 0.023), capa, Vector3.ONE, 5)
+	# pedais
+	for k in 3:
+		var pd := B.box(b, Vector3(0.07, 0.1, 0.02), Vector3(0.58 - k * 0.14, 0.78, 0.98), borracha)
+		pd.rotation_degrees.x = -35
+		B.box(b, Vector3(0.015, 0.2, 0.015), Vector3(0.58 - k * 0.14, 0.88, 1.02), metal, Vector3(-20, 0, 0))
+	# freio de mão e coifa do câmbio
+	B.cyl(b, 0.05, 0.08, Vector3(0.0, 1.0, 0.28), borracha, Vector3(-15, 0, 0), 8, 0.03)
+	var fm := B.box(b, Vector3(0.04, 0.03, 0.3), Vector3(0.17, 0.98, 0.1), painel)
+	fm.rotation_degrees.x = 18
+	# portas: maçaneta, manivela do vidro, alto-falante e bolso com garrafa
+	for sx in [-1.0, 1.0]:
+		var hw := LARGURA * 0.5 - 0.07
+		B.box(b, Vector3(0.03, 0.03, 0.12), Vector3(sx * hw, 1.22, 0.72), cromo)
+		var man := Node3D.new()
+		man.position = Vector3(sx * hw, 1.08, 0.45)
+		b.add_child(man)
+		B.cyl(man, 0.02, 0.03, Vector3.ZERO, cromo, Vector3(0, 0, 90), 8)
+		B.box(man, Vector3(0.015, 0.1, 0.015), Vector3(sx * -0.015, -0.04, 0), cromo)
+		B.cyl(man, 0.015, 0.05, Vector3(sx * -0.035, -0.09, 0), borracha, Vector3(0, 0, 90), 6)
+		B.cyl(b, 0.07, 0.015, Vector3(sx * hw, 0.86, 0.75), borracha, Vector3(0, 0, 90), 14)
+		B.box(b, Vector3(0.05, 0.12, 0.5), Vector3(sx * (hw - 0.02), 0.82, 0.3), painel)
+	B.cyl(b, 0.035, 0.24, Vector3(-(LARGURA * 0.5 - 0.11), 0.95, 0.2), B.mat(Color(0.5, 0.7, 0.85), 0.1, 0.0, "cab_garrafa"), Vector3.ZERO, 8)
+	# relógios: velocímetro e combustível com ponteiros que mexem
+	var centros := {"vel": Vector3(0.32, 1.33, 0.818), "comb": Vector3(0.54, 1.33, 0.818)}
+	for id in centros:
+		var c: Vector3 = centros[id]
+		B.cyl(b, 0.06, 0.004, c + Vector3(0, 0, -0.004), B.mat(Color(0.05, 0.05, 0.05), 0.4), Vector3(90, 0, 0), 18)
+		for k in 7:
+			var a := deg_to_rad(-120.0 + k * 40.0)
+			B.box(b, Vector3(0.004, 0.012, 0.002), c + Vector3(sin(a) * 0.048, cos(a) * 0.048, -0.008), B.emissive(Color(0.95, 0.85, 0.6), 0.5), Vector3(0, 0, -rad_to_deg(a)))
+		var piv := Node3D.new()
+		piv.position = c + Vector3(0, 0, -0.01)
+		b.add_child(piv)
+		B.box(piv, Vector3(0.004, 0.045, 0.002), Vector3(0, 0.02, 0), B.emissive(Color(1.0, 0.3, 0.1), 1.2))
+		_ponteiros[id] = piv
+	var odo := Label3D.new()
+	odo.text = "%06d km" % int(main_km())
+	odo.font_size = 20
+	odo.pixel_size = 0.0007
+	odo.modulate = Color(0.95, 0.8, 0.5)
+	odo.position = Vector3(0.32, 1.305, 0.81)
+	odo.rotation.y = PI
+	odo.name = "Odometro"
+	b.add_child(odo)
+	# porta-luvas com fecho, mapa dobrado e lanterna em cima do painel
+	B.box(b, Vector3(0.4, 0.18, 0.01), Vector3(-0.45, 1.12, 0.8), painel)
+	B.box(b, Vector3(0.06, 0.02, 0.01), Vector3(-0.45, 1.2, 0.792), cromo)
+	var mp := B.box(b, Vector3(0.3, 0.008, 0.2), Vector3(-0.42, 1.33, 1.0), papel)
+	mp.rotation_degrees.y = 14
+	B.box(b, Vector3(0.12, 0.003, 0.004), Vector3(-0.4, 1.336, 1.0), B.mat(Color(0.7, 0.15, 0.1), 0.9), Vector3(0, 30, 0))
+	B.cyl(b, 0.02, 0.17, Vector3(-0.15, 1.34, 0.98), B.mat(Color(0.15, 0.2, 0.35), 0.6, 0.2), Vector3(0, 0, 90), 8)
+	# Nossa Senhora no painel e foto presa no quebra-sol
+	B.cyl(b, 0.02, 0.07, Vector3(-0.05, 1.37, 1.0), B.mat(Color(0.25, 0.4, 0.75), 0.5), Vector3.ZERO, 8, 0.008)
+	B.sphere(b, 0.011, Vector3(-0.05, 1.415, 1.0), B.mat(Color(0.9, 0.8, 0.7), 0.6))
+	var foto := B.box(b, Vector3(0.08, 0.004, 0.06), Vector3(0.43, 1.79, 0.62), B.mat(Color(0.7, 0.55, 0.45), 0.6, 0.0, "cab_foto"))
+	foto.rotation_degrees.x = 12
+	# rack no vidro de trás com a espingarda e um terço
+	for sx in [-0.3, 0.3]:
+		B.box(b, Vector3(0.04, 0.08, 0.05), Vector3(sx, 1.6, -0.72), painel)
+	var esp := Node3D.new()
+	esp.position = Vector3(0, 1.64, -0.71)
+	b.add_child(esp)
+	B.cyl(esp, 0.014, 0.75, Vector3(0.08, 0.0, 0), B.mat(Color(0.12, 0.12, 0.12), 0.4, 0.7), Vector3(0, 0, 90), 8)
+	B.box(esp, Vector3(0.38, 0.06, 0.04), Vector3(-0.38, -0.02, 0), B.mat(Color(0.35, 0.22, 0.12), 0.7))
+	# luz de preenchimento: de dia o sol entra pelos vidros, aqui só clareia o painel
+	var fill := OmniLight3D.new()
+	fill.light_color = Color(0.85, 0.88, 0.95)
+	fill.light_energy = 0.55
+	fill.omni_range = 1.6
+	fill.omni_attenuation = 1.4
+	fill.position = Vector3(0, 1.62, 0.55)
+	b.add_child(fill)
+	# luz de teto e mochila no banco do passageiro
+	B.box(b, Vector3(0.16, 0.02, 0.08), Vector3(0, 1.82, 0.1), B.emissive(Color(1.0, 0.85, 0.6), 0.15))
+	var moch := B.box(b, Vector3(0.32, 0.38, 0.2), Vector3(-0.43, 1.25, 0.3), Texturas.material("tecido", Color(0.26, 0.32, 0.22), 0.95))
+	moch.rotation_degrees = Vector3(-8, 12, 4)
+	B.box(b, Vector3(0.22, 0.14, 0.05), Vector3(-0.43, 1.18, 0.42), Texturas.material("tecido", Color(0.22, 0.28, 0.19), 0.95), Vector3(-8, 12, 4))
+	# trinca no para-brisa (estrela de rachaduras no plano do vidro)
+	var tri := Node3D.new()
+	tri.position = Vector3(-0.35, 1.56, 1.0)
+	tri.rotation_degrees.x = -53
+	b.add_child(tri)
+	for k in 7:
+		var l := 0.1 + fmod(k * 0.37, 0.15)
+		var a := k * 51.0 + 10.0
+		B.box(tri, Vector3(l, 0.002, 0.002), Vector3(cos(deg_to_rad(a)) * l * 0.5, sin(deg_to_rad(a)) * l * 0.5, 0), B.mat(Color(0.92, 0.94, 0.97), 0.1, 0.0, "cab_trinca"), Vector3(0, 0, a))
+
+func main_km() -> float:
+	var m: Node = get_tree().current_scene if is_inside_tree() else null
+	if m and "comboio" in m and m.comboio:
+		return 128734.0 + float(m.comboio.odometro) / 1000.0
+	return 128734.0
+
+func _atualizar_ponteiros() -> void:
+	if _ponteiros.is_empty() or not is_inside_tree():
+		return
+	var m: Node = get_tree().current_scene
+	if m == null or not ("comboio" in m):
+		return
+	var c = m.comboio
+	var kmh := absf(float(c.velocidade)) * 3.6
+	if is_instance_valid(_ponteiros.get("vel")):
+		_ponteiros.vel.rotation.z = -deg_to_rad(-120.0 + clampf(kmh / 140.0, 0.0, 1.0) * 240.0)
+	if is_instance_valid(_ponteiros.get("comb")):
+		_ponteiros.comb.rotation.z = -deg_to_rad(-120.0 + clampf(float(c.diesel) / maxf(tanque_litros(), 1.0), 0.0, 1.0) * 240.0)

@@ -22,5 +22,6 @@ static func material(nome: String, cor: Color, rough := 0.9, metal := 0.0, sujei
 	m.set_shader_parameter("rugosidade", rough)
 	m.set_shader_parameter("metalico", metal)
 	m.set_shader_parameter("sujeira", sujeira)
+	m.set_shader_parameter("descascado", 0.7 if nome == "reboco" else 0.0)
 	_cache[k] = m
 	return m

@@ -36,6 +36,8 @@ var _armadura := {}
 var tremor := 0.0          # tremor de câmera (0..1)
 var _vel_real := 0.0
 var _t_acao := 0.0         # animação de ação (comer, enfaixar...) em curso
+var no_ar := 0.0           # altura do pulo acima do chão
+var _vy := 0.0
 var preso := false         # fazendo um trabalho que não dá para largar (não anda)
 var anim_trabalho := ""    # animação em loop enquanto vasculha/conserta/esfola
 
@@ -263,8 +265,32 @@ func _sobrevivencia(dt: float) -> void:
 		if infeccao > 0.6:
 			vida = maxf(0.0, vida - dt * 0.002)
 	if mundo:
-		position.y = chao(position)
+		_pulo(dt)
+		position.y = chao(position) + no_ar
 		_atualizar_predio(dt)
+
+## Pulo [Espaço]: gasta um pouco de fôlego; não dá agachado, mirando ou ocupado.
+func _pulo(dt: float) -> void:
+	if no_ar <= 0.0 and _vy <= 0.0:
+		if Input.is_action_just_pressed("pular") and not agachado and not mirando and not preso and estamina > 0.08 and get_viewport().get_camera_3d() == camera:
+			_vy = 4.4
+			no_ar = 0.001
+			estamina = maxf(0.0, estamina - 0.05)
+			if corpo.modelo:
+				corpo.tocar("Jump_Start", 1.6, 0.05)
+			Som.em("esforco", global_position + Vector3(0, 1.5, 0), -12.0, 0.15)
+		return
+	_vy -= 13.0 * dt
+	no_ar += _vy * dt
+	if no_ar <= 0.0:
+		no_ar = 0.0
+		_vy = 0.0
+		if corpo.modelo:
+			corpo.tocar("Jump_Land", 1.5, 0.05)
+		Som.em("passo_terra", global_position + Vector3(0, 0.1, 0), -3.0, 0.15)
+		tremor = maxf(tremor, 0.15)
+	elif corpo.modelo:
+		corpo.loop("Jump_Loop")
 
 ## Dentro de uma construção: câmera mais perto e vista em corte dos andares de cima.
 func _atualizar_predio(dt: float) -> void:

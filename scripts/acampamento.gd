@@ -118,7 +118,9 @@ func _cerca() -> void:
 			if _no_portao(meio):
 				continue
 			var y0 := _chao(Vector3(p0.x, 0, p0.y))
-			B.box(self, Vector3(0.14, 1.7, 0.14), Vector3(p0.x, y0 + 0.85, p0.y), madeira, Vector3(0, 0, rng.randf_range(-4, 4)))
+			var inc := Vector3(rng.randf_range(-3, 3), 0, rng.randf_range(-3, 3))
+			B.cyl(self, 0.075, 1.7, Vector3(p0.x, y0 + 0.85, p0.y), madeira, inc, 7)
+			B.cyl(self, 0.075, 0.2, Vector3(p0.x, y0 + 1.8, p0.y), madeira, inc, 7, 0.01)
 			var y1 := _chao(Vector3(p1.x, 0, p1.y))
 			var ym := (y0 + y1) * 0.5
 			var ang := rad_to_deg(atan2(p1.x - p0.x, p1.y - p0.y))
@@ -132,31 +134,96 @@ func _cerca() -> void:
 					B.box(self, Vector3(0.05, 0.22, sl), c3 + Vector3(0, hh, 0), tabua, Vector3(0, ang, rng.randf_range(-2, 2)))
 			for hh in [1.2, 1.5]:
 				B.box(self, Vector3(0.02, 0.02, sl), c3 + Vector3(0, hh, 0), arame, Vector3(0, ang, 0))
-	# portão: dois mourões grossos e a folha aberta para dentro
-	for pp in [portao_a, portao_b]:
-		var yy := _chao(Vector3(pp.x, 0, pp.y))
-		B.box(self, Vector3(0.22, 2.1, 0.22), Vector3(pp.x, yy + 1.05, pp.y), madeira)
-	var ya := _chao(Vector3(portao_a.x, 0, portao_a.y))
+	_portao(madeira, tabua)
+
+## Portão de verdade: mourões, trave com placa pendurada e uma folha de tábuas com
+## travessa em Z, dobradiças e tranca. Abre sozinho quando um amigo chega perto.
+var _folha: Node3D
+var _abertura := 0.0
+var _dentro_dir := Vector2.ZERO
+
+func _portao(madeira: Material, tabua: Material) -> void:
+	var ferro := B.mat(Color(0.18, 0.17, 0.16), 0.55, 0.75, "ferro_camp")
 	var dir_p := (portao_b - portao_a).normalized()
-	var dentro := (Vector2(main.trailer.global_position.x, main.trailer.global_position.z) - (portao_a + portao_b) * 0.5).normalized()
-	var folha_fim := portao_a + (dir_p * 0.2 + dentro).normalized() * (PORTAO - 0.3)
-	var fm := (portao_a + folha_fim) * 0.5
-	var ang_f := rad_to_deg(atan2(folha_fim.x - portao_a.x, folha_fim.y - portao_a.y))
-	for hh in [0.35, 0.85, 1.35]:
-		B.box(self, Vector3(0.05, 0.14, PORTAO - 0.3), Vector3(fm.x, ya + hh, fm.y), tabua, Vector3(0, ang_f, 0))
-	B.box(self, Vector3(0.05, 1.3, 0.12), Vector3(fm.x, ya + 0.85, fm.y), tabua, Vector3(0, ang_f, 0))
 	var pc := (portao_a + portao_b) * 0.5
-	var placa := Label3D.new()
-	placa.text = "ACAMPAMENTO"
-	placa.font_size = 64
-	placa.pixel_size = 0.004
-	placa.modulate = Color(0.95, 0.9, 0.8)
-	placa.outline_size = 6
-	placa.shaded = true
-	placa.position = Vector3(pc.x, ya + 2.25, pc.y)
-	placa.rotation.y = atan2(dir_p.x, dir_p.y) + PI * 0.5
-	add_child(placa)
-	B.box(self, Vector3(PORTAO + 0.3, 0.12, 0.12), Vector3(pc.x, ya + 2.05, pc.y), madeira, Vector3(0, rad_to_deg(atan2(dir_p.x, dir_p.y)), 0))
+	_dentro_dir = (Vector2(main.trailer.global_position.x, main.trailer.global_position.z) - pc).normalized()
+	var ang_p := rad_to_deg(atan2(dir_p.x, dir_p.y))
+	var ya := _chao(Vector3(portao_a.x, 0, portao_a.y))
+	var yb := _chao(Vector3(portao_b.x, 0, portao_b.y))
+	for pp in [[portao_a, ya], [portao_b, yb]]:
+		var v: Vector2 = pp[0]
+		B.cyl(self, 0.13, 2.5, Vector3(v.x, pp[1] + 1.25, v.y), madeira, Vector3.ZERO, 8)
+		B.cyl(self, 0.13, 0.22, Vector3(v.x, pp[1] + 2.61, v.y), madeira, Vector3.ZERO, 8, 0.02)   # ponta
+	var ym := maxf(ya, yb)
+	# trave de cima e mãos-francesas
+	B.box(self, Vector3(0.16, 0.16, PORTAO + 0.7), Vector3(pc.x, ym + 2.3, pc.y), madeira, Vector3(0, ang_p, 0))
+	for lado in [-1.0, 1.0]:
+		var pa: Vector2 = pc + dir_p * lado * (PORTAO * 0.5 - 0.25)
+		B.box(self, Vector3(0.1, 0.1, 0.6), Vector3(pa.x, ym + 2.05, pa.y), madeira, Vector3(-45.0 * lado, ang_p, 0))
+	# placa pendurada por duas correntes
+	var bx := Node3D.new()
+	bx.position = Vector3(pc.x, ym + 1.86, pc.y)
+	bx.rotation.y = atan2(dir_p.x, dir_p.y) - PI * 0.5
+	add_child(bx)
+	B.box(bx, Vector3(1.9, 0.42, 0.05), Vector3.ZERO, tabua, Vector3(0, 0, -2.5))
+	for sx in [-0.75, 0.75]:
+		B.box(bx, Vector3(0.02, 0.24, 0.02), Vector3(sx, 0.32, 0), ferro)
+	for lado in [1.0, -1.0]:
+		var placa := Label3D.new()
+		placa.text = "ACAMPAMENTO"
+		placa.font_size = 72
+		placa.pixel_size = 0.0035
+		placa.modulate = Color(0.93, 0.9, 0.82)
+		placa.outline_size = 0
+		placa.shaded = true
+		placa.double_sided = false
+		placa.position = Vector3(0, 0, 0.03 * lado)
+		placa.rotation.y = 0.0 if lado > 0 else PI
+		placa.rotation.z = deg_to_rad(-2.5) * lado
+		bx.add_child(placa)
+	# folha do portão (gira na dobradiça em portao_a)
+	_folha = Node3D.new()
+	_folha.position = Vector3(portao_a.x, ya, portao_a.y)
+	add_child(_folha)
+	var L := PORTAO - 0.25
+	for hh in [0.3, 0.75, 1.2, 1.6]:
+		B.box(_folha, Vector3(0.05, 0.16, L), Vector3(0, hh, 0.12 + L * 0.5), tabua)
+	for zz in [0.2, L * 0.5 + 0.12, L + 0.05]:
+		B.box(_folha, Vector3(0.06, 1.55, 0.12), Vector3(0.03, 0.95, zz), tabua)
+	var diag := Vector2(L - 0.2, 1.25)
+	B.box(_folha, Vector3(0.05, 0.12, diag.length()), Vector3(-0.03, 0.95, 0.12 + L * 0.5), tabua, Vector3(rad_to_deg(atan2(diag.y, diag.x)), 0, 0))
+	for hh in [0.4, 1.45]:
+		B.box(_folha, Vector3(0.07, 0.06, 0.34), Vector3(0.0, hh, 0.2), ferro)          # dobradiças
+	B.box(_folha, Vector3(0.09, 0.05, 0.22), Vector3(0.0, 1.0, L + 0.08), ferro)          # tranca
+	_folha.rotation.y = atan2(dir_p.x, dir_p.y)
+	_folha.set_meta("fechado", _folha.rotation.y)
+	# para que lado abre (para dentro do acampamento)
+	var aberto_dir := atan2(_dentro_dir.x, _dentro_dir.y)
+	_folha.set_meta("aberto", _folha.rotation.y + wrapf(aberto_dir - _folha.rotation.y, -PI, PI) * 0.95)
+
+func _animar_portao(dt: float) -> void:
+	if _folha == null:
+		return
+	var pc := (portao_a + portao_b) * 0.5
+	var p3 := Vector3(pc.x, 0, pc.y)
+	var amigos: Array = []
+	if main.jogador.visible:
+		amigos.append(main.jogador.global_position)
+	for r in main.recrutas_nos:
+		if is_instance_valid(r):
+			amigos.append(r.global_position)
+	if main.get("cachorro") and is_instance_valid(main.cachorro):
+		amigos.append(main.cachorro.global_position)
+	var abrir := false
+	for a in amigos:
+		if Vector2(a.x - p3.x, a.z - p3.z).length() < 3.2:
+			abrir = true
+	var antes := _abertura
+	_abertura = move_toward(_abertura, 1.0 if abrir else 0.0, dt * 1.6)
+	if (antes == 0.0 and _abertura > 0.0) or (antes == 1.0 and _abertura < 1.0):
+		Som.em("porta", Vector3(portao_a.x, _folha.position.y + 1.0, portao_a.y), -6.0, 0.2)
+	var e := _abertura * _abertura * (3.0 - 2.0 * _abertura)
+	_folha.rotation.y = lerp_angle(_folha.get_meta("fechado"), _folha.get_meta("aberto"), e)
 
 func _no_portao(p: Vector2) -> bool:
 	return _dist_seg(p, portao_a, portao_b) < 0.6
@@ -203,36 +270,44 @@ func _fogueira() -> void:
 	fogueira = tr.global_transform * Vector3(-4.4, 0, 0.0)
 	fogueira.y = _chao(fogueira)
 	var f := fogueira
-	var pedra := B.mat(Color(0.42, 0.4, 0.38), 0.9, 0.0, "pedra")
-	for k in 11:
-		var a := TAU * k / 11.0
-		B.sphere(self, 0.17, f + Vector3(cos(a) * 0.6, 0.08, sin(a) * 0.6), pedra, Vector3(1.1, 0.7, 1), 6)
+	var pedra := Texturas.material("pedra", Color(0.36, 0.34, 0.32), 0.95, 0.0, 0.5)
+	var fuligem := B.mat(Color(0.1, 0.09, 0.08), 1.0, 0.0, "pedra_fuligem")
+	var rp := RandomNumberGenerator.new()
+	rp.seed = int(f.x * 3.0) ^ int(f.z * 7.0)
+	for k in 13:
+		var a := TAU * k / 13.0 + rp.randf_range(-0.08, 0.08)
+		var tam := rp.randf_range(0.11, 0.16)
+		var pd := B.sphere(self, tam, f + Vector3(cos(a) * 0.62, 0.06, sin(a) * 0.62), pedra, Vector3(rp.randf_range(1.0, 1.5), rp.randf_range(0.55, 0.8), rp.randf_range(0.9, 1.2)), 5)
+		pd.rotation.y = rp.randf() * TAU
+		B.sphere(self, tam * 0.8, f + Vector3(cos(a) * 0.56, 0.08, sin(a) * 0.56), fuligem, Vector3(0.6, 0.5, 0.6), 5)
 	var lenha := B.mat(Color(0.3, 0.2, 0.12), 0.95, 0.0, "lenha")
-	var brasa := B.mat(Color(0.08, 0.05, 0.04), 1.0, 0.0, "carvao")
-	B.cyl(self, 0.45, 0.06, f + Vector3(0, 0.03, 0), brasa, Vector3.ZERO, 12)
-	for k in 5:
-		var tora := B.cyl(self, 0.065, 0.85, f + Vector3(0, 0.22, 0), lenha, Vector3(68, k * 72.0, 0), 6)
-		tora.name = "Tora"
-	var chama := Node3D.new()
-	chama.name = "Chama"
-	chama.position = f
-	add_child(chama)
-	B.sphere(chama, 0.28, Vector3(0, 0.35, 0), B.emissive(Color(1.0, 0.42, 0.08), 4.5), Vector3(1, 1.7, 1), 8)
-	B.sphere(chama, 0.16, Vector3(0.05, 0.62, 0.02), B.emissive(Color(1.0, 0.75, 0.25), 6.0), Vector3(1, 1.8, 1), 8)
-	var luz := OmniLight3D.new()
-	luz.name = "Luz"
-	luz.light_color = Color(1.0, 0.55, 0.22)
-	luz.light_energy = 2.6
-	luz.omni_range = 11.0
-	luz.shadow_enabled = true
-	luz.position = f + Vector3(0, 1.0, 0)
-	add_child(luz)
+	var queimada := B.mat(Color(0.07, 0.05, 0.04), 1.0, 0.0, "carvao")
+	B.cyl(self, 0.5, 0.05, f + Vector3(0, 0.025, 0), B.mat(Color(0.13, 0.12, 0.11), 1.0, 0.0, "cinza_fogo"), Vector3.ZERO, 14)
+	# lenha em pirâmide (as pontas de cima queimadas)
+	for k in 6:
+		var a := TAU * k / 6.0 + 0.3
+		var base := f + Vector3(cos(a) * 0.38, 0.0, sin(a) * 0.38)
+		var tora := Node3D.new()
+		tora.position = base
+		tora.rotation = Vector3(0, -a + PI * 0.5, 0)
+		add_child(tora)
+		var inc := Node3D.new()
+		inc.rotation.x = deg_to_rad(-38.0)
+		tora.add_child(inc)
+		B.cyl(inc, 0.06, 0.5, Vector3(0, 0.25, 0), lenha, Vector3.ZERO, 6)
+		B.cyl(inc, 0.058, 0.18, Vector3(0, 0.58, 0), queimada, Vector3.ZERO, 6, 0.03)
+	var fogo := Fogo.new()
+	fogo.name = "Fogo"
+	fogo.position = f + Vector3(0, 0.05, 0)
+	add_child(fogo)
 	# panela no tripé
 	var ferro := B.mat(Color(0.15, 0.15, 0.15), 0.5, 0.7, "ferro_camp")
 	for k in 3:
 		var a2 := TAU * k / 3.0
 		B.cyl(self, 0.02, 1.25, f + Vector3(cos(a2) * 0.45, 0.58, sin(a2) * 0.45), ferro, Vector3(-18.0 * cos(a2), 0, 18.0 * sin(a2)), 4)
-	B.cyl(self, 0.16, 0.18, f + Vector3(0, 1.0, 0), ferro, Vector3.ZERO, 10)
+	B.cyl(self, 0.004, 0.25, f + Vector3(0, 1.2, 0), ferro, Vector3.ZERO, 4)
+	B.cyl(self, 0.12, 0.13, f + Vector3(0, 1.0, 0), ferro, Vector3.ZERO, 12, 0.13)
+	B.cyl(self, 0.13, 0.015, f + Vector3(0, 1.07, 0), ferro, Vector3.ZERO, 12)
 	# troncos de lenha empilhados
 	for i in 6:
 		B.cyl(self, 0.11, 0.9, f + tr.global_transform.basis * Vector3(-2.6, 0.11 + (i / 3) * 0.2, -2.4 + (i % 3) * 0.23), lenha, Vector3(0, 0, 90) + Vector3(0, rad_to_deg(tr.global_rotation.y), 0), 6)
@@ -263,11 +338,5 @@ func _cadeiras() -> void:
 			B.cyl(cad, 0.014, 0.62, Vector3(sx, 0.26, -0.08), aco, Vector3(-28, 0, 0), 4)
 			B.box(cad, Vector3(0.04, 0.03, 0.4), Vector3(sx + signf(sx) * 0.02, 0.62, 0.0), aco)
 
-func _process(_dt: float) -> void:
-	var ch := get_node_or_null("Chama")
-	if ch:
-		var t := Time.get_ticks_msec() / 1000.0
-		ch.scale = Vector3.ONE * (1.0 + 0.12 * sin(t * 9.0) + 0.06 * sin(t * 23.0))
-		var l: OmniLight3D = get_node_or_null("Luz")
-		if l:
-			l.light_energy = 2.4 + 0.4 * sin(t * 11.0) + 0.2 * sin(t * 27.0)
+func _process(dt: float) -> void:
+	_animar_portao(dt)
