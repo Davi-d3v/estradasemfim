@@ -23,10 +23,10 @@ CONTROLES
 
 O tutorial aparece no primeiro jogo. Enter pula um passo; Backspace encerra.
 
-NOVIDADES v0.11 (texturas reais)
+NOVIDADES v0.12 (texturas reais)
   - Paredes, tijolos, telhados, concreto, metal e asfalto com fotos do ambientCG (CC0).
   - Pichações de verdade nas casas e barreiras.
-  - Maçã, pão, baguete e melancia escaneados na feira da vila, na despensa e no trailer; tocos na beira da estrada.
+  - Escritas nas paredes das casas trocadas por pichações de verdade.
 
 NOVIDADES v0.10 (refino)
   - Pular com Espaço (a pé).
