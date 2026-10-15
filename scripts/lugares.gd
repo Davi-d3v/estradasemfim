@@ -221,15 +221,7 @@ static func _barraca(p: Node3D, pos: Vector3, rot: float, cor_lona: Color, merca
 	lona.rotation.x = 0.12
 	B.box(b, Vector3(2.8, 0.9, 0.7), Vector3(0, 0.45, 0.6), madeira)
 	for k in 5:
-		if comida:
-			# caixotes de feira com maçã, pão e melancia de verdade
-			B.box(b, Vector3(0.45, 0.12, 0.4), Vector3(-1.0 + k * 0.5, 0.96, 0.6), B.mat(Color(0.55, 0.42, 0.27), 0.9, 0.0, "caixote"))
-			if k == 2:
-				Objetos3D.por(b, "melancia", Vector3(-1.0 + k * 0.5, 1.02, 0.6), r.randf() * 360.0, 1.0, 35.0)
-			else:
-				Objetos3D.monte(b, Vector3(-1.0 + k * 0.5, 1.02, 0.6), r, 6, 0.14)
-		else:
-			B.box(b, Vector3(0.45, 0.3, 0.4), Vector3(-1.0 + k * 0.5, 1.05, 0.6), B.mat(mercadoria[k % mercadoria.size()], 0.8))
+		B.box(b, Vector3(0.45, 0.3, 0.4), Vector3(-1.0 + k * 0.5, 1.05, 0.6), B.mat(mercadoria[k % mercadoria.size()], 0.8))
 	return b
 
 static func _vila(p: Node3D, f: Dictionary, r: RandomNumberGenerator, m: WorldGen) -> void:

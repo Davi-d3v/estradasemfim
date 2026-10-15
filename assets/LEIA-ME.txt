@@ -13,5 +13,3 @@ Sons:
 Texturas e modelos escaneados (ambientCG, CC0 — https://ambientcg.com, enviados pelo Davi):
 - texturas/tijolo (Bricks001), reboco (PaintedPlaster014), telha (RoofingTiles012B), telha_velha (RoofingTiles014D),
   concreto (Concrete023), metal (Metal046B), asfalto (Road008B), grade (MetalWalkway002), pichacao (GraffitiSet001)
-- modelos/apple001, bread001, bread011, melon001, treestump001 (3DApple001, 3DBread001, 3DBread011, 3DMelon001,
-  3DTreeStump001), reduzidos com tools/reduzir_modelos.gd

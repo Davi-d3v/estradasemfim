@@ -122,10 +122,10 @@
   concreto, metal, asfalto (pista inteira com faixa amarela; bordas viram brancas). Shader superficie.gdshader com
   cor+normal+rugosidade projetadas no espaço do objeto (telhas acompanham a casa); road.gdshader idem.
 - [x] Pichações (scripts/grafite.gd): 16 tags do GraffitiSet001 coladas nas casas e nas barreiras de quarentena.
-- [x] Modelos escaneados reduzidos (tools/reduzir_modelos.gd): maçã, pão, baguete, melancia (barraca de comida da vila,
-  despensa e fruteira do trailer, caixote do acampamento) e toco de árvore (beira da estrada). Créditos em assets/licencas.
-  Prints: --refino --so=casa|mercado|toco|sacos ; antes/depois em prints/antes_depois_*.png
-- [x] v0.11 para Windows
+- [x] Frutas, pães e toco escaneados foram testados e retirados (o Davi achou estranho no jogo).
+- [x] Escritas (Label3D) nas paredes das casas trocadas por pichações do GraffitiSet (80% das casas, 1 a 3 cada).
+  Prints: --refino --so=casa|sacos ; antes/depois em prints/antes_depois_*.png
+- [x] v0.12 para Windows (sem frutas/toco, pichações no lugar das escritas)
 
 ## Próximos
 - ouvir o retorno do Davi sobre a v0.9

@@ -4373,48 +4373,6 @@ func _capturar_refino() -> void:
 					n += 1
 		if not achou:
 			print("refino: nenhuma casa achada")
-	# 1b) barraca de comida da vila e um toco na mata
-	if so == "" or so == "mercado":
-		hora = 10.5
-		_atualizar_ceu()
-		var feito := false
-		for reg_i in 8:
-			for l in mundo.lugares_da_regiao(reg_i):
-				if feito or l.tipo != "vila":
-					continue
-				jogador.position = l.pos
-				mundo.atualizar(l.pos)
-				await get_tree().process_frame
-				var mel := _achar_malha("melon001", l.pos, 60.0)
-				if mel == null:
-					continue
-				feito = true
-				_limpar_zumbis_perto(l.pos, 60.0)
-				var fb: Basis = mel.get_parent().global_transform.basis
-				var alvo: Vector3 = mel.global_position + Vector3(0, 0.1, 0)
-				var de: Vector3 = alvo + fb.z * 1.6 + fb.x * 0.5 + Vector3(0, 0.75, 0)
-				_abrir_vista(de, alvo)
-				cam.fov = 55.0
-				cam.current = true
-				cam.look_at_from_position(de, alvo, Vector3.UP)
-				await _salvar("refino_mercado")
-	if so == "" or so == "toco":
-		hora = 9.0
-		_atualizar_ceu()
-		for zz in range(12, 40):
-			var zc := zz * WorldGen.TAM + 20.0
-			mundo.atualizar(mundo.ponto_estrada(zc, 0.0))
-			await get_tree().process_frame
-			var tc := _achar_malha("treestump001", mundo.ponto_estrada(zc, 0.0), 70.0)
-			if tc:
-				var alvo: Vector3 = tc.global_position + Vector3(0, 0.2, 0)
-				var de: Vector3 = alvo + Vector3(1.6, 1.1, 1.4)
-				_abrir_vista(de, alvo)
-				cam.fov = 55.0
-				cam.current = true
-				cam.look_at_from_position(de, alvo, Vector3.UP)
-				await _salvar("refino_toco")
-				break
 	# comboio parado na estrada para o resto
 	var z := 14 * WorldGen.TAM + 20.0
 	comboio.posicionar(z, -0.5, 0.0)

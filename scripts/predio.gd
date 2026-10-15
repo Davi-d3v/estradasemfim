@@ -608,9 +608,9 @@ func _fachada(cor_ext: Color) -> void:
 		for q in 4:
 			B.box(no, Vector3(0.02, 0.4, 0.04), Vector3(hw + 0.31, 2.2, profundidade * 0.15 - 0.3 + q * 0.2), _m("metal", Color(0.3, 0.3, 0.3), 0.5, 0.5))
 	# pichações de verdade (tags) nas paredes de fora
-	if _rng.randf() < 0.6:
-		for q in _rng.randi_range(1, 2):
-			var lado := _rng.randi() % 3
+	if _rng.randf() < 0.8:
+		for q in _rng.randi_range(1, 3):
+			var lado := 0 if _rng.randf() < 0.25 else 1 + _rng.randi() % 2   # mais nas laterais (sem porta)
 			var larg := _rng.randf_range(1.0, 2.0)
 			var y := _rng.randf_range(0.7, 1.5)
 			match lado:
@@ -620,15 +620,3 @@ func _fachada(cor_ext: Color) -> void:
 					Grafite.colar(no, Vector3(hw + 0.02, y, _rng.randf_range(-profundidade * 0.35, profundidade * 0.35)), Vector3.RIGHT, larg, _rng)
 				_:
 					Grafite.colar(no, Vector3(-hw - 0.02, y, _rng.randf_range(-profundidade * 0.35, profundidade * 0.35)), Vector3.LEFT, larg, _rng)
-	if _rng.randf() < 0.6:
-		# pichação ou marca de busca de equipe de resgate na parede (X com números)
-		var pic := Label3D.new()
-		pic.text = ["X\n2", "SOCORRO", "VIVOS AQUI", "NÃO ENTRE", "X 0", "DEUS SALVE"][_rng.randi() % 6]
-		pic.font_size = 120
-		pic.pixel_size = 0.006
-		pic.modulate = [Color(0.75, 0.12, 0.08), Color(0.1, 0.1, 0.1), Color(0.85, 0.75, 0.15)][_rng.randi() % 3]
-		pic.position = Vector3(-largura * 0.2, 1.4, hd + 0.02)
-		pic.rotation.z = _rng.randf_range(-0.1, 0.1)
-		pic.double_sided = false
-		pic.shaded = true
-		no.add_child(pic)
