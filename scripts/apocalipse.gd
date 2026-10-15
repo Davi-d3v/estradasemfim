@@ -210,6 +210,9 @@ static func _barricada_quarentena(n: Node3D, m: WorldGen, z: float, r: RandomNum
 		var b := B.box(n, Vector3(3.6, 0.85, 0.55), a[0] + Vector3(0, 0.42, 0), concreto)
 		b.rotation.y = a[1] + PI * 0.5 + r.randf_range(-0.2, 0.2)
 		var faixa := B.box(n, Vector3(3.62, 0.12, 0.57), a[0] + Vector3(0, 0.7, 0), B.mat(Color(0.85, 0.15, 0.1), 0.7, 0.0, "faixa_barreira"))
+		if r.randf() < 0.7:
+			var nb: Vector3 = b.global_transform.basis.z if b.is_inside_tree() else Basis(Vector3.UP, b.rotation.y).z
+			Grafite.colar(n, a[0] + Vector3(0, 0.38, 0) + nb * 0.27, nb, r.randf_range(1.2, 1.9), r)
 		faixa.rotation.y = b.rotation.y
 	# sacos de areia e arame farpado no acostamento
 	for lado in [-1.0, 1.0]:

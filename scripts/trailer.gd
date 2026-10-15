@@ -500,6 +500,13 @@ func _interior_detalhes(r: Node3D, hz: float, hw: float, escuro: Material) -> vo
 		B.box(r, Vector3(0.1, 0.07, 0.28), Vector3(0.35 + k * 0.12, by + 0.09, 0.42), bota)
 	B.box(r, Vector3(0.28, 0.16, 0.14), Vector3(0.45, by + 0.14, 1.0), B.mat(Color(0.25, 0.3, 0.18), 0.6, 0.3, "caixa_municao"))
 	B.box(r, Vector3(0.06, 0.03, 0.1), Vector3(0.45, by + 0.235, 1.0), escuro)
+	# fruteira em cima do armário: melancia, maçãs e uma baguete
+	var rf := RandomNumberGenerator.new()
+	rf.seed = 77
+	B.cyl(r, 0.13, 0.04, Vector3(0.05, BASE_Y + 0.68, hz - 0.36), B.mat(Color(0.5, 0.35, 0.2), 0.8), Vector3.ZERO, 14, 0.16)
+	Objetos3D.monte(r, Vector3(0.05, BASE_Y + 0.7, hz - 0.36), rf, 4, 0.07)
+	Objetos3D.por(r, "baguete", Vector3(0.18, BASE_Y + 0.665, hz - 0.42), 70.0, 1.0, 15.0)
+	Objetos3D.por(r, "melancia", Vector3(-0.42, BASE_Y + 0.055, 0.55), 20.0, 0.95, 15.0)
 	# vasinho com uma muda na prateleira alta
 	B.cyl(r, 0.05, 0.08, Vector3(-0.2, 1.63, hz - 0.25), B.mat(Color(0.6, 0.32, 0.2), 0.9), Vector3.ZERO, 10, 0.06)
 	for k in 5:
@@ -615,7 +622,10 @@ func _mod_despensa(nivel: int, cond: float) -> void:
 						B.cyl(r, 0.04, 0.12, Vector3(hw + 0.06, y0 + 0.08, zc + dz), B.mat(Color(0.75, 0.25, 0.15), 0.3), Vector3.ZERO, 10)
 						B.box(r, Vector3(0.06, 0.09, 0.06), Vector3(hw + 0.06, y0 + 0.3, zc + dz), B.mat(Color(0.9, 0.9, 0.88), 0.5))
 					3:
-						B.box(r, Vector3(0.1, 0.08, 0.1), Vector3(hw + 0.07, y0 + 0.06, zc + dz), B.mat(Color(0.82, 0.1, 0.08), 0.5))
+						if k == 0:
+							Objetos3D.por(r, "pao", Vector3(hw + 0.07, y0 + 0.02, zc + dz), 30.0, 0.85, 20.0)
+						else:
+							Objetos3D.por(r, "maca", Vector3(hw + 0.07, y0 + 0.02, zc + dz), 0.0, 1.0, 20.0)
 						B.cyl(r, 0.035, 0.14, Vector3(hw + 0.06, y0 + 0.32, zc + dz), B.mat(Color(0.25, 0.45, 0.2), 0.4), Vector3.ZERO, 8)
 		else:
 			B.box(r, Vector3(0.022, alt - 0.04, larg - 0.04), Vector3(hw + 0.02, y0 + alt * 0.5, zc), preto_porta(cond))

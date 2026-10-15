@@ -10,3 +10,8 @@ Sons:
 - sons/*.ogg — sintetizados para o jogo (tools/gerar_sons.py), sem licença de terceiros
 - sons/kenney/ — motor, impacto, derrapagem, passos e ambiente dos Starter Kits da Kenney (CC0;
   github.com/KenneyNL/Starter-Kit-Racing, Starter-Kit-FPS, Starter-Kit-City-Builder)
+Texturas e modelos escaneados (ambientCG, CC0 — https://ambientcg.com, enviados pelo Davi):
+- texturas/tijolo (Bricks001), reboco (PaintedPlaster014), telha (RoofingTiles012B), telha_velha (RoofingTiles014D),
+  concreto (Concrete023), metal (Metal046B), asfalto (Road008B), grade (MetalWalkway002), pichacao (GraffitiSet001)
+- modelos/apple001, bread001, bread011, melon001, treestump001 (3DApple001, 3DBread001, 3DBread011, 3DMelon001,
+  3DTreeStump001), reduzidos com tools/reduzir_modelos.gd

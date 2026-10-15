@@ -113,6 +113,11 @@ func _ready() -> void:
 	_mat_estrada = ShaderMaterial.new()
 	_mat_estrada.shader = load("res://shaders/road.gdshader")
 	_mat_estrada.set_shader_parameter("largura", LARG_ESTRADA)
+	if Texturas.usar_fotos and ResourceLoader.exists("res://assets/texturas/asfalto/cor.jpg"):
+		_mat_estrada.set_shader_parameter("tem_tex", true)
+		_mat_estrada.set_shader_parameter("tex_cor", load("res://assets/texturas/asfalto/cor.jpg"))
+		_mat_estrada.set_shader_parameter("tex_normal", load("res://assets/texturas/asfalto/normal.jpg"))
+		_mat_estrada.set_shader_parameter("tex_rough", load("res://assets/texturas/asfalto/rugosidade.jpg"))
 	_mat_terreno = ShaderMaterial.new()
 	_mat_terreno.shader = load("res://shaders/terrain.gdshader")
 	mat_capim = ShaderMaterial.new()
@@ -1112,6 +1117,13 @@ func _arvores(n: Node3D, z0: float, k: int) -> void:
 					_arvore_morta(n, Vector3(x, y - 0.2, z), r)
 				_:
 					_arvore(n, Vector3(x, y - 0.2, z), r)
+	# tocos de árvore cortada (madeireiros, lenha) perto da estrada
+	for i in (1 if r.randf() < 0.55 else 0):
+		var zt := z0 + r.randf() * TAM
+		var xt := centro_x(zt) + (1.0 if r.randf() > 0.5 else -1.0) * r.randf_range(9.0, 35.0)
+		if perto_de_feature(xt, zt, 4.0):
+			continue
+		Objetos3D.por(n, "toco", Vector3(xt, altura(xt, zt) - 0.1, zt), r.randf() * 360.0, r.randf_range(1.8, 2.4), 60.0)
 	# arbustos baixos
 	for i in int(r.randi_range(4, 10) * clampf(fator, 0.3, 1.5)):
 		var z := z0 + r.randf() * TAM

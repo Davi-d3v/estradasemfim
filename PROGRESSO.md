@@ -117,5 +117,15 @@
   Prints: --refino [--so=casa|fogo|cabine|trailer|pulo|sacos|horda]
 - [x] v0.10 para Windows
 
+## Rodada v0.11 (texturas reais do ambientCG enviadas pelo Davi)
+- [x] assets/texturas: tijolo, reboco (com massa caída controlada por área), telha e telha velha (casas abandonadas),
+  concreto, metal, asfalto (pista inteira com faixa amarela; bordas viram brancas). Shader superficie.gdshader com
+  cor+normal+rugosidade projetadas no espaço do objeto (telhas acompanham a casa); road.gdshader idem.
+- [x] Pichações (scripts/grafite.gd): 16 tags do GraffitiSet001 coladas nas casas e nas barreiras de quarentena.
+- [x] Modelos escaneados reduzidos (tools/reduzir_modelos.gd): maçã, pão, baguete, melancia (barraca de comida da vila,
+  despensa e fruteira do trailer, caixote do acampamento) e toco de árvore (beira da estrada). Créditos em assets/licencas.
+  Prints: --refino --so=casa|mercado|toco|sacos ; antes/depois em prints/antes_depois_*.png
+- [x] v0.11 para Windows
+
 ## Próximos
 - ouvir o retorno do Davi sobre a v0.9

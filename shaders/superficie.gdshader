@@ -10,8 +10,20 @@ uniform float metalico = 0.0;
 uniform float sujeira = 0.4;
 uniform float descascado = 0.0;    // reboco externo: tinta e massa caindo, tijolo aparecendo
 uniform float relevo = 1.0;
+// texturas fotográficas (ambientCG, CC0): cor, normal e rugosidade, projetadas em
+// coordenadas do objeto em metros (escala = metros por repetição)
+uniform bool tem_tex = false;
+uniform sampler2D tex_cor : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D tex_normal : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D tex_rough : hint_default_white, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform vec2 escala = vec2(2.0);
+uniform vec3 media : source_color = vec3(0.5);       // cor média da foto (para tingir sem mudar o brilho)
+uniform float tingir = 0.0;           // 1 = a cor do material manda (reboco pintado, metal pintado)
+uniform float massa_caida = 0.0;      // reboco: quanto da massa caída da foto aparece (0 = parede inteira)
 varying vec3 wpos;
 varying vec3 wnorm;
+varying vec3 opos;
+varying vec3 onorm;
 
 float hash(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 float noise(vec2 p) {
@@ -23,6 +35,8 @@ float fbm(vec2 p) { float v = 0.0; float a = 0.5; for (int i = 0; i < 4; i++) { 
 void vertex() {
 	wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	wnorm = normalize(mat3(MODEL_MATRIX) * NORMAL);
+	opos = VERTEX;
+	onorm = NORMAL;
 }
 
 // coordenada 2D na face dominante: (horizontal, vertical) para paredes, (x, z) para pisos
@@ -59,7 +73,42 @@ void fragment() {
 	float manchas = fbm(uv * 0.6);
 	float h = 0.0;          // altura do relevo (m)
 	float ao = 1.0;         // sombra nas frestas
-	if (padrao == 0 || padrao == 6) {
+	if (tem_tex) {
+		// projeção na face dominante, no espaço do objeto (telhas acompanham a casa girada)
+		vec3 an = abs(onorm);
+		vec2 st; vec3 T; vec3 Bt;
+		if (an.y > 0.7) { st = vec2(opos.x, -opos.z); T = vec3(1, 0, 0); Bt = vec3(0, 0, 1); }
+		else if (an.x > an.z) { st = vec2(opos.z, -opos.y); T = vec3(0, 0, 1); Bt = vec3(0, 1, 0); }
+		else { st = vec2(opos.x, -opos.y); T = vec3(1, 0, 0); Bt = vec3(0, 1, 0); }
+		st /= escala;
+		vec3 tc = texture(tex_cor, st).rgb;
+		vec2 nxy = texture(tex_normal, st).rg * 2.0 - 1.0;
+		float nz = sqrt(max(0.0, 1.0 - dot(nxy, nxy)));
+		vec3 N0 = normalize(onorm);
+		T = normalize(T - N0 * dot(T, N0));
+		Bt = normalize(Bt - N0 * dot(Bt, N0) - T * dot(Bt, T));
+		vec3 nobj = normalize(T * nxy.x + Bt * nxy.y + N0 * nz);
+		float lum = dot(tc, vec3(0.333));
+		float tinta = 1.0;
+		if (massa_caida >= 0.0 && padrao == 0) {
+			// reboco: onde a foto mostra massa caída, só deixa aparecer em algumas áreas
+			float area = smoothstep(0.45, 0.62, fbm(uv * 0.22 + 31.0) + massa_caida * 0.25 - 0.12);
+			float inteiro = smoothstep(0.4, 0.55, lum);           // 1 = massa/tinta, 0 = tijolo à mostra
+			float cobre = (1.0 - area) * (1.0 - inteiro);
+			tc = mix(tc, vec3(0.62, 0.61, 0.58) * (0.9 + grao * 0.12 + (manchas - 0.5) * 0.1), cobre);
+			nobj = normalize(mix(nobj, N0, cobre));
+			tinta = max(inteiro, cobre);
+		}
+		c = tc * mix(vec3(1.0), cor / max(media, vec3(0.05)), tingir * tinta);
+		r = texture(tex_rough, st).r * mix(1.0, rugosidade / 0.85, 0.3);
+		if (!chao) {
+			float pe = 1.0 - smoothstep(0.0, 0.55 + noise(vec2(uv.x * 3.0, 0.0)) * 0.3, fract(wpos.y / 3.0) * 3.0);
+			c = mix(c, c * vec3(0.55, 0.47, 0.38), pe * sujeira * 0.8);
+			float escorrido = smoothstep(0.55, 0.9, noise(vec2(uv.x * 6.0, uv.y * 0.35))) * smoothstep(0.3, 0.7, fract(wpos.y / 3.0));
+			c = mix(c, c * vec3(0.62, 0.6, 0.56), escorrido * sujeira * 0.6);
+		}
+		NORMAL = normalize(mat3(VIEW_MATRIX) * (mat3(MODEL_MATRIX) * nobj));
+	} else if (padrao == 0 || padrao == 6) {
 		// reboco / concreto: textura de massa, manchas, rachaduras, umidade embaixo
 		float massa = fbm(uv * 7.0);
 		c *= 0.86 + manchas * 0.22 + grao * 0.05 + (massa - 0.5) * 0.08;

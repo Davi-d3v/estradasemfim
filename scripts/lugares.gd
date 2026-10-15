@@ -208,7 +208,7 @@ static func _varal(p: Node3D, a: Vector3, b: Vector3, r: RandomNumberGenerator) 
 		var roupa := B.box(p, Vector3(0.45, 0.6, 0.02), q, B.mat(Color.from_hsv(r.randf(), 0.5, 0.6), 0.95))
 		roupa.look_at_from_position(q, q + (b - a).cross(Vector3.UP), Vector3.UP)
 
-static func _barraca(p: Node3D, pos: Vector3, rot: float, cor_lona: Color, mercadoria: Array, r: RandomNumberGenerator) -> Node3D:
+static func _barraca(p: Node3D, pos: Vector3, rot: float, cor_lona: Color, mercadoria: Array, r: RandomNumberGenerator, comida := false) -> Node3D:
 	var b := Node3D.new()
 	b.position = pos
 	b.rotation.y = rot
@@ -221,7 +221,15 @@ static func _barraca(p: Node3D, pos: Vector3, rot: float, cor_lona: Color, merca
 	lona.rotation.x = 0.12
 	B.box(b, Vector3(2.8, 0.9, 0.7), Vector3(0, 0.45, 0.6), madeira)
 	for k in 5:
-		B.box(b, Vector3(0.45, 0.3, 0.4), Vector3(-1.0 + k * 0.5, 1.05, 0.6), B.mat(mercadoria[k % mercadoria.size()], 0.8))
+		if comida:
+			# caixotes de feira com maçã, pão e melancia de verdade
+			B.box(b, Vector3(0.45, 0.12, 0.4), Vector3(-1.0 + k * 0.5, 0.96, 0.6), B.mat(Color(0.55, 0.42, 0.27), 0.9, 0.0, "caixote"))
+			if k == 2:
+				Objetos3D.por(b, "melancia", Vector3(-1.0 + k * 0.5, 1.02, 0.6), r.randf() * 360.0, 1.0, 35.0)
+			else:
+				Objetos3D.monte(b, Vector3(-1.0 + k * 0.5, 1.02, 0.6), r, 6, 0.14)
+		else:
+			B.box(b, Vector3(0.45, 0.3, 0.4), Vector3(-1.0 + k * 0.5, 1.05, 0.6), B.mat(mercadoria[k % mercadoria.size()], 0.8))
 	return b
 
 static func _vila(p: Node3D, f: Dictionary, r: RandomNumberGenerator, m: WorldGen) -> void:
@@ -309,7 +317,7 @@ static func _vila(p: Node3D, f: Dictionary, r: RandomNumberGenerator, m: WorldGe
 	var comida := [Color(0.85, 0.5, 0.12), Color(0.3, 0.5, 0.2), Color(0.6, 0.15, 0.1)]
 	var pecas := [Color(0.35, 0.35, 0.38), Color(0.5, 0.42, 0.3), Color(0.2, 0.2, 0.2)]
 	var remed := [Color(0.9, 0.9, 0.88), Color(0.8, 0.15, 0.12), Color(0.3, 0.55, 0.75)]
-	_barraca(p, Vector3(-7.0, 0, -2.5), 0.0, Color(0.2, 0.35, 0.45), comida, r)
+	_barraca(p, Vector3(-7.0, 0, -2.5), 0.0, Color(0.2, 0.35, 0.45), comida, r, true)
 	_barraca(p, Vector3(-11.5, 0, -2.5), 0.0, Color(0.5, 0.35, 0.15), pecas, r)
 	_barraca(p, Vector3(7.0, 0, -2.5), 0.0, Color(0.45, 0.15, 0.15), remed, r)
 	_pessoa(p, Vector3(-7.0, 0, -3.0), 0.0, "vendedor", r, m, j.id + ":vendedor")

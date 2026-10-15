@@ -308,6 +308,14 @@ func _fogueira() -> void:
 	B.cyl(self, 0.004, 0.25, f + Vector3(0, 1.2, 0), ferro, Vector3.ZERO, 4)
 	B.cyl(self, 0.12, 0.13, f + Vector3(0, 1.0, 0), ferro, Vector3.ZERO, 12, 0.13)
 	B.cyl(self, 0.13, 0.015, f + Vector3(0, 1.07, 0), ferro, Vector3.ZERO, 12)
+	# caixote com comida perto da fogueira
+	var cx := f + tr.global_transform.basis * Vector3(1.6, 0, -1.7)
+	cx.y = _chao(cx)
+	B.box(self, Vector3(0.5, 0.3, 0.38), cx + Vector3(0, 0.15, 0), B.mat(Color(0.5, 0.36, 0.22), 0.9, 0.0, "caixote"))
+	var rc := RandomNumberGenerator.new()
+	rc.seed = 5
+	Objetos3D.monte(self, cx + Vector3(0, 0.3, 0), rc, 5, 0.12)
+	Objetos3D.por(self, "melancia", cx + Vector3(0.45, 0, 0.1), 40.0, 1.0, 40.0)
 	# troncos de lenha empilhados
 	for i in 6:
 		B.cyl(self, 0.11, 0.9, f + tr.global_transform.basis * Vector3(-2.6, 0.11 + (i / 3) * 0.2, -2.4 + (i % 3) * 0.23), lenha, Vector3(0, 0, 90) + Vector3(0, rad_to_deg(tr.global_rotation.y), 0), 6)

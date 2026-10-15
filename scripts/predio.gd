@@ -396,7 +396,7 @@ func _torre_andar(no: Node3D, k: int, y0: float, segs: Array) -> void:
 func _telhado(y: float) -> void:
 	var hw := largura * 0.5 + 0.4
 	var hd := profundidade * 0.5 + 0.4
-	var telha := _m("telha", Color(0.52, 0.24, 0.15))
+	var telha := _m("telha_velha" if condicao < 0.35 else "telha", Color(0.52, 0.24, 0.15))
 	if tipo in ["loja", "apto"]:
 		B.box(telhado, Vector3(largura + 0.1, 0.25, profundidade + 0.1), Vector3(0, y + 0.1, 0), _m("concreto", Color(0.55, 0.53, 0.5)))
 		B.box(telhado, Vector3(largura + 0.1, 0.8, 0.15), Vector3(0, y + 0.5, profundidade * 0.5), _m("concreto", Color(0.55, 0.53, 0.5)))
@@ -607,6 +607,19 @@ func _fachada(cor_ext: Color) -> void:
 		B.box(no, Vector3(0.3, 0.5, 0.8), Vector3(hw + 0.15, 2.2, profundidade * 0.15), _m("esmalte", Color(0.85, 0.85, 0.82)))
 		for q in 4:
 			B.box(no, Vector3(0.02, 0.4, 0.04), Vector3(hw + 0.31, 2.2, profundidade * 0.15 - 0.3 + q * 0.2), _m("metal", Color(0.3, 0.3, 0.3), 0.5, 0.5))
+	# pichações de verdade (tags) nas paredes de fora
+	if _rng.randf() < 0.6:
+		for q in _rng.randi_range(1, 2):
+			var lado := _rng.randi() % 3
+			var larg := _rng.randf_range(1.0, 2.0)
+			var y := _rng.randf_range(0.7, 1.5)
+			match lado:
+				0:
+					Grafite.colar(no, Vector3(_rng.randf_range(-largura * 0.35, largura * 0.35), y, hd + 0.02), Vector3.BACK, larg, _rng)
+				1:
+					Grafite.colar(no, Vector3(hw + 0.02, y, _rng.randf_range(-profundidade * 0.35, profundidade * 0.35)), Vector3.RIGHT, larg, _rng)
+				_:
+					Grafite.colar(no, Vector3(-hw - 0.02, y, _rng.randf_range(-profundidade * 0.35, profundidade * 0.35)), Vector3.LEFT, larg, _rng)
 	if _rng.randf() < 0.6:
 		# pichação ou marca de busca de equipe de resgate na parede (X com números)
 		var pic := Label3D.new()

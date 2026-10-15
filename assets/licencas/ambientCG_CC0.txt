@@ -1,0 +1,4 @@
+ambientCG (https://ambientcg.com) — todos os materiais e modelos são CC0 1.0 Universal (domínio público).
+https://docs.ambientcg.com/license/
+Usados: Bricks001, PaintedPlaster014, RoofingTiles012B, RoofingTiles014D, Concrete023, Metal046B, Road008B,
+MetalWalkway002, GraffitiSet001, 3DApple001, 3DBread001, 3DBread011, 3DMelon001, 3DTreeStump001.
