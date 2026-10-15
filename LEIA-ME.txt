@@ -23,10 +23,10 @@ CONTROLES
 
 O tutorial aparece no primeiro jogo. Enter pula um passo; Backspace encerra.
 
-NOVIDADES v0.12 (texturas reais)
+NOVIDADES v0.13 (texturas reais)
   - Paredes, tijolos, telhados, concreto, metal e asfalto com fotos do ambientCG (CC0).
   - Pichações de verdade nas casas e barreiras.
-  - Escritas nas paredes das casas trocadas por pichações de verdade.
+  - Escritas nas paredes das casas trocadas por pichações de verdade, só em parede inteira (longe de portas e janelas).
 
 NOVIDADES v0.10 (refino)
   - Pular com Espaço (a pé).
