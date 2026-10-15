@@ -2,9 +2,9 @@
 ::res://::1792097380
 CLAUDE.md::TextFile::-1::1792000946::0::1::::<><><>0<>0<><>::
 export_presets.cfg::TextFile::-1::1791856619::0::1::::<><><>0<>0<><>::
-PROGRESSO.md::TextFile::-1::1792088200::0::1::::<><><>0<>0<><>::
+PROGRESSO.md::TextFile::-1::1792097540::0::1::::<><><>0<>0<><>::
 ::res://assets/::1792087647
-LEIA-ME.txt::TextFile::-1::1792088200::0::1::::<><><>0<>0<><>::
+LEIA-ME.txt::TextFile::-1::1792097540::0::1::::<><><>0<>0<><>::
 ::res://assets/animais/::1791990631
 Deer.gltf::PackedScene::2804924295555773399::1791928422::1791928456::1::::<><><>0<>0<>c684f36b1f27d3b1764c0e41f4997f8f<>res://.godot/imported/Deer.gltf-f34ca44c58932d7e8753cc444b67037f.scn::
 Fox.gltf::PackedScene::3449848165699509315::1791928422::1791928456::1::::<><><>0<>0<>7be979bf76f964fd9da4582f14c6ecbb<>res://.godot/imported/Fox.gltf-93c41cc88a9f7ec44385300b7b9f71a2.scn::
@@ -60,7 +60,7 @@ wrench_B.gltf::PackedScene::5453841899661816092::1792072717::1792072722::1::::<>
 ambientCG_CC0.txt::TextFile::-1::1792071251::0::1::::<><><>0<>0<><>::
 KayKit_RPGToolsBits_License.txt::TextFile::-1::1792072717::0::1::::<><><>0<>0<><>::
 Kenney_SurvivalKit_License.txt::TextFile::-1::1791928420::0::1::::<><><>0<>0<><>::
-PolyHaven_CC0.txt::TextFile::-1::1792088200::0::1::::<><><>0<>0<><>::
+PolyHaven_CC0.txt::TextFile::-1::1792097540::0::1::::<><><>0<>0<><>::
 Quaternius_Animals_License.txt::TextFile::-1::1791928422::0::1::::<><><>0<>0<><>::
 Quaternius_ModularOutfits_License.txt::TextFile::-1::1791932103::0::1::::<><><>0<>0<><>::
 Quaternius_UniversalBaseCharacters_License.txt::TextFile::-1::1791932103::0::1::::<><><>0<>0<><>::
@@ -318,7 +318,7 @@ rugosidade.jpg::CompressedTexture2D::7918365859438670904::1792071229::1792071229
 cor.jpg::CompressedTexture2D::7759480414169653857::1792071229::1792071229::1::::<><><>0<>0<>af530100edc188aeaf7b4be885bb54b7<>res://.godot/imported/cor.jpg-864a5dbe79a15e6c12f7987bce5be4b0.s3tc.ctex::
 normal.jpg::CompressedTexture2D::3744606854590753491::1792071229::1792071229::1::::<><><>0<>0<>75d186f9060bf9ec1d1e4e58c996eaac<>res://.godot/imported/normal.jpg-d91f0c711aa3cd0b87852f7d1b490e21.s3tc.ctex::
 rugosidade.jpg::CompressedTexture2D::6868025236240401962::1792071229::1792071229::1::::<><><>0<>0<>fc71c7f1bd0285e3084eb3afe645ea19<>res://.godot/imported/rugosidade.jpg-86ece4e09c5faee468a97448e5a9f2c5.s3tc.ctex::
-::res://prints/::1792096790
+::res://prints/::1792097386
 119_zumbis_modelo.png::CompressedTexture2D::3994063043350873346::1791932959::1791933203::1::::<><><>0<>0<>c90f20363dbe56b15646b6dc943020a2<>res://.godot/imported/119_zumbis_modelo.png-51a0f864e2cef78f8dc899c8ec972707.ctex::
 120_combate_de_perto.png::CompressedTexture2D::4486773025121629619::1791933137::1791933203::1::::<><><>0<>0<>97a643ed87ba4695f0d100161342f15b<>res://.godot/imported/120_combate_de_perto.png-9c432cbecf67667c60b8c14f83875c20.ctex::
 121b_vila_moradores.png::CompressedTexture2D::91921045007968033::1791932829::1791932910::1::::<><><>0<>0<>41cda9640106e400d15cacc17341f6c6<>res://.godot/imported/121b_vila_moradores.png-837f27ef42c94ea16ae9ddf30122c993.ctex::
