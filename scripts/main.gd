@@ -284,6 +284,8 @@ func _ready() -> void:
 			_capturar_vida()
 		elif "--cachorro" in OS.get_cmdline_user_args():
 			_capturar_cachorro()
+		elif "--comboio-evoluido" in OS.get_cmdline_user_args():
+			_capturar_evoluido()
 		elif "--acampamento" in OS.get_cmdline_user_args():
 			_capturar_acampamento()
 		elif "--refino" in OS.get_cmdline_user_args():
@@ -4145,6 +4147,68 @@ func _capturar_exploracao() -> void:
 	_atualizar_hud()
 	await _salvar("explorar_binoculo")
 	exploracao._alternar_zoom()
+	get_tree().quit()
+
+## Foto de divulgação: o comboio no máximo (picape e trailer com tudo, cinco reboques), fim de tarde.
+func _capturar_evoluido() -> void:
+	comboio.set_physics_process(false)
+	var cam := Camera3D.new()
+	cam.far = 2500.0
+	cam.near = 0.05
+	add_child(cam)
+	hud.visible = false
+	hora = 17.35
+	_atualizar_ceu()
+	for slot in picape.config:
+		picape.config[slot].nivel = Pickup.MODULOS[slot].nivel_max
+		picape.config[slot].condicao = 0.85
+	picape.trofeus = 4
+	picape.reconstruir()
+	for slot in trailer.config:
+		trailer.config[slot].nivel = Trailer.MODULOS[trailer.config[slot].id].nivel_max
+		trailer.config[slot].condicao = 0.85
+	trailer.reconstruir()
+	var zc := 1460.0
+	var dz := mundo.direcao(zc)
+	var pc := mundo.ponto_estrada(zc, -0.6)
+	comboio.posicionar_livre(pc, atan2(dz.x, dz.z), 0.0)
+	for t in ["apartamentos", "oficina", "estufa", "hospital", "torreta"]:
+		comboio.engatar(_novo_reboque(t, 3, 0.9), true)
+	comboio.posicionar_livre(pc, atan2(dz.x, dz.z), 0.0)
+	comboio_extra.nome_comboio = "ESTRADA SEM FIM"
+	comboio_extra.trofeus = 4
+	var nomes := [["Tião", "vigia"], ["Marta", "medico"], ["Beto", "mecanico"], ["Rita", "agricultor"], ["Zeca", "batedor"]]
+	for i in nomes.size():
+		var rc := Recrutas.novo(nomes[i][0], nomes[i][1], 300 + i)
+		rc.dias = 30
+		base.lista.append(rc)
+	comboio_extra.aplicar_visual()
+	jogador.position = pc + Vector3(30, 0, 0)
+	mundo.atualizar(pc)
+	for f in 3:
+		await get_tree().process_frame
+	_limpar_zumbis_perto(pc, 200.0)
+	jogador.visible = false
+	var lado := Vector3(dz.z, 0, -dz.x)
+	var ult: Node3D = comboio.cadeia[comboio.cadeia.size() - 1]
+	var meio: Vector3 = (picape.global_position + ult.global_position) * 0.5
+	# 1) três quartos de frente, alto
+	var de := picape.global_position + dz * 14.0 + lado * 13.0 + Vector3(0, 6.5, 0)
+	_abrir_vista(de, meio)
+	cam.fov = 50.0
+	cam.current = true
+	cam.look_at_from_position(de, meio + Vector3(0, 0.5, 0), Vector3.UP)
+	await _salvar("comboio_evoluido")
+	# 2) rente ao asfalto, de frente para a picape
+	var de2 := picape.global_position + dz * 7.5 + lado * 3.2 + Vector3(0, 0.7, 0)
+	cam.fov = 58.0
+	cam.look_at_from_position(de2, picape.global_position - dz * 6.0 + Vector3(0, 1.4, 0), Vector3.UP)
+	await _salvar("comboio_evoluido_frente")
+	# 3) de lado, o comboio inteiro
+	var de3 := meio + lado * 26.0 + Vector3(0, 3.5, 0)
+	cam.fov = 55.0
+	cam.look_at_from_position(de3, meio + Vector3(0, 1.0, 0), Vector3.UP)
+	await _salvar("comboio_evoluido_lado")
 	get_tree().quit()
 
 ## Prints da etapa 8: os 4 reboques raros, o comboio com nome e troféus, pneu furado e o rádio no mapa.
