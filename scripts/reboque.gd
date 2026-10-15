@@ -395,12 +395,16 @@ func _corpo_oficina() -> void:
 			B.box(r, Vector3(0.05, 0.86, 0.05), Vector3(s * 0.75, 1.17, dz), aco)
 	B.box(r, Vector3(0.16, 0.14, 0.22), Vector3(0.55, 1.73, 0.75), B.mat(Color(0.2, 0.35, 0.55), 0.5, 0.5))
 	B.box(r, Vector3(1.4, 0.03, 0.4), Vector3(0, 1.1, 0.6), madeira)
-	for i in 4:
-		B.box(r, Vector3(0.12, 0.03, 0.03), Vector3(-0.5 + i * 0.25, 1.67, 0.45), aco, Vector3(0, i * 25.0, 0))
+	# ferramentas de verdade (KayKit) em cima da bancada e no painel
+	Kit.por(r, "hammer", Vector3(-0.45, 1.66, 0.5), Vector3(90, 35, 0), 1.0, 30.0)
+	Kit.por(r, "wrench_A", Vector3(-0.15, 1.655, 0.45), Vector3(90, -20, 0), 1.0, 30.0)
+	Kit.por(r, "handplane", Vector3(0.15, 1.65, 0.6), Vector3(0, 70, 0), 1.0, 30.0)
 	# painel de ferramentas
 	B.box(r, Vector3(1.6, 0.9, 0.03), Vector3(0, 2.1, 1.0), madeira)
-	for i in 8:
-		B.box(r, Vector3(0.04, 0.25, 0.02), Vector3(-0.65 + i * 0.18, 2.15, 0.98), aco, Vector3(0, 0, _rng.randf_range(-20, 20)))
+	Kit.painel(r, Vector3(0, 2.15, 0.97), 180.0, _rng, 6, 1.4)
+	# bigorna e tenaz no assoalho
+	Kit.por(r, "anvil", Vector3(-0.15, 0.74, -0.15), Vector3(0, 90, 0), 1.0, 40.0)
+	Kit.por(r, "tongs", Vector3(-0.15, 1.08, -0.05), Vector3(90, 10, 0), 1.0, 25.0)
 	# gerador
 	var ger := Node3D.new()
 	ger.position = Vector3(-0.5, 0.74, -1.0)

@@ -15,6 +15,12 @@ const FOTOS := {
 	"telha": {"pasta": "telha", "escala": Vector2(3.0, 3.0), "media": Color(0.559, 0.336, 0.242), "tingir": 0.2},
 	"telha_velha": {"pasta": "telha_velha", "escala": Vector2(2.8, 2.8), "media": Color(0.366, 0.306, 0.242), "tingir": 0.0},
 	"concreto": {"pasta": "concreto", "escala": Vector2(2.5, 2.5), "media": Color(0.513, 0.512, 0.515), "tingir": 0.8},
+	# Screaming Brain Studios — Tiny Texture Pack 2 (512 px; normal e rugosidade geradas da cor)
+	"tabuas": {"pasta": "tabuas_sbs", "escala": Vector2(2.0, 2.0), "media": Color(0.598, 0.369, 0.237), "tingir": 1.0},
+	"porta": {"pasta": "porta_sbs", "escala": Vector2(1.2, 1.2), "media": Color(0.33, 0.226, 0.127), "tingir": 1.0},
+	"piso_madeira": {"pasta": "piso_madeira_sbs", "escala": Vector2(2.0, 2.0), "media": Color(0.771, 0.707, 0.499), "tingir": 1.0},
+	"piso_ceramica": {"pasta": "ceramica_sbs", "escala": Vector2(1.6, 1.6), "media": Color(0.605, 0.574, 0.558), "tingir": 0.3},
+	"madeira_movel": {"pasta": "movel_sbs", "escala": Vector2(1.2, 1.2), "media": Color(0.737, 0.404, 0.18), "tingir": 1.0},
 	"metal": {"pasta": "metal", "escala": Vector2(1.6, 1.6), "media": Color(0.246, 0.246, 0.247), "tingir": 1.0},
 }
 static var usar_fotos := true

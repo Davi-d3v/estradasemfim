@@ -13,3 +13,8 @@ Sons:
 Texturas e modelos escaneados (ambientCG, CC0 — https://ambientcg.com, enviados pelo Davi):
 - texturas/tijolo (Bricks001), reboco (PaintedPlaster014), telha (RoofingTiles012B), telha_velha (RoofingTiles014D),
   concreto (Concrete023), metal (Metal046B), asfalto (Road008B), grade (MetalWalkway002), pichacao (GraffitiSet001)
+Texturas Screaming Brain Studios — Tiny Texture Pack 2 (512 px), enviadas pelo Davi:
+- texturas/tabuas_sbs (Wood_15), porta_sbs (Wood_11), piso_madeira_sbs (Wood_09), ceramica_sbs (Tile_07), movel_sbs (Wood_03);
+  normal e rugosidade geradas a partir da cor. (Só 80 das 170 texturas saíram do .rar aqui.)
+Modelos KayKit RPG Tools Bits 1.0 (Kay Lousberg, www.kaylousberg.com, CC0) em kaykit/: bigorna, rebolo, ferramentas,
+  balde, lampião, cordas, cadernos e mapas. Licença em licencas/KayKit_RPGToolsBits_License.txt

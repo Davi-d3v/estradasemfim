@@ -312,6 +312,16 @@ func _fogueira() -> void:
 	var cx := f + tr.global_transform.basis * Vector3(1.6, 0, -1.7)
 	cx.y = _chao(cx)
 	B.box(self, Vector3(0.5, 0.3, 0.38), cx + Vector3(0, 0.15, 0), B.mat(Color(0.5, 0.36, 0.22), 0.9, 0.0, "caixote"))
+	# cepo com machado cravado, balde d'água e lampião no caixote (KayKit)
+	var cepo := f + tr.global_transform.basis * Vector3(-2.2, 0, -1.4)
+	cepo.y = _chao(cepo)
+	B.cyl(self, 0.24, 0.42, cepo + Vector3(0, 0.21, 0), B.mat(Color(0.38, 0.27, 0.17), 0.95, 0.0, "cepo"), Vector3.ZERO, 10)
+	B.cyl(self, 0.235, 0.01, cepo + Vector3(0, 0.425, 0), B.mat(Color(0.62, 0.48, 0.3), 0.9, 0.0, "cepo_topo"), Vector3.ZERO, 10)
+	Kit.por(self, "axe", cepo + Vector3(0, 0.53, 0), Vector3(0, rad_to_deg(tr.global_rotation.y) + 30.0, -25))
+	var bal := f + tr.global_transform.basis * Vector3(1.3, 0, 1.2)
+	bal.y = _chao(bal)
+	Kit.por(self, "bucket_metal", bal, Vector3(0, 20, 0))
+	Kit.por(self, "lantern", cx + Vector3(0.1, 0.3, 0), Vector3(0, 0, 0))
 	# troncos de lenha empilhados
 	for i in 6:
 		B.cyl(self, 0.11, 0.9, f + tr.global_transform.basis * Vector3(-2.6, 0.11 + (i / 3) * 0.2, -2.4 + (i % 3) * 0.23), lenha, Vector3(0, 0, 90) + Vector3(0, rad_to_deg(tr.global_rotation.y), 0), 6)

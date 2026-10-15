@@ -491,6 +491,14 @@ static func _ferro_velho(p: Node3D, f: Dictionary, r: RandomNumberGenerator, m: 
 	var teto := B.box(gal, Vector3(10.6, 0.08, 9.6), Vector3(0, 4.3, 0), chapa)
 	teto.rotation.x = 0.06
 	B.box(gal, Vector3(3.0, 0.9, 1.0), Vector3(-2.5, 0.45, -3.5), B.mat(Color(0.35, 0.3, 0.25), 0.8))  # bancada
+	Kit.por(gal, "saw", Vector3(-3.2, 0.91, -3.4), Vector3(90, 10, 0))
+	Kit.por(gal, "hammer", Vector3(-2.4, 0.91, -3.3), Vector3(90, -40, 0))
+	Kit.por(gal, "handdrill", Vector3(-1.8, 0.91, -3.6), Vector3(90, 70, 0))
+	Kit.por(gal, "grindstone", Vector3(0.2, 0.0, -3.6), Vector3(0, 90, 0))
+	Kit.por(gal, "anvil", Vector3(1.6, 0.0, -3.4), Vector3(0, 15, 0))
+	Kit.por(gal, "shovel", Vector3(-4.85, 0.75, -1.5), Vector3(0, 90, -12))
+	Kit.por(gal, "pickaxe", Vector3(-4.85, 0.55, -0.6), Vector3(0, 90, 70))
+	Kit.por(gal, "bucket_metal", Vector3(-0.8, 0.0, -2.6), Vector3(0, 30, 0))
 	for k in 8:
 		B.wheel(gal, Vector3(3.2, 0.3 + k * 0.28, -2.8), 0.42, 0.26).rotation_degrees.z = 90
 	_vasculhavel(p, Vector3(-12, 1.0, -6), "Galpão de peças", "galpao", 1.5, m, j.id + ":galpao")

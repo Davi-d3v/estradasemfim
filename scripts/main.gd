@@ -4382,6 +4382,36 @@ func _capturar_refino() -> void:
 	await get_tree().process_frame
 	_limpar_zumbis_perto(ct, 90.0)
 	var bt := trailer.global_transform.basis
+	# 1c) oficina e acampamento com as ferramentas do KayKit
+	if so == "kit":
+		hora = 16.0
+		_atualizar_ceu()
+		var of := _novo_reboque("oficina", 3, 1.0)
+		comboio.engatar(of, true)
+		comboio.posicionar(comboio.pos.z, -0.5, 0.0)
+		await get_tree().process_frame
+		var ob: Basis = of.global_transform.basis
+		var oc: Vector3 = of.global_position
+		var de := oc - ob.x * 2.6 - ob.z * 2.2 + Vector3(0, 2.6, 0)
+		_abrir_vista(de, oc)
+		cam.fov = 60.0
+		cam.current = true
+		cam.look_at_from_position(de, oc + Vector3(0, 1.2, 0.3), Vector3.UP)
+		await _salvar("kit_oficina")
+		var de2 := oc - ob.x * 0.2 - ob.z * 0.9 + Vector3(0, 2.0, 0)
+		cam.look_at_from_position(de2, oc + ob.z * 1.0 + Vector3(0, 1.9, 0), Vector3.UP)
+		await _salvar("kit_painel")
+		_alternar_acampamento()
+		var ac: Acampamento = acampamento
+		for f in 30:
+			await get_tree().process_frame
+		var f0 := ac.fogueira
+		var de3 := f0 + bt.x * 2.0 + bt.z * 3.2 + Vector3(0, 1.8, 0)
+		_abrir_vista(de3, f0)
+		cam.look_at_from_position(de3, f0 + Vector3(0, 0.3, -0.5), Vector3.UP)
+		await _salvar("kit_acampamento")
+		get_tree().quit()
+		return
 	# 2) fogo e portão ao entardecer
 	if so == "" or so == "fogo":
 		hora = 18.9

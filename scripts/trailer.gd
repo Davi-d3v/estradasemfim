@@ -500,6 +500,10 @@ func _interior_detalhes(r: Node3D, hz: float, hw: float, escuro: Material) -> vo
 		B.box(r, Vector3(0.1, 0.07, 0.28), Vector3(0.35 + k * 0.12, by + 0.09, 0.42), bota)
 	B.box(r, Vector3(0.28, 0.16, 0.14), Vector3(0.45, by + 0.14, 1.0), B.mat(Color(0.25, 0.3, 0.18), 0.6, 0.3, "caixa_municao"))
 	B.box(r, Vector3(0.06, 0.03, 0.1), Vector3(0.45, by + 0.235, 1.0), escuro)
+	# caderno aberto e mapa enrolado no armário, corda no chão (KayKit)
+	Kit.por(r, "journal_open", Vector3(0.02, BASE_Y + 0.665, hz - 0.42), Vector3(0, 180, 0), 0.8, 12.0)
+	Kit.por(r, "map_rolled", Vector3(0.3, 1.625, hz - 0.22), Vector3(0, 90, 0), 1.0, 12.0)
+	Kit.por(r, "rope_bundle_B", Vector3(0.45, BASE_Y + 0.06, 0.78), Vector3(0, 40, 0), 1.0, 12.0)
 	# vasinho com uma muda na prateleira alta
 	B.cyl(r, 0.05, 0.08, Vector3(-0.2, 1.63, hz - 0.25), B.mat(Color(0.6, 0.32, 0.2), 0.9), Vector3.ZERO, 10, 0.06)
 	for k in 5:

@@ -127,5 +127,13 @@
   Prints: --refino --so=casa|sacos ; antes/depois em prints/antes_depois_*.png
 - [x] v0.13 para Windows: pichações só em pano de parede inteiro (Predio._panos_livres), do tamanho que cabe, fora da frente
 
+## Rodada v0.14 (pacotes do Davi: SBS Tiny Texture Pack 2 e KayKit RPG Tools Bits)
+- [x] Madeira (tábuas, portas, venezianas, móveis, piso) e piso de cerâmica com as texturas SBS; normal/rugosidade geradas.
+  O .rar só abriu em parte (89 de 170 arquivos vieram sem compressão; não há descompactador de RAR aqui).
+- [x] KayKit (scripts/kit.gd): ferramentas na bancada e no painel da oficina, bigorna e tenaz; galpão das vilas com rebolo,
+  bigorna, serrote, pá e picareta; trailer com caderno aberto, mapa enrolado e corda; acampamento com cepo e machado,
+  balde e lampião. Prints: --refino --so=kit
+- [x] v0.14 para Windows
+
 ## Próximos
 - ouvir o retorno do Davi sobre a v0.9
