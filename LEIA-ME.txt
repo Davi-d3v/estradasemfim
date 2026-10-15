@@ -23,6 +23,10 @@ CONTROLES
 
 O tutorial aparece no primeiro jogo. Enter pula um passo; Backspace encerra.
 
+NOVIDADES v0.14
+  - Madeira e pisos com texturas novas (tábuas, portas, móveis, cerâmica).
+  - Ferramentas, bigorna, rebolo, balde, lampião, cordas e cadernos (KayKit) na oficina, no galpão, no trailer e no acampamento.
+
 NOVIDADES v0.13 (texturas reais)
   - Paredes, tijolos, telhados, concreto, metal e asfalto com fotos do ambientCG (CC0).
   - Pichações de verdade nas casas e barreiras.
