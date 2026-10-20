@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/jornais_1.jpg-b92c8352a6e8ef7a6861227b3edd5de
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

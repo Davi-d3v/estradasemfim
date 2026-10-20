@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/punto_7.jpg-ae3ee5ea1f120efe64a5c683213e88c5.
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

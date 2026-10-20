@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/dinheiro_1.jpg-2d722de888ee4ae25fe328453e9276
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

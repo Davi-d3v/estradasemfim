@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/kar98k_14.jpg-75ed3ffc3a4328e00681ac7b6a6e35d
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

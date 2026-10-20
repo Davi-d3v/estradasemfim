@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/svd_5.jpg-5c9eea23d3dfbb994b24d9ce0cc98c3d.ct
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

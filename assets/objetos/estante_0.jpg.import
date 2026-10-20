@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/estante_0.jpg-57b8575405632e359fd82c3c7f17285
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

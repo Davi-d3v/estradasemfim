@@ -165,6 +165,14 @@ const TABELAS := {
 }
 var _frame_fechou := -10
 
+## No jogo exportado, os modelos do Sketchfab vêm num pacote à parte (modelos.pck, ao lado do
+## .exe) para cada arquivo de download ficar abaixo de 100 MB. Sem ele o jogo usa os modelos simples.
+func _init() -> void:
+	if not OS.has_feature("editor"):
+		var pck := OS.get_executable_path().get_base_dir().path_join("modelos.pck")
+		if FileAccess.file_exists(pck):
+			ProjectSettings.load_resource_pack(pck, false)
+
 func _ready() -> void:
 	capturando = "--capturar" in OS.get_cmdline_user_args()
 	if "--carregar" in OS.get_cmdline_user_args():

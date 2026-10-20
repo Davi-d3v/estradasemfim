@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/acr_6.jpg-2e61b59c6ebf435fd921161a2d2d9670.ct
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

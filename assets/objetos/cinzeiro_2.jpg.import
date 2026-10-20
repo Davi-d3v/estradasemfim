@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/cinzeiro_2.jpg-d83af7dcbb3d3d4ed2508a6fdd42bd
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

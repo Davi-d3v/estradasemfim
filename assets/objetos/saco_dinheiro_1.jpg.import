@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/saco_dinheiro_1.jpg-723b7f1584b4828a5015e611d
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

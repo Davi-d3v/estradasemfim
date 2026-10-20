@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/trailer_park_20.png-272e362f0323bae630e6b4b55
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

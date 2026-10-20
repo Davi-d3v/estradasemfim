@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/prototipo_8.jpg-b830ca39ea86d25cc49b30a92e4e9
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

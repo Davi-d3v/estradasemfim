@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/viatura_6.png-ae39ca00fc99a3fa103d6c6a6f9d688
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

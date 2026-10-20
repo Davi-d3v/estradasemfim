@@ -18,7 +18,7 @@ dest_files=["res://.godot/imported/objetos_vila_30.jpg-4b506b647a7b0b64445291d75
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
