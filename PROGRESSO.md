@@ -150,5 +150,22 @@
   cada pedaço; Godot gera os níveis de detalhe. Fluidez: 0 quadros > 100 ms.
 - [x] v0.16 para Windows
 
+## Rodada v0.17 (armas e objetos do Sketchfab enviados pelo Davi)
+- [x] Armas com modelo detalhado (scripts/armas_hd.gd normaliza cada .glb: cano +X, origem na empunhadura):
+  Pistola 1911, Rifle Kar98k, e novas: Carabina Saiga-9, Fuzil ACR (automático), Fuzil bullpup (automático),
+  Dragunov (precisão, zoom), Protótipo (automático, silencioso); munição de fuzil 5,56. Loot militar/armaria.
+- [x] Pegada de duas mãos (scripts/pegada_arma.gd, IK de dois ossos por cima da animação): coronha no ombro,
+  mão esquerda no guarda-mão, tronco de lado e cabeça na mira; arma baixa ao andar. tools/ver_pegada.gd.
+- [x] Objetos (scripts/props.gd, catálogo com tamanho real): cozinha (pia, fogareiro, botijão, panelas, latas),
+  estante de ferro, sofá, poltronas, cadeiras, cômodas, estante de livros, abajur, jornais, cinzeiros, dinheiro,
+  plantas da estufa, mobiliário de rua (ponto de ônibus, bancos, caçamba, hidrante). Pacotes com muitas peças são
+  juntados por material. Casas mobiliadas com eles; acampamento com fogareiro e às vezes casa móvel (Trailer Park);
+  vila com bancos, ponto de ônibus, hidrante e caçamba; dinheiro ao lado do cofre do shopping; estufa com mudas.
+- [x] Carros com modelo na estrada (Punto, viatura, carro velho enferrujado) — metade dos carros não queimados.
+- [x] Muro de carros amassados (scan de 2,5 milhões de triângulos reduzido por tools/reduzir_scan.py) no ferro-velho
+  e nas barreiras de quarentena. Prints: --objetos; folha de contato: tools/ver_props.gd.
+- Licenças: Dragunov, carro enferrujado e dinheiro russo são CC-BY-NC (não comercial); bullpup e City Props são
+  Sketchfab Padrão e ficam fora do repositório (assets/sketchfab_padrao/), só no jogo exportado.
+
 ## Próximos
 - ouvir o retorno do Davi sobre a v0.9

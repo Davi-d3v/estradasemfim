@@ -1,3 +1,6 @@
 .godot/
 prints/
 *.tmp
+
+# licença Sketchfab Padrão: não redistribuir o modelo solto (só dentro do jogo)
+assets/sketchfab_padrao/

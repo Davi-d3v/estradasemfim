@@ -21,12 +21,18 @@ const ITENS := {
 	"machado": {"nome": "Machados", "um": "machado", "vol": 3.0},
 	"pistola": {"nome": "Pistolas", "um": "pistola", "vol": 1.5},
 	"espingarda": {"nome": "Espingardas", "um": "espingarda", "vol": 4.0},
-	"rifle": {"nome": "Rifles", "um": "rifle", "vol": 4.0},
+	"rifle": {"nome": "Rifles Kar98k", "um": "rifle Kar98k", "vol": 4.0},
+	"carabina": {"nome": "Carabinas Saiga", "um": "carabina Saiga", "vol": 3.0},
+	"fuzil": {"nome": "Fuzis ACR", "um": "fuzil ACR", "vol": 3.5},
+	"bullpup": {"nome": "Fuzis bullpup", "um": "fuzil bullpup", "vol": 3.0},
+	"precisao": {"nome": "Dragunovs", "um": "Dragunov", "vol": 4.5},
+	"prototipo": {"nome": "Protótipos experimentais", "um": "protótipo experimental", "vol": 3.5},
 	"besta": {"nome": "Bestas", "um": "besta", "vol": 3.0},
 	# munição
 	"municao_pistola": {"nome": "Balas 9 mm", "um": "bala 9 mm", "vol": 0.05},
 	"cartucho": {"nome": "Cartuchos 12", "um": "cartucho 12", "vol": 0.1},
 	"municao_rifle": {"nome": "Balas de rifle", "um": "bala de rifle", "vol": 0.08},
+	"municao_fuzil": {"nome": "Munição de fuzil 5,56", "um": "bala de fuzil", "vol": 0.06},
 	"virote": {"nome": "Virotes", "um": "virote", "vol": 0.15},
 	# consumíveis
 	"bandagem": {"nome": "Bandagens", "um": "bandagem", "vol": 0.3},
@@ -146,12 +152,12 @@ const TABELAS := {
 	"acampamento": {"comida": [1, 3, 0.8], "agua": [1, 3, 0.8], "remedio": [0, 1, 0.3], "sucata": [1, 3, 0.5], "molotov": [1, 2, 0.3], "municao_pistola": [2, 6, 0.3], "bandagem": [1, 2, 0.4]},
 	"torre": {"comida": [1, 2, 0.6], "agua": [1, 2, 0.6], "remedio": [1, 2, 0.4], "pecas": [0, 1, 0.3], "rifle": [1, 1, 0.15], "municao_rifle": [2, 6, 0.5], "sinalizador": [1, 2, 0.5], "binoculo": [1, 1, 0.3], "lanterna": [1, 1, 0.3], "chaves_presidio": [1, 1, 0.05]},
 	"carro_mata": {"sucata": [3, 8, 1.0], "pecas": [1, 2, 0.6], "galoes_diesel": [1, 1, 0.3], "remedio": [0, 1, 0.2], "sinalizador": [1, 1, 0.3], "pistola": [1, 1, 0.06], "municao_pistola": [3, 9, 0.35]},
-	"militar": {"cartao_militar": [1, 1, 0.07], "binoculo": [1, 1, 0.12], "lanterna": [1, 1, 0.2], "municao_rifle": [6, 18, 0.9], "municao_pistola": [6, 16, 0.8], "cartucho": [3, 8, 0.5], "comida": [2, 6, 0.8], "agua": [2, 5, 0.7], "bandagem": [1, 4, 0.7], "remedio": [1, 2, 0.5], "rifle": [1, 1, 0.25], "sinalizador": [1, 3, 0.5], "galoes_diesel": [1, 2, 0.5], "chapa": [1, 2, 0.3]},
+	"militar": {"fuzil": [1, 1, 0.06], "bullpup": [1, 1, 0.03], "precisao": [1, 1, 0.04], "municao_fuzil": [10, 30, 0.5], "cartao_militar": [1, 1, 0.07], "binoculo": [1, 1, 0.12], "lanterna": [1, 1, 0.2], "municao_rifle": [6, 18, 0.9], "municao_pistola": [6, 16, 0.8], "cartucho": [3, 8, 0.5], "comida": [2, 6, 0.8], "agua": [2, 5, 0.7], "bandagem": [1, 4, 0.7], "remedio": [1, 2, 0.5], "rifle": [1, 1, 0.25], "sinalizador": [1, 3, 0.5], "galoes_diesel": [1, 2, 0.5], "chapa": [1, 2, 0.3]},
 	"deposito_diesel": {"galoes_diesel": [3, 6, 1.0], "pecas": [1, 3, 0.6], "sucata": [3, 8, 0.8], "molotov": [1, 3, 0.5]},
 	"hospital_campanha": {"remedio": [3, 6, 1.0], "bandagem": [3, 8, 1.0], "analgesico": [2, 5, 0.9], "agua": [2, 5, 0.7], "comida": [1, 4, 0.5]},
-	"arsenal": {"rifle": [1, 2, 0.9], "municao_rifle": [20, 45, 1.0], "espingarda": [1, 1, 0.5], "cartucho": [10, 24, 0.9], "pistola": [1, 2, 0.6], "municao_pistola": [20, 40, 0.9], "sinalizador": [2, 4, 0.7], "molotov": [2, 4, 0.4], "binoculo": [1, 1, 0.5], "lanterna": [1, 1, 0.6]},
+	"arsenal": {"fuzil": [1, 2, 0.7], "bullpup": [1, 1, 0.35], "prototipo": [1, 1, 0.2], "precisao": [1, 1, 0.4], "carabina": [1, 1, 0.4], "municao_fuzil": [30, 80, 1.0], "rifle": [1, 2, 0.9], "municao_rifle": [20, 45, 1.0], "espingarda": [1, 1, 0.5], "cartucho": [10, 24, 0.9], "pistola": [1, 2, 0.6], "municao_pistola": [20, 40, 0.9], "sinalizador": [2, 4, 0.7], "molotov": [2, 4, 0.4], "binoculo": [1, 1, 0.5], "lanterna": [1, 1, 0.6]},
 	"almoxarifado": {"antibiotico": [1, 3, 0.6], "po_cafe": [2, 5, 0.8], "comida": [8, 16, 1.0], "agua": [6, 12, 1.0], "remedio": [2, 5, 0.9], "bandagem": [3, 8, 1.0], "tecido": [4, 10, 0.8], "lanterna": [1, 1, 0.5], "analgesico": [2, 4, 0.7]},
-	"armaria": {"espingarda": [1, 2, 0.9], "cartucho": [12, 30, 1.0], "pistola": [1, 2, 0.8], "municao_pistola": [20, 40, 1.0], "colete_couro": [1, 1, 0.3]},
+	"armaria": {"carabina": [1, 1, 0.5], "fuzil": [1, 1, 0.25], "municao_fuzil": [10, 30, 0.5], "espingarda": [1, 2, 0.9], "cartucho": [12, 30, 1.0], "pistola": [1, 2, 0.8], "municao_pistola": [20, 40, 1.0], "colete_couro": [1, 1, 0.3]},
 	"cofre": {"remedio": [3, 6, 0.9], "municao_rifle": [10, 25, 0.7], "galoes_diesel": [2, 3, 0.7], "binoculo": [1, 1, 0.4], "chaves_presidio": [1, 1, 0.3], "cartao_militar": [1, 1, 0.3]},
 	"esconderijo": {"comida": [2, 6, 0.9], "agua": [2, 5, 0.8], "remedio": [1, 2, 0.4], "municao_pistola": [4, 12, 0.4], "galoes_diesel": [1, 1, 0.3], "lanterna": [1, 1, 0.2], "bandagem": [1, 3, 0.5]},
 	"presidio": {"comida": [0, 2, 0.4], "tecido": [1, 3, 0.6], "sucata": [1, 4, 0.6], "taco": [1, 1, 0.1], "analgesico": [1, 2, 0.2], "chaves_presidio": [1, 1, 0.06]},
@@ -286,6 +292,10 @@ func _ready() -> void:
 			_capturar_cachorro()
 		elif "--comboio-evoluido" in OS.get_cmdline_user_args():
 			_capturar_evoluido()
+		elif "--armas-hd" in OS.get_cmdline_user_args():
+			_capturar_armas_hd()
+		elif "--objetos" in OS.get_cmdline_user_args():
+			_capturar_objetos()
 		elif "--acampamento" in OS.get_cmdline_user_args():
 			_capturar_acampamento()
 		elif "--refino" in OS.get_cmdline_user_args():
@@ -4657,7 +4667,184 @@ func _achar_malha(nome: String, perto: Vector3, raio: float) -> MeshInstance3D:
 				melhor = n
 	return melhor
 
+## Prints das armas novas na mão: de lado e de frente, mirando e com a arma baixa.
+func _capturar_armas_hd() -> void:
+	var cam := Camera3D.new()
+	cam.far = 900.0
+	cam.near = 0.02
+	add_child(cam)
+	comboio.set_physics_process(false)
+	hud.visible = false
+	hora = 11.0
+	_atualizar_ceu()
+	var z := 14 * WorldGen.TAM + 20.0
+	comboio.posicionar(z, -0.5, 0.0)
+	var pc := mundo.ponto_estrada(z + 22.0, 2.0)
+	mundo.atualizar(pc)
+	await get_tree().process_frame
+	_limpar_zumbis_perto(pc, 80.0)
+	var ids: Array = ["pistola", "carabina", "espingarda", "rifle", "fuzil", "bullpup", "precisao", "prototipo"]
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--so="):
+			ids = a.substr(5).split(",")
+	var d := mundo.direcao(z + 22.0)
+	for id in ids:
+		jogador.corpo.arma = id
+		jogador.corpo.construir()
+		equip.sel = id
+		_posar_jogador(pc, pc + d * 10.0, -0.02, 0.0)
+		jogador.set_process(false)
+		for pose in ["mira", "baixa"]:
+			jogador.corpo.arma_costas(false)
+			for f in 6:
+				if pose == "mira":
+					jogador.corpo.pose_mirar(1.0)
+					jogador.corpo.mirar_para(d)
+				else:
+					jogador.corpo.loop("Pistol_Idle" if not Armas.eh_longa(id) else "Idle")
+				await get_tree().process_frame
+			var bt: Basis = jogador.corpo.global_basis
+			var c: Vector3 = jogador.global_position + Vector3(0, 1.35, 0)
+			# de lado (direito) e 3/4 de frente
+			cam.fov = 40.0
+			cam.current = true
+			cam.look_at_from_position(c - bt.x * 2.6 + bt.z * 0.4 + Vector3(0, 0.1, 0), c + bt.z * 0.35, Vector3.UP)
+			await _salvar("arma_%s_%s_lado" % [id, pose])
+			cam.look_at_from_position(c + bt.z * 2.4 - bt.x * 1.3 + Vector3(0, 0.25, 0), c + bt.z * 0.2, Vector3.UP)
+			await _salvar("arma_%s_%s_frente" % [id, pose])
+	get_tree().quit()
+
 ## Prints do acampamento novo: cerca grande com portão, fogueira e a roda de cadeiras.
+## Prints dos objetos com modelo: carros na estrada, sala e cozinha com móveis, praça da
+## vila, muro de carros do ferro-velho, casa móvel no acampamento e a estufa.
+func _capturar_objetos() -> void:
+	var cam := Camera3D.new()
+	cam.far = 900.0
+	cam.fov = 60.0
+	add_child(cam)
+	hora = 15.5
+	_atualizar_ceu()
+	comboio.set_physics_process(false)
+	hud.visible = false
+	var so := ""
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--so="):
+			so = a.substr(5)
+	var fazer := func(n: String) -> bool:
+		return so == "" or so.contains(n)
+	# carros com modelo na estrada
+	if fazer.call("carros"):
+		var achou: Node3D = null
+		var z := 600.0
+		while achou == null and z < 9000.0:
+			mundo.atualizar(mundo.ponto_estrada(z, 0.0))
+			await get_tree().process_frame
+			for c in mundo.carros_soltos:
+				if is_instance_valid(c) and c.has_meta("modelo") and c.global_position.z > z - 60.0:
+					achou = c
+					break
+			z += 192.0
+		if achou:
+			var cp := achou.global_position
+			_limpar_zumbis_perto(cp, 30.0)
+			jogador.visible = false
+			var de := cp + achou.global_basis.z * 6.0 + achou.global_basis.x * 4.5 + Vector3(0, 2.2, 0)
+			cam.current = true
+			cam.look_at_from_position(de, cp + Vector3(0, 0.6, 0), Vector3.UP)
+			await _salvar("mod_carro_" + String(achou.get_meta("modelo")))
+			# vários pela estrada, de cima
+			cam.look_at_from_position(cp + Vector3(14, 16, -14), cp, Vector3.UP)
+			await _salvar("mod_carros_estrada")
+	# interior de casa: sala e cozinha
+	if fazer.call("casa"):
+		var casa := _achar_predio("casa", 300.0, 20000.0)
+		if casa:
+			_limpar_zumbis_perto(casa.global_position, 40.0)
+			_dentro_predio(casa, 0, "sala")
+			for f in 10:
+				await get_tree().process_frame
+			await _salvar("mod_sala")
+			_dentro_predio(casa, 0, "cozinha")
+			for f in 10:
+				await get_tree().process_frame
+			await _salvar("mod_cozinha")
+			_dentro_predio(casa, 0, "quarto")
+			for f in 10:
+				await get_tree().process_frame
+			await _salvar("mod_quarto")
+			jogador.visible = false
+	# lugares
+	for par in [["vila", "mod_vila_praca"], ["ferro_velho", "mod_ferro_velho"]]:
+		if not fazer.call(par[0]):
+			continue
+		var l := _achar_lugar(par[0])
+		if l.is_empty():
+			continue
+		mundo.atualizar(l.pos)
+		for f in 20:
+			await get_tree().process_frame
+		_limpar_zumbis_perto(l.pos, 80.0)
+		var est := _caminho_do_lugar(l)
+		var frente := Vector3(0, 0, 1)
+		if est.size() > 0:
+			frente = Vector3(est[est.size() - 1].x - l.pos.x, 0, est[est.size() - 1].z - l.pos.z).normalized()
+		var dir := frente.cross(Vector3.UP)
+		var alvo: Vector3 = l.pos + frente * 4.0
+		var de: Vector3 = alvo + frente * 14.0 + dir * 9.0 + Vector3(0, 7.0, 0)
+		if par[0] == "ferro_velho":
+			alvo = l.pos - frente * (float(l.raio) - 6.0)
+			de = l.pos + frente * 6.0 + dir * 8.0 + Vector3(0, 9.0, 0)
+		_abrir_vista(de, alvo)
+		jogador.visible = false
+		cam.current = true
+		cam.look_at_from_position(de, alvo, Vector3.UP)
+		await _salvar(par[1])
+	# acampamento com casa móvel
+	if fazer.call("trailer"):
+		var feito := false
+		for ri in 30:
+			if feito:
+				break
+			for l in mundo.lugares_da_regiao(ri):
+				if l.tipo != "acampamento":
+					continue
+				mundo.atualizar(l.pos)
+				for f in 4:
+					await get_tree().process_frame
+				var tem := false
+				for v in mundo.vasculhaveis:
+					if is_instance_valid(v) and String(v.get_meta("chave")) == l.id + ":trailer":
+						tem = true
+				if not tem:
+					continue
+				for f in 15:
+					await get_tree().process_frame
+				_limpar_zumbis_perto(l.pos, 40.0)
+				var de2: Vector3 = l.pos + Vector3(10, 6, 12)
+				_abrir_vista(de2, l.pos)
+				jogador.visible = false
+				cam.current = true
+				cam.look_at_from_position(de2, l.pos + Vector3(-4, 1, -1), Vector3.UP)
+				await _salvar("mod_acampamento_trailer")
+				feito = true
+				break
+	# estufa (reboque) com as plantas de modelo
+	if fazer.call("estufa"):
+		var es := _novo_reboque("estufa", 3, 1.0)
+		comboio.engatar(es, true)
+		var z2 := 14 * WorldGen.TAM + 20.0
+		comboio.posicionar(z2, -0.5, 0.0)
+		mundo.atualizar(es.global_position)
+		for f in 10:
+			await get_tree().process_frame
+		_limpar_zumbis_perto(es.global_position, 40.0)
+		var bt := es.global_transform.basis
+		var ce := es.global_position
+		cam.current = true
+		cam.look_at_from_position(ce + bt.x * 3.2 + bt.z * 2.5 + Vector3(0, 2.6, 0), ce + Vector3(0, 1.0, 0), Vector3.UP)
+		await _salvar("mod_estufa")
+	get_tree().quit()
+
 func _capturar_acampamento() -> void:
 	var cam := Camera3D.new()
 	cam.far = 900.0

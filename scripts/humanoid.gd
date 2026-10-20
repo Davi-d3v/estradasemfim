@@ -249,6 +249,8 @@ func pose_zumbi(fase: float) -> void:
 func pose_mirar(k := 1.0) -> void:
 	if modelo:
 		loop("Pistol_Aim_Neutral")
+		if pegada and pegada.ativo and not _mirou:
+			mirar_para(global_basis.z)
 		return
 	ombro_d.rotation.x = lerpf(ombro_d.rotation.x, -1.45, k)
 	ombro_d.rotation.z = lerpf(ombro_d.rotation.z, -0.15, k)
@@ -413,6 +415,10 @@ func _construir_modelo(rng: RandomNumberGenerator) -> void:
 	braco_d = Modelos.anexo(sk, "upperarm_r", "braco_d")
 	antebraco_e = Modelos.anexo(sk, "lowerarm_l", "antebraco_e")
 	antebraco_d = Modelos.anexo(sk, "lowerarm_r", "antebraco_d")
+	pegada = PegadaArma.new()
+	pegada.name = "PegadaArma"
+	pegada.corpo = self
+	sk.add_child(pegada)
 	_acessorios_modelo()
 	_arma_modelo()
 	set_process(true)
@@ -503,7 +509,20 @@ func _arma_modelo() -> void:
 	if mao_d == null:
 		return
 	_nas_costas = false
-	Modelos.arma_na_mao(mao_d, arma)
+	var a := Modelos.arma_na_mao(mao_d, arma)
+	if pegada:
+		pegada.ativo = a != null and Armas.eh_longa(arma)
+		if pegada.ativo:
+			pegada.ombro = a.get_meta("ombro", pegada.ombro)
+			pegada.apoio = a.get_meta("apoio", pegada.apoio)
+
+## Arma longa nas mãos: pegada de duas mãos. mira = direção (mundo); baixa: 0 apontando, 1 arma baixa.
+var pegada: PegadaArma
+var _mirou := false
+func mirar_para(dir: Vector3) -> void:
+	if pegada:
+		pegada.mira = dir
+		_mirou = true
 
 var _nas_costas := false
 ## Espingarda e rifle vão para as costas (bandoleira) quando não estão em uso.
@@ -515,6 +534,8 @@ func arma_costas(sim: bool) -> void:
 		return
 	_nas_costas = sim
 	a.get_parent().remove_child(a)
+	if pegada:
+		pegada.ativo = not sim and Armas.eh_longa(arma)
 	if sim:
 		costas.add_child(a)
 		# atravessada nas costas, cano para cima à direita (osso spine_03: +Y sobe, +Z frente)
@@ -618,6 +639,12 @@ func destravar() -> void:
 func _process(_dt: float) -> void:
 	if modelo and _oneshot and Time.get_ticks_msec() / 1000.0 > _oneshot_fim + 0.25:
 		_fim_anim(&"")
+	if pegada and pegada.ativo:
+		# sem ninguém mirando neste quadro: arma baixa, apontada para a frente do corpo
+		if not _mirou:
+			pegada.mira = global_basis.z
+		pegada.baixa = move_toward(pegada.baixa, 0.0 if _mirou else 1.0, _dt * 8.0)
+		_mirou = false
 
 ## Escolhe parado/andar/correr/agachado pela velocidade real.
 func _locomover(intensidade: float) -> void:

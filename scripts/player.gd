@@ -216,13 +216,18 @@ func _process(dt: float) -> void:
 		corpo.vel_anim = _vel_real
 		corpo.agachado_anim = agachado
 		var fogo = Armas.LISTA.has(corpo.arma) and Armas.LISTA[corpo.arma].tipo == "fogo"
-		var longa: bool = corpo.arma in ["espingarda", "rifle"]
+		var longa: bool = Armas.eh_longa(corpo.arma)
 		var em_uso: bool = mirando or recarga_ativa() or corpo.ocupado_anim()
 		corpo.arma_costas(longa and not em_uso)
 		var branca = Armas.LISTA.has(corpo.arma) and not fogo
 		corpo.anim_parado = ("Pistol_Idle" if (fogo and not (longa and not em_uso)) else ("Sword_Idle" if branca and _t_golpe > 0.0 else "Idle"))
 		if anim_trabalho != "":
 			corpo.anim_parado = anim_trabalho
+		if longa and em_uso:
+			# arma longa na mão: aponta para onde a câmera olha (mirando ou atirando do quadril)
+			corpo.rotation.y = lerp_angle(corpo.rotation.y, yaw, minf(1.0, dt * 14.0))
+			if mirando or corpo.ocupado_anim():
+				corpo.mirar_para(-camera.global_basis.z)
 		if mirando:
 			corpo.rotation.y = lerp_angle(corpo.rotation.y, yaw, minf(1.0, dt * 14.0))
 			corpo.pose_mirar(1.0)

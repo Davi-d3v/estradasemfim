@@ -154,7 +154,7 @@ static func _bloqueio(m: WorldGen, raiz: Node3D, z: float, rot: float, sem: int,
 		h.semente = r.randi()
 		h.visual = "civil"
 		h.feminino = r.randf() < 0.3
-		h.arma = ["rifle", "espingarda", "pistola"][i]
+		h.arma = ["carabina", "espingarda", "pistola"][i]
 		h.anim_parado = "Pistol_Idle" if i != 1 else "Idle_FoldArms"
 		h.com_bone = r.randf() < 0.6
 		h.position = Vector3(-2.5 + i * 2.5, 0, -4.2 + r.randf_range(-0.4, 0.4))

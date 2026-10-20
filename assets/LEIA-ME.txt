@@ -25,3 +25,33 @@ dry_quiver_leaf (folhas secas), potted_plant_02 (vaso), fir_tree_01 (abetos).
 Árvores (glTF, reduzidas por tools/reduzir_arvore.py e montadas por tools/montar_arvores.gd): fir_tree_01 (abeto,
 principal árvore da mata), pachira_aquatica_01 (árvore de copa, ampliada 4x), pine_sapling_small (pinheirinhos),
 didelta_spinosa (arbustos). pine_sapling_medium ficou de fora (agulhas em geometria, ralas demais reduzidas).
+
+Modelos do Sketchfab enviados pelo Davi (texturas reduzidas por tools/encolher_glb.py; o muro de carros foi
+simplificado de 2,5 milhões para ~100 mil triângulos por tools/reduzir_scan.py). Licença CC-BY 4.0
+(creativecommons.org/licenses/by/4.0) salvo indicação:
+- armas_hd/acr.glb — "Adaptive Combat Rifle", doomsentinel
+- armas_hd/kar98k.glb — "Kar98k Free Model", Danya
+- armas_hd/m1911.glb — "Kimber 1911", m.daneshyab
+- armas_hd/saiga9.glb — "Saiga-9mm", rwroclav
+- armas_hd/prototipo.glb — "Sci-fi Weapon | Firearm | Game Ready", by__Rx
+- armas_hd/svd.glb — "SVD 63 - Dragunov", lokeig — CC-BY-NC 4.0 (uso não comercial)
+- objetos/cozinha.glb — "Kitchen - Assets", SeverDoes3D
+- objetos/estante.glb — "Shelf", Dmitriy Mitroshin
+- objetos/objetos_vila.glb — "Objects Interior(Village) Alpha", Elbolillo
+- objetos/jornais.glb — "Newspaper Stack", karlwirbelwind
+- objetos/jornal_ps1.glb — "PS1 Style Newspaper: Bloody and Normal Versions", Jan_Strydom
+- objetos/cinzeiro.glb — "Vintage Metal Ashtray", Mattyew
+- objetos/cinzeiro_cigarros.glb — "Ashtray with Cigarettes", YJ_
+- objetos/saco_dinheiro.glb — "Bag of Money", Glowbox 3D
+- objetos/dinheiro.glb — "Russian's money", CommunicationNode — CC-BY-NC 4.0 (uso não comercial)
+- objetos/estufa_plantas.glb — "Greenhouse Foliage", Mats de Wind
+- carros/punto.glb — "(FREE) 1995 Fiat Punto GT", Karol Miklas
+- carros/viatura.glb — "Fairheaven LT '80 Cop Cruiser", Daniel Zhabotinsky
+- carros/carro_enferrujado.glb — "Old Rusty Car", Renafox — CC-BY-NC 4.0 (uso não comercial)
+- carros/muro_carros.glb — "Wall of Cars (Free Raw Scan)", Renafox
+- carros/trailer_park.glb — "Trailer Park", Elbolillo
+Licença Sketchfab Padrão (não pode ser redistribuída como arquivo solto; fica FORA do repositório público,
+em sketchfab_padrao/, e só vai embutida no jogo exportado — sem ela o jogo usa as armas/objetos simples):
+- sketchfab_padrao/bullpup.glb — "Sci-fi Bullpup Rifle", Diamonddogkz
+- sketchfab_padrao/city_props.glb — "City Props Collection volume 1", TampaJoey
+Endereços de cada modelo em licencas/Sketchfab_creditos.txt.

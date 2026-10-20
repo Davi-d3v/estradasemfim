@@ -387,6 +387,9 @@ static func shopping(p: Node3D, f: Dictionary, r: RandomNumberGenerator, m: Worl
 	B.cyl(p, 0.18, 0.08, Vector3(-6, 0.9, -22.05), B.mat(Color(0.7, 0.6, 0.2), 0.3, 0.9), Vector3(90, 0, 0), 12)
 	Lugares._vasculhavel(p, Vector3(-6, 1.0, -21.4), "Cofre da administração", "cofre", 1.0, m, j.id + ":cofre")
 	trancar(p.get_child(p.get_child_count() - 1), "chave_cofre")
+	# dinheiro: não vale nada no apocalipse, mas está lá
+	Props.por(p, "saco_dinheiro", Vector3(-4.9, 0, -22.3), 30.0)
+	Props.por(p, "dinheiro", Vector3(-5.4, 0.02, -21.6), 0.0, 1.2)
 	# barricada de carrinhos na entrada
 	var car := B.mat(Color(0.6, 0.6, 0.62), 0.4, 0.8)
 	for i in 9:

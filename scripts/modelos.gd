@@ -124,7 +124,15 @@ const ARMAS_FOGO := {
 ## arma para +Z. Vale para todas as poses, porque a arma é rígida na mão.
 const BASE_MAO := Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0))
 const CENTRO_MAO := Vector3(0.0, 0.08, 0.0)
+## Armas com modelo detalhado (ArmasHD). Se o arquivo não existir (ex.: modelo de licença
+## que não vai para o repositório), cai no modelo simples de ARMAS_FOGO.
+const ARMAS_HD := {"pistola": "m1911", "rifle": "kar98k", "carabina": "saiga9", "fuzil": "acr",
+	"precisao": "svd", "prototipo": "prototipo", "bullpup": "bullpup"}
+const RESERVA := {"carabina": "metralhadora", "fuzil": "metralhadora", "precisao": "rifle", "prototipo": "metralhadora", "bullpup": "metralhadora"}
+
 ## Monta a arma na âncora da mão direita. Cria o nó "Arma" e, nas de fogo, "Boca".
+## Nas armas longas, guarda em meta "ombro" e "apoio" (espaço da arma, metros, a partir
+## da empunhadura) para a pegada com as duas mãos (PegadaArma).
 static func arma_na_mao(mao: Node3D, id: String) -> Node3D:
 	var velho := mao.get_node_or_null("Arma")
 	if velho:
@@ -134,6 +142,19 @@ static func arma_na_mao(mao: Node3D, id: String) -> Node3D:
 	var arma := Node3D.new()
 	arma.name = "Arma"
 	mao.add_child(arma)
+	if ARMAS_HD.has(id) and ArmasHD.existe(ARMAS_HD[id]):
+		var hd := ArmasHD.montar(ARMAS_HD[id])
+		hd.transform = Transform3D(BASE_MAO, CENTRO_MAO)
+		arma.add_child(hd)
+		var boca_hd := Node3D.new()
+		boca_hd.name = "Boca"
+		boca_hd.position = CENTRO_MAO + BASE_MAO * (hd.get_meta("boca") as Vector3)
+		arma.add_child(boca_hd)
+		arma.set_meta("ombro", hd.get_meta("ombro"))
+		arma.set_meta("apoio", hd.get_meta("apoio"))
+		return arma
+	if RESERVA.has(id):
+		id = RESERVA[id]
 	var preto := mat(Color(0.08, 0.08, 0.08), 0.45, 0.6)
 	var aco := mat(Color(0.55, 0.55, 0.57), 0.3, 0.85)
 	var madeira := mat(Color(0.4, 0.24, 0.12), 0.7)
@@ -147,6 +168,10 @@ static func arma_na_mao(mao: Node3D, id: String) -> Node3D:
 		boca.name = "Boca"
 		boca.position = CENTRO_MAO + BASE_MAO * ((d[3] - d[2]) * esc)
 		arma.add_child(boca)
+		# pegada de duas mãos aproximada para os modelos simples
+		var comp: float = (d[3].x - d[2].x) * esc
+		arma.set_meta("ombro", Vector3(-comp * 0.42, 0.04, 0.0))
+		arma.set_meta("apoio", Vector3(comp * 0.45, 0.02, 0.0))
 		return arma
 	# armas brancas: lâmina/cabo ao longo de +Z do osso (sai pelo polegar), gume para +Y
 	var lam := Node3D.new()

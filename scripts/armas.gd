@@ -8,12 +8,23 @@ const LISTA := {
 	"pe_de_cabra": {"nome": "Pé de cabra", "tipo": "branca", "dano": [30.0, 42.0], "alcance": 2.2, "cad": 0.62, "ruido": 10.0, "empurrao": 7.0, "estamina": 0.07, "durab": 220},
 	"taco": {"nome": "Taco com pregos", "tipo": "branca", "dano": [34.0, 50.0], "alcance": 2.4, "cad": 0.8, "ruido": 12.0, "empurrao": 11.0, "estamina": 0.09, "durab": 90},
 	"machado": {"nome": "Machado", "tipo": "branca", "dano": [50.0, 72.0], "alcance": 2.3, "cad": 1.0, "ruido": 12.0, "empurrao": 8.0, "estamina": 0.11, "durab": 160},
-	"pistola": {"nome": "Pistola 9 mm", "tipo": "fogo", "dano": [40.0, 58.0], "alcance": 38.0, "cad": 0.3, "pente": 12, "municao": "municao_pistola", "recarga": 1.4, "ruido": 48.0, "disp": 0.03, "projeteis": 1, "coice": 0.035, "zoom": 40.0},
+	"pistola": {"nome": "Pistola 1911", "tipo": "fogo", "dano": [40.0, 58.0], "alcance": 38.0, "cad": 0.3, "pente": 12, "municao": "municao_pistola", "recarga": 1.4, "ruido": 48.0, "disp": 0.03, "projeteis": 1, "coice": 0.035, "zoom": 40.0},
 	"espingarda": {"nome": "Espingarda 12", "tipo": "fogo", "dano": [16.0, 24.0], "alcance": 16.0, "cad": 0.95, "pente": 2, "municao": "cartucho", "recarga": 2.2, "ruido": 62.0, "disp": 0.1, "projeteis": 8, "coice": 0.09, "zoom": 44.0},
-	"rifle": {"nome": "Rifle de caça", "tipo": "fogo", "dano": [95.0, 130.0], "alcance": 85.0, "cad": 1.25, "pente": 5, "municao": "municao_rifle", "recarga": 2.6, "ruido": 75.0, "disp": 0.008, "projeteis": 1, "coice": 0.06, "zoom": 26.0},
+	"rifle": {"nome": "Rifle Kar98k", "tipo": "fogo", "dano": [95.0, 130.0], "alcance": 85.0, "cad": 1.25, "pente": 5, "municao": "municao_rifle", "recarga": 2.6, "ruido": 75.0, "disp": 0.008, "projeteis": 1, "coice": 0.06, "zoom": 26.0},
+	"carabina": {"nome": "Carabina Saiga 9 mm", "tipo": "fogo", "dano": [36.0, 50.0], "alcance": 55.0, "cad": 0.2, "pente": 30, "municao": "municao_pistola", "recarga": 2.0, "ruido": 52.0, "disp": 0.02, "projeteis": 1, "coice": 0.022, "zoom": 34.0},
+	"fuzil": {"nome": "Fuzil ACR", "tipo": "fogo", "auto": true, "dano": [34.0, 46.0], "alcance": 70.0, "cad": 0.1, "pente": 30, "municao": "municao_fuzil", "recarga": 2.4, "ruido": 70.0, "disp": 0.022, "projeteis": 1, "coice": 0.018, "zoom": 30.0},
+	"bullpup": {"nome": "Fuzil bullpup militar", "tipo": "fogo", "auto": true, "dano": [36.0, 50.0], "alcance": 72.0, "cad": 0.085, "pente": 30, "municao": "municao_fuzil", "recarga": 2.2, "ruido": 66.0, "disp": 0.018, "projeteis": 1, "coice": 0.016, "zoom": 28.0},
+	"precisao": {"nome": "Dragunov (SVD)", "tipo": "fogo", "dano": [110.0, 150.0], "alcance": 120.0, "cad": 0.7, "pente": 10, "municao": "municao_rifle", "recarga": 2.8, "ruido": 80.0, "disp": 0.004, "projeteis": 1, "coice": 0.07, "zoom": 16.0},
+	"prototipo": {"nome": "Protótipo experimental", "tipo": "fogo", "auto": true, "dano": [48.0, 62.0], "alcance": 80.0, "cad": 0.09, "pente": 40, "municao": "municao_fuzil", "recarga": 2.0, "ruido": 34.0, "disp": 0.014, "projeteis": 1, "coice": 0.012, "zoom": 28.0},
 	"besta": {"nome": "Besta", "tipo": "fogo", "dano": [70.0, 95.0], "alcance": 45.0, "cad": 1.4, "pente": 1, "municao": "virote", "recarga": 1.6, "ruido": 4.0, "disp": 0.018, "projeteis": 1, "coice": 0.01, "zoom": 34.0},
 }
-const ORDEM := ["facao", "pe_de_cabra", "taco", "machado", "pistola", "espingarda", "rifle", "besta"]
+const ORDEM := ["facao", "pe_de_cabra", "taco", "machado", "pistola", "carabina", "espingarda", "rifle", "fuzil", "bullpup", "precisao", "prototipo", "besta"]
+
+## Armas longas: duas mãos (coronha no ombro) e vão para as costas quando não estão em uso.
+const LONGAS := ["espingarda", "rifle", "carabina", "fuzil", "bullpup", "precisao", "prototipo"]
+
+static func eh_longa(id: String) -> bool:
+	return id in LONGAS
 
 ## Consumíveis usados pela barra rápida (botão esquerdo com o item selecionado).
 const CONSUMIVEIS := {

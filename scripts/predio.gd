@@ -491,24 +491,46 @@ func _mobiliar(no: Node3D, r: Rect2, uso: String, y0: float, k: int, esc: Rect2)
 		"sala":
 			var p: Vector2 = Vector2(r2.get_center().x, r2.position.y + 0.5)
 			if livre.call(p, 1.2):
-				B.box(no, Vector3(2.0, 0.45, 0.85), Vector3(p.x, y0 + 0.22, p.y), tecido)
-				B.box(no, Vector3(2.0, 0.55, 0.2), Vector3(p.x, y0 + 0.65, p.y - 0.35), tecido)
-				for s in [-1.0, 1.0]:
-					B.box(no, Vector3(0.2, 0.6, 0.85), Vector3(p.x + s * 1.0, y0 + 0.4, p.y), tecido)
+				if Props.existe("sofa"):
+					Props.por(no, "sofa", Vector3(p.x, y0, p.y - 0.15), 0.0, _rng.randf_range(0.9, 1.0))
+				else:
+					B.box(no, Vector3(2.0, 0.45, 0.85), Vector3(p.x, y0 + 0.22, p.y), tecido)
+					B.box(no, Vector3(2.0, 0.55, 0.2), Vector3(p.x, y0 + 0.65, p.y - 0.35), tecido)
+					for s in [-1.0, 1.0]:
+						B.box(no, Vector3(0.2, 0.6, 0.85), Vector3(p.x + s * 1.0, y0 + 0.4, p.y), tecido)
 			var e: Vector2 = cantos[1]
 			if livre.call(e, 0.6):
-				B.box(no, Vector3(0.9, 1.9, 0.38), Vector3(e.x - 0.2, y0 + 0.95, e.y + 0.05), mad)
-				for q in 3:
-					for b in 4:
-						B.box(no, Vector3(0.06, 0.26, 0.2), Vector3(e.x - 0.5 + b * 0.12, y0 + 0.6 + q * 0.5, e.y + 0.05), Texturas.material("tecido", Color.from_hsv(_rng.randf(), 0.5, 0.5)))
+				if Props.existe("estante_livros"):
+					Props.por(no, "estante_livros", Vector3(e.x - 0.5, y0, e.y + 0.05), 0.0, 0.85)
+				else:
+					B.box(no, Vector3(0.9, 1.9, 0.38), Vector3(e.x - 0.2, y0 + 0.95, e.y + 0.05), mad)
+					for q in 3:
+						for b in 4:
+							B.box(no, Vector3(0.06, 0.26, 0.2), Vector3(e.x - 0.5 + b * 0.12, y0 + 0.6 + q * 0.5, e.y + 0.05), Texturas.material("tecido", Color.from_hsv(_rng.randf(), 0.5, 0.5)))
 				_container(no, Vector3(e.x - 0.2, y0 + 1.0, e.y + 0.4), "Estante", "estante", 0.25)
-			B.box(no, Vector3(1.1, 0.42, 0.6), Vector3(r2.get_center().x, y0 + 0.21, r2.get_center().y), mad)
+			var mc := r2.get_center()
+			B.box(no, Vector3(1.1, 0.42, 0.6), Vector3(mc.x, y0 + 0.21, mc.y), mad)
+			# em cima da mesinha: jornais velhos e o cinzeiro
+			Props.por(no, "jornais" if _rng.randf() < 0.5 else "jornal", Vector3(mc.x - 0.2, y0 + 0.42, mc.y), _rng.randf() * 360.0, 0.8, 30.0, false)
+			Props.por(no, "cinzeiro_cheio" if _rng.randf() < 0.6 else "cinzeiro", Vector3(mc.x + 0.3, y0 + 0.42, mc.y + 0.1), _rng.randf() * 360.0, 1.0, 25.0, false)
+			var c3s: Vector2 = cantos[2]
+			if _rng.randf() < 0.6 and livre.call(c3s, 0.7):
+				Props.por(no, "poltrona" if _rng.randf() < 0.5 else "poltrona2", Vector3(c3s.x + 0.2, y0, c3s.y - 0.2), 135.0 + _rng.randf_range(-15, 15))
+			if _rng.randf() < 0.35:
+				Props.por(no, "garrafa", Vector3(mc.x + _rng.randf_range(-0.4, 0.4), y0 + 0.42, mc.y - 0.15), 0.0, 1.0, 25.0, false)
 		"cozinha":
 			var c0: Vector2 = cantos[0]
 			if livre.call(c0, 1.2):
 				B.box(no, Vector3(2.2, 0.9, 0.6), Vector3(c0.x + 1.1, y0 + 0.45, c0.y), branco)
 				B.box(no, Vector3(2.25, 0.05, 0.65), Vector3(c0.x + 1.1, y0 + 0.92, c0.y), _m("granito", Color(0.25, 0.25, 0.25), 0.3))
 				_container(no, Vector3(c0.x + 1.1, y0 + 0.8, c0.y + 0.5), "Armário da cozinha", "armario", 0.25)
+				# fogareiro com panela, latas e o botijão do lado
+				Props.por(no, "fogareiro", Vector3(c0.x + 1.6, y0 + 0.945, c0.y), 0.0, 0.9, 30.0, false)
+				if _rng.randf() < 0.6:
+					Props.por(no, "panela" if _rng.randf() < 0.5 else "panela2", Vector3(c0.x + 1.6, y0 + 1.06, c0.y), _rng.randf() * 360.0, 1.0, 25.0, false)
+				for i in _rng.randi_range(0, 3):
+					Props.por(no, ["lata", "lata_baixa", "pote"][_rng.randi() % 3], Vector3(c0.x + 0.3 + i * 0.16, y0 + 0.945, c0.y - 0.1 + _rng.randf() * 0.15), _rng.randf() * 360.0, 1.0, 20.0, false)
+				Props.por(no, "botijao", Vector3(c0.x + 2.5, y0, c0.y), _rng.randf() * 360.0, 1.0, 30.0, false)
 			var c1: Vector2 = cantos[1]
 			if livre.call(c1, 0.6):
 				B.box(no, Vector3(0.7, 1.75, 0.65), Vector3(c1.x - 0.1, y0 + 0.88, c1.y + 0.05), branco)
@@ -518,8 +540,16 @@ func _mobiliar(no: Node3D, r: Rect2, uso: String, y0: float, k: int, esc: Rect2)
 			B.box(no, Vector3(1.2, 0.05, 0.8), Vector3(m.x, y0 + 0.75, m.y), mad)
 			for s in [Vector2(-0.5, -0.3), Vector2(0.5, -0.3), Vector2(-0.5, 0.3), Vector2(0.5, 0.3)]:
 				B.box(no, Vector3(0.05, 0.73, 0.05), Vector3(m.x + s.x, y0 + 0.37, m.y + s.y), mad)
-			var cad := B.box(no, Vector3(0.42, 0.04, 0.42), Vector3(m.x + 0.9, y0 + 0.02, m.y + 0.4), mad)
-			cad.rotation = Vector3(1.5, 0.4, 0)
+			if Props.existe("cadeira"):
+				Props.por(no, "cadeira" if _rng.randf() < 0.5 else "cadeira2", Vector3(m.x + 0.2, y0, m.y + 0.55), 180.0 + _rng.randf_range(-20, 20))
+				if _rng.randf() < 0.5:
+					Props.por(no, "cadeira2", Vector3(m.x - 0.3, y0, m.y - 0.6), _rng.randf_range(-25, 25))
+				Props.por(no, "prato", Vector3(m.x + 0.2, y0 + 0.775, m.y + 0.15), 0.0, 1.0, 20.0, false)
+				if _rng.randf() < 0.5:
+					Props.por(no, "frigideira", Vector3(m.x - 0.3, y0 + 0.775, m.y - 0.1), _rng.randf() * 360.0, 1.0, 20.0, false)
+			else:
+				var cad := B.box(no, Vector3(0.42, 0.04, 0.42), Vector3(m.x + 0.9, y0 + 0.02, m.y + 0.4), mad)
+				cad.rotation = Vector3(1.5, 0.4, 0)
 		"quarto":
 			var c2: Vector2 = cantos[0]
 			if livre.call(c2 + Vector2(0.8, 1.0), 1.0):
@@ -529,6 +559,11 @@ func _mobiliar(no: Node3D, r: Rect2, uso: String, y0: float, k: int, esc: Rect2)
 				B.box(no, Vector3(1.5, 0.9, 0.08), Vector3(c2.x + 0.75, y0 + 0.6, c2.y - 0.02), mad)
 				B.box(no, Vector3(0.45, 0.5, 0.4), Vector3(c2.x + 1.8, y0 + 0.25, c2.y + 0.2), mad)
 				_container(no, Vector3(c2.x + 1.8, y0 + 0.6, c2.y + 0.5), "Criado-mudo", "gaveta", 0.1)
+				Props.por(no, "abajur", Vector3(c2.x + 1.8, y0 + 0.5, c2.y + 0.2), _rng.randf() * 360.0, 0.9, 25.0, false)
+			var c4q: Vector2 = cantos[2]
+			if livre.call(c4q, 0.8) and r2.size.y > 3.2 and _rng.randf() < 0.7:
+				Props.por(no, "comoda" if _rng.randf() < 0.5 else "comoda2", Vector3(c4q.x + 0.7, y0, c4q.y - 0.05), 180.0, 0.9)
+				_container(no, Vector3(c4q.x + 0.7, y0 + 0.8, c4q.y - 0.6), "Cômoda", "gaveta", 0.15)
 			var c3: Vector2 = cantos[1]
 			if livre.call(c3, 0.8):
 				B.box(no, Vector3(1.2, 2.0, 0.55), Vector3(c3.x - 0.4, y0 + 1.0, c3.y + 0.1), mad)
@@ -547,6 +582,15 @@ func _mobiliar(no: Node3D, r: Rect2, uso: String, y0: float, k: int, esc: Rect2)
 			for i in 3:
 				var x := r2.position.x + (i + 0.5) * r2.size.x / 3.0
 				var z1 := r2.get_center().y
+				if Props.existe("estante_ferro_larga"):
+					# duas estantes de ferro costas com costas, de frente para os corredores
+					for lado in [-1.0, 1.0]:
+						Props.por(no, "estante_ferro_larga", Vector3(x + lado * 0.3, y0, z1), 90.0 * lado, 0.95)
+					for b in 6:
+						if _rng.randf() < 0.5:
+							Props.por(no, ["lata", "lata_baixa", "pote"][_rng.randi() % 3], Vector3(x + _rng.randf_range(-0.25, 0.25), y0 + [0.07, 0.62, 1.15][_rng.randi() % 3], z1 - 0.75 + b * 0.3), _rng.randf() * 360.0, 1.0, 20.0, false)
+					_container(no, Vector3(x + 0.5, y0 + 1.0, z1), "Prateleira", "prateleira", 0.2)
+					continue
 				B.box(no, Vector3(0.6, 1.7, 3.2), Vector3(x, y0 + 0.85, z1), _m("metal", Color(0.55, 0.55, 0.55), 0.5, 0.5))
 				for q in 4:
 					B.box(no, Vector3(0.65, 0.04, 3.2), Vector3(x, y0 + 0.2 + q * 0.45, z1), _m("metal", Color(0.4, 0.4, 0.4), 0.5, 0.5))
@@ -556,12 +600,19 @@ func _mobiliar(no: Node3D, r: Rect2, uso: String, y0: float, k: int, esc: Rect2)
 				_container(no, Vector3(x + 0.5, y0 + 1.0, z1), "Prateleira", "prateleira", 0.2)
 			B.box(no, Vector3(2.0, 1.0, 0.7), Vector3(r2.end.x - 1.0, y0 + 0.5, r2.end.y - 0.5), mad)
 			_container(no, Vector3(r2.end.x - 1.0, y0 + 1.0, r2.end.y - 1.1), "Caixa registradora", "gaveta", 0.1)
+			if _rng.randf() < 0.4:
+				Props.por(no, "dinheiro", Vector3(r2.end.x - 1.2, y0 + 1.0, r2.end.y - 0.5), _rng.randf() * 360.0, 1.0, 20.0, false)
 		"deposito":
 			for i in 5:
 				var p2 := Vector2(_rng.randf_range(r2.position.x, r2.end.x), _rng.randf_range(r2.position.y, r2.end.y))
 				if livre.call(p2, 0.6):
 					B.box(no, Vector3(0.7, 0.6, 0.7), Vector3(p2.x, y0 + 0.3, p2.y), _m("papelao", Color(0.55, 0.42, 0.27)), Vector3(0, _rng.randf() * 90, 0))
 			_container(no, Vector3(r2.get_center().x, y0 + 0.8, r2.get_center().y), "Caixas do depósito", "caixa", 0.4)
+			var cd: Vector2 = cantos[0]
+			if livre.call(cd + Vector2(0.6, 0), 0.8):
+				Props.por(no, "estante_ferro", Vector3(cd.x + 0.6, y0, cd.y + 0.1), 0.0)
+			if _rng.randf() < 0.5:
+				Props.por(no, "lixo", Vector3(r2.end.x - 0.3, y0, r2.end.y - 0.3), _rng.randf() * 360.0)
 		"cabana":
 			var c6: Vector2 = cantos[0]
 			B.box(no, Vector3(0.9, 0.35, 1.9), Vector3(c6.x + 0.45, y0 + 0.2, c6.y + 0.95), mad)

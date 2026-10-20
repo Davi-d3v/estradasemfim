@@ -161,7 +161,7 @@ func atualizar(dt: float, ativo: bool) -> void:
 	main.jogador.zoom = info().get("zoom", 55.0)
 	if Input.is_action_just_pressed("recarregar") and eh_fogo(sel) and not String(main.hud.dica).begins_with("[R]"):
 		recarregar()
-	if Input.is_action_just_pressed("atacar"):
+	if Input.is_action_just_pressed("atacar") or (Input.is_action_pressed("atacar") and info().get("auto", false) and eh_fogo(sel)):
 		usar()
 
 func usar() -> void:
@@ -274,10 +274,14 @@ func atirar() -> void:
 	main.ruido(j.global_position, a.ruido, "tiro")
 	j.pitch = clampf(j.pitch + a.coice, -1.0, 0.6)
 	j.flash_tiro()
-	Som.em({"pistola": "tiro_pistola", "espingarda": "tiro_espingarda", "rifle": "tiro_rifle", "besta": "golpe_ar"}.get(sel, "tiro_pistola"), j.global_position + Vector3(0, 1.4, 0), 0.0 if sel != "besta" else -6.0, 0.05, 4.0)
+	var som: String = {"pistola": "tiro_pistola", "carabina": "tiro_pistola", "espingarda": "tiro_espingarda", "rifle": "tiro_rifle", "precisao": "tiro_rifle",
+		"fuzil": "tiro_rifle", "bullpup": "tiro_rifle", "prototipo": "tiro_pistola", "besta": "golpe_ar"}.get(sel, "tiro_pistola")
+	var vol := {"besta": -6.0, "fuzil": -3.0, "bullpup": -3.0, "prototipo": -9.0}.get(sel, 0.0) as float
+	Som.em(som, j.global_position + Vector3(0, 1.4, 0), vol, 0.05 if not a.get("auto", false) else 0.12, 4.0)
 	j.tremer(0.25 + a.coice * 4.0)
 	if j.corpo.modelo:
-		j.corpo.tocar("Pistol_Shoot", 1.6 if sel == "pistola" else 1.1, 0.03)
+		if not Armas.eh_longa(sel):
+			j.corpo.tocar("Pistol_Shoot", 1.6 if sel == "pistola" else 1.1, 0.03)
 
 ## O alvo (zumbi ou animal) mais perto ao longo do raio. {alvo, ponto, distancia, cabeca}
 func _raio(o: Vector3, d: Vector3, alcance: float) -> Dictionary:

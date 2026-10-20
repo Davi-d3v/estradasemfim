@@ -294,8 +294,19 @@ static func _vila(p: Node3D, f: Dictionary, r: RandomNumberGenerator, m: WorldGe
 	_vasculhavel(p, Vector3(0, 1.0, 4.0), "Poço da vila", "poco", 0.25, m, j.id + ":poco")
 	for k in 4:
 		var a := TAU * k / 4.0 + 0.4
-		var bc := B.box(p, Vector3(1.8, 0.1, 0.45), Vector3(sin(a) * 5.5, 0.45, 4.0 + cos(a) * 5.5), madeira)
-		bc.rotation.y = a
+		if Props.existe("banco_concreto"):
+			# banco de praça virado para o poço (frente do modelo em +Z)
+			Props.por(p, "banco_concreto" if k % 2 == 0 else "banco_praca", Vector3(sin(a) * 5.5, 0, 4.0 + cos(a) * 5.5), rad_to_deg(a) + 180.0, 0.9)
+		else:
+			var bc := B.box(p, Vector3(1.8, 0.1, 0.45), Vector3(sin(a) * 5.5, 0.45, 4.0 + cos(a) * 5.5), madeira)
+			bc.rotation.y = a
+	# mobiliário de rua que sobrou da cidade: ponto de ônibus, hidrante, caçamba, lixo
+	Props.por(p, "ponto_onibus", Vector3(4.9, 0, raio - 9.0), -90.0, 0.9)
+	Props.por(p, "hidrante", Vector3(-3.2, 0, raio - 6.0), r.randf() * 360.0)
+	Props.por(p, "hidrante", Vector3(3.2, 0, -10.0), r.randf() * 360.0)
+	Props.por(p, "cacamba_lixo", Vector3(-6.0, 0, -9.5), 0.0)
+	for k in 3:
+		Props.por(p, "lixo", Vector3(-6.0 + r.randf_range(-1.8, 1.8), 0, -8.0 + r.randf_range(0.0, 1.0)), r.randf() * 360.0, r.randf_range(0.8, 1.1), 40.0, false)
 	B.cyl(p, 0.35, 0.9, Vector3(4.0, 0.45, 9.0), B.mat(Color(0.25, 0.2, 0.15), 0.7, 0.6), Vector3.ZERO, 12)
 	B.sphere(p, 0.3, Vector3(4.0, 1.0, 9.0), B.emissive(Color(1.0, 0.5, 0.15), 3.0))
 	var fogo := OmniLight3D.new()
@@ -533,6 +544,8 @@ static func _ferro_velho(p: Node3D, f: Dictionary, r: RandomNumberGenerator, m: 
 			var rc2 := RandomNumberGenerator.new()
 			rc2.seed = r.randi()
 			var de_cima := m.carro_abandonado(c, Vector3(r.randf_range(-0.3, 0.3), 1.15, r.randf_range(-0.3, 0.3)), r.randf_range(-0.4, 0.4), rc2)
+	# muro de carros amassados nos fundos do pátio
+	Props.por(p, "muro_carros", Vector3(r.randf_range(-3.0, 3.0), -0.3, -raio + 5.0), r.randf_range(-6, 6), 1.0, 220.0)
 	# às vezes um reboque abandonado guardado no pátio
 	if r.randf() < 0.45:
 		m.reboque_abandonado_em(p.transform * Vector3(8, 0, 8), p.rotation.y + 1.2, "fv:" + j.id, r)
@@ -594,6 +607,22 @@ static func _acampamento(p: Node3D, f: Dictionary, r: RandomNumberGenerator, m: 
 	B.box(p, Vector3(0.4, 0.5, 0.25), Vector3(1.6, 0.25, 1.2), Texturas.material("tecido", Color(0.3, 0.32, 0.2)), Vector3(0, 0.6, 1.4))
 	_vasculhavel(p, Vector3(1.6, 0.4, 1.2), "Mochila largada", "acampamento", 0.1, m, j.id + ":moch")
 	_varal(p, Vector3(-3, 0, -1), Vector3(2, 0, -3), r)
+	# fogareiro e panela largados perto da fogueira
+	Props.por(p, "fogareiro", Vector3(-0.9, 0.0, 0.8), r.randf() * 360.0, 1.0, 35.0, false)
+	Props.por(p, "panela", Vector3(0.1, 0.25, 0.0), r.randf() * 360.0, 1.0, 30.0, false)
+	Props.por(p, "botijao", Vector3(-1.4, 0.0, 1.1), r.randf() * 360.0, 1.0, 35.0, false)
+	# às vezes uma casa móvel (trailer) abandonada no fundo do acampamento
+	if r.randf() < 0.5 and Props.existe("casa_trailer"):
+		var ct := Vector3(-9.5, 0, -2.0)
+		var giro_t := 90.0 + r.randf_range(-10, 10)
+		var eixo_t := Vector3(sin(deg_to_rad(giro_t)), 0, cos(deg_to_rad(giro_t)))
+		# apoiada no ponto mais baixo do terreno (no morro, a outra ponta fica enterrada)
+		var hmin := INF
+		for k in [-7.0, -3.5, 0.0, 3.5, 7.0]:
+			hmin = minf(hmin, _altura_local(p, m, ct + eixo_t * k))
+		ct.y = hmin - 0.1
+		Props.por(p, "casa_trailer" if r.randf() < 0.5 else "casa_trailer2", ct, giro_t, 1.0, 160.0)
+		_vasculhavel(p, ct + Vector3(1.0, 1.0, 0), "Casa móvel abandonada", "casa", 1.0, m, j.id + ":trailer")
 	_zumbis_lugar(p, r.randi_range(1, 3), 8.0, r, m)
 
 static func _torre(p: Node3D, f: Dictionary, r: RandomNumberGenerator, m: WorldGen) -> void:

@@ -1223,6 +1223,17 @@ func carro_abandonado(n: Node3D, pos: Vector3, rot_y: float, r: RandomNumberGene
 	c.rotation.y = rot_y
 	n.add_child(c)
 	var queimado := r.randf() < 0.45
+	# parte dos carros usa os modelos (Punto, viatura, carro velho enferrujado); a frente
+	# deles fica em +Z, como a do carro feito à mão
+	var sorte_modelo := r.randf()
+	if not desmontado and not queimado and sorte_modelo < 0.5:
+		var qual := "carro_velho" if sorte_modelo < 0.22 else ("carro_punto" if sorte_modelo < 0.4 else "carro_viatura")
+		if Props.existe(qual):
+			var mc := Props.por(c, qual, Vector3.ZERO, 0.0, 1.0, 160.0)
+			if mc:
+				c.rotation.z = r.randf_range(-0.03, 0.03)
+				c.set_meta("modelo", qual)
+				return c
 	var cores := [Color(0.35, 0.12, 0.1), Color(0.25, 0.3, 0.35), Color(0.55, 0.52, 0.45), Color(0.18, 0.22, 0.15), Color(0.6, 0.55, 0.4)]
 	var base: Color = cores[r.randi() % cores.size()]
 	var cor := B.worn(base, 0.2 if queimado else 0.55)

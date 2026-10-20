@@ -1,0 +1,92 @@
+armas_hd/acr.glb
+  "Adaptive Combat Rifle" — doomsentinel (https://sketchfab.com/doomsentinel)
+  CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+  https://sketchfab.com/3d-models/adaptive-combat-rifle-a18a8008a299430caa5f1fe05563c949
+armas_hd/kar98k.glb
+  "Kar98k Free Model" — Danya (https://sketchfab.com/dsamuta)
+  CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+  https://sketchfab.com/3d-models/kar98k-free-model-e88c90c8e203401fa28e8f4ef03e657f
+armas_hd/m1911.glb
+  "Kimber 1911" — m.daneshyab (https://sketchfab.com/m.daneshyab)
+  CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+  https://sketchfab.com/3d-models/kimber-1911-12b70050f764456fb4db69a37a96c505
+armas_hd/prototipo.glb
+  "Sci-fi Weapon | Firearm  | Game Ready" — by__Rx (https://sketchfab.com/by__Rx)
+  CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+  https://sketchfab.com/3d-models/sci-fi-weapon-firearm-game-ready-861a20e07d8d46208c9e5fa244c254d2
+armas_hd/saiga9.glb
+  "Saiga-9mm" — rwroclav (https://sketchfab.com/rwroclav)
+  CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+  https://sketchfab.com/3d-models/saiga-9mm-3d031dfeb2ad45beb19e89977225a631
+armas_hd/svd.glb
+  "SVD 63 - Dragunov" — lokeig (https://sketchfab.com/lokeig)
+  CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)
+  https://sketchfab.com/3d-models/svd-63-dragunov-07ff1bb7af4449409e23c04539b6040e
+sketchfab_padrao/bullpup.glb
+  "Sci-fi Bullpup Rifle" — Diamonddogkz (https://sketchfab.com/Diamonddogkz)
+  SKETCHFAB Standard (https://sketchfab.com/licenses)
+  https://sketchfab.com/3d-models/sci-fi-bullpup-rifle-1d3c8f11af294214a27fe8c64df0328e
+sketchfab_padrao/city_props.glb
+  "City Props Collection volume 1" — TampaJoey (https://sketchfab.com/TampaJoey)
+  SKETCHFAB Standard (https://sketchfab.com/licenses)
+  https://sketchfab.com/3d-models/city-props-collection-volume-1-32b8b82bb1e9489c993799c91967a916
+objetos/cinzeiro.glb
+  "Vintage Metal Ashtray" — Mattyew (https://sketchfab.com/mrgrandgrind)
+  CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+  https://sketchfab.com/3d-models/vintage-metal-ashtray-e3a5fd374386419680a26a3acaa18728
+objetos/cinzeiro_cigarros.glb
+  "Ashtray with Cigarettes" — YJ_ (https://sketchfab.com/YJ_)
+  CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+  https://sketchfab.com/3d-models/ashtray-with-cigarettes-6e9bfb5e4b1e42b791a51c40cb993306
+objetos/cozinha.glb
+  "Kitchen - Assets" — SeverDoes3D (https://sketchfab.com/SeverDoes3D)
+  CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+  https://sketchfab.com/3d-models/kitchen-assets-1bf20d2de7f749d889d69c42207ca669
+objetos/dinheiro.glb
+  "Russian's money" — CommunicationNode (https://sketchfab.com/Starven38)
+  CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)
+  https://sketchfab.com/3d-models/russians-money-005d9149a9a643949523cec943fadd61
+objetos/estante.glb
+  "Shelf" — Dmitriy Mitroshin (https://sketchfab.com/LtxxwSibeRia)
+  CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+  https://sketchfab.com/3d-models/shelf-7f9d5022f23e409fa18d641acba9fa4e
+objetos/estufa_plantas.glb
+  "Greenhouse Foliage" — Mats de Wind (https://sketchfab.com/matsdewind)
+  CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+  https://sketchfab.com/3d-models/greenhouse-foliage-12379c14d8284592a9c5cdb93d80b03f
+objetos/jornais.glb
+  "[CC0] Newspaper Stack - Ready to Unity HDRP" — karlwirbelwind (https://sketchfab.com/karlwirbelwind)
+  CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+  https://sketchfab.com/3d-models/cc0-newspaper-stack-ready-to-unity-hdrp-c4311a0b918643af97904e10c7a34efc
+objetos/jornal_ps1.glb
+  "PS1 Style Newspaper_ Bloody and Normal Versions" — Jan_Strydom (https://sketchfab.com/JanStrydom)
+  CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+  https://sketchfab.com/3d-models/ps1-style-newspaper--bloody-and-normal-versions-3ed544a635354217a1404f3b2426998d
+objetos/objetos_vila.glb
+  "Objects Interior(Village) Alpha" — Elbolillo (https://sketchfab.com/Elbolilloduro)
+  CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+  https://sketchfab.com/3d-models/objects-interiorvillage-alpha-c640f60b970a48648a158c91c1c45b2b
+objetos/saco_dinheiro.glb
+  "Bag of Money 💰" — Glowbox 3D (https://sketchfab.com/glowbox3d)
+  CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+  https://sketchfab.com/3d-models/bag-of-money-833e0a53433d4dc785644416b5edd32d
+carros/carro_enferrujado.glb
+  "Old Rusty Car" — Renafox (https://sketchfab.com/kryik1023)
+  CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)
+  https://sketchfab.com/3d-models/old-rusty-car-95baa20ebc5d4d2e869f0b549be838fe
+carros/muro_carros.glb
+  "Wall of Cars (Free Raw Scan)" — Renafox (https://sketchfab.com/kryik1023)
+  CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+  https://sketchfab.com/3d-models/wall-of-cars-free-raw-scan-57a42eafa761498495f282491603dffc
+carros/punto.glb
+  "(FREE) 1995 Fiat Punto GT" — Karol Miklas (https://sketchfab.com/karolmiklas)
+  CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+  https://sketchfab.com/3d-models/free-1995-fiat-punto-gt-48db6facb4b64e99b60f36b8c01185e1
+carros/trailer_park.glb
+  "Trailer Park" — Elbolillo (https://sketchfab.com/Elbolilloduro)
+  CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+  https://sketchfab.com/3d-models/trailer-park-3703c4cba0ec451582edb70d868c5737
+carros/viatura.glb
+  "Fairheaven LT '80 Cop Cruiser - Low poly model" — Daniel Zhabotinsky (https://sketchfab.com/DanielZhabotinsky)
+  CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+  https://sketchfab.com/3d-models/fairheaven-lt-80-cop-cruiser-low-poly-model-61766c1e6e1e4b2b803c174f33433a74

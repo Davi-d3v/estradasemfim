@@ -17,6 +17,7 @@ const VALOR := {
 	"galoes_diesel": 28, "municao_pistola": 2, "cartucho": 3, "municao_rifle": 4, "virote": 2,
 	"molotov": 9, "sinalizador": 7, "pele": 6, "couro": 12,
 	"pistola": 60, "espingarda": 110, "rifle": 160, "machado": 25, "besta": 70,
+	"carabina": 170, "fuzil": 260, "bullpup": 280, "precisao": 300, "prototipo": 420, "municao_fuzil": 3,
 	"colete_couro": 45, "capuz_couro": 25, "calca_couro": 35, "bracadeiras": 18,
 }
 ## o que cada tipo de banca negocia
@@ -26,7 +27,7 @@ const BANCAS := {
 	"remedio": ["remedio", "bandagem", "analgesico", "agua", "comida"],
 	"marco": ["comida", "agua", "galoes_diesel", "pecas", "remedio", "bandagem", "municao_pistola", "cartucho", "municao_rifle", "rifle", "espingarda", "colete_couro"],
 }
-const RARIDADE := {"pistola": 1, "espingarda": 2, "rifle": 3, "besta": 2, "eixo": 1, "colete_couro": 2}
+const RARIDADE := {"pistola": 1, "espingarda": 2, "rifle": 3, "besta": 2, "eixo": 1, "colete_couro": 2, "carabina": 3, "fuzil": 4, "bullpup": 4, "precisao": 4, "prototipo": 5}
 const NIVEIS_REP := [[0, "Desconhecido"], [20, "Conhecido"], [45, "Amigo"], [75, "Aliado"]]
 
 const FACCOES := [

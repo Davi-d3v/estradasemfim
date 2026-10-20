@@ -87,7 +87,7 @@ static func construir_marco(m: WorldGen, n: Node3D, z0: float, k: int, idx: int)
 		gp.y = m.altura(gp.x, gp.z)
 		var h := Lugares._pessoa(n, gp, rot + (PI if funcoes[i] == "vigia" else r.randf() * TAU), funcoes[i], r, m, "marco:%d:%d" % [idx, i])
 		if funcoes[i] == "vigia":
-			h.arma = "rifle"
+			h.arma = "fuzil" if r.randf() < 0.5 else "rifle"
 		h.set_meta("nao_mesclar", true)
 
 static func _conteiner(p: Node3D, pos: Vector3, cor: Color, r: RandomNumberGenerator) -> void:

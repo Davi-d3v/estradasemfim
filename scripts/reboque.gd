@@ -445,6 +445,12 @@ func _corpo_estufa() -> void:
 		for k in int((L - 0.4) / 0.3):
 			var z := -hz + 0.35 + k * 0.3
 			var verde := Color(0.15, 0.4, 0.12).lerp(Color(0.3, 0.5, 0.15), _rng.randf())
+			if Props.existe("planta_arbusto"):
+				# mudas com modelo (Greenhouse Foliage), crescem com o nível da estufa
+				var tipo_pl: String = ["planta_arbusto", "planta_costela", "planta_muda", "planta_capim", "planta_samambaia", "planta_palmeira"][_rng.randi() % 6]
+				var alt_pl := _rng.randf_range(0.28, 0.42) * (0.75 + nivel * 0.12)
+				Props.por(r, tipo_pl, Vector3(x + _rng.randf_range(-0.06, 0.06), 1.0, z), _rng.randf() * 360.0, alt_pl / maxf(Props.tamanho(tipo_pl).y, 0.1), 40.0, false)
+				continue
 			var pl := B.sphere(r, _rng.randf_range(0.1, 0.17) * (0.7 + nivel * 0.15), Vector3(x + _rng.randf_range(-0.08, 0.08), 1.1, z), B.mat(verde, 0.8), Vector3(1, 1.3, 1), 6)
 			if _rng.randf() < 0.25:
 				B.sphere(r, 0.04, pl.position + Vector3(0.05, 0.05, 0), B.mat(Color(0.85, 0.15, 0.08), 0.5), Vector3.ONE, 6)

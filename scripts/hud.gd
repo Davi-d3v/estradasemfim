@@ -385,7 +385,7 @@ func _icone_item(id: String, c: Vector2, e: float) -> void:
 			draw_rect(Rect2(c + Vector2(-14, -8) * e, Vector2(26, 8) * e), esc)
 			draw_colored_polygon(PackedVector2Array([c + Vector2(-12, 0) * e, c + Vector2(-4, 0) * e, c + Vector2(-6, 12) * e, c + Vector2(-14, 12) * e]), esc)
 			return
-		"espingarda", "rifle":
+		"espingarda", "rifle", "carabina", "fuzil", "bullpup", "precisao", "prototipo":
 			draw_line(c + Vector2(-18, 6) * e, c + Vector2(-4, 2) * e, mad, 6 * e)
 			draw_line(c + Vector2(-4, 1) * e, c + Vector2(18, -6) * e, esc, 3 * e if id == "espingarda" else 2 * e)
 			if id == "rifle":

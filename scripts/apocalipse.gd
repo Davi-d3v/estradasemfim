@@ -233,6 +233,11 @@ static func _barricada_quarentena(n: Node3D, m: WorldGen, z: float, r: RandomNum
 	var gu := B.box(n, Vector3(1.8, 2.4, 1.8), g[0] + Vector3(0, 1.0, 0), _m("metal", Color(0.3, 0.33, 0.25), 0.7, 0.4))
 	gu.rotation = Vector3(0.0, g[1], 0.25)
 	_tambor_fogo(n, _pt(m, z + 1.0, hw + 3.4)[0], r, true)
+	# muro de carros amassados fechando um dos lados (modelo escaneado)
+	if Props.existe("muro_carros") and r.randf() < 0.7:
+		var lado_m := -1.0 if r.randf() < 0.5 else 1.0
+		var am := _pt(m, z + r.randf_range(-3.0, 3.0), lado_m * (hw + 7.5))
+		Props.por(n, "muro_carros", am[0] - Vector3(0, 0.3, 0), rad_to_deg(am[1]) + 90.0 + r.randf_range(-8, 8), r.randf_range(0.8, 1.0), 220.0)
 
 static func _tambor_fogo(n: Node3D, p: Vector3, r: RandomNumberGenerator, aceso: bool) -> void:
 	B.cyl(n, 0.3, 0.9, p + Vector3(0, 0.45, 0), _m("metal", Color(0.3, 0.17, 0.1), 0.9, 0.4), Vector3.ZERO, 10)
