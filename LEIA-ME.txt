@@ -1,6 +1,10 @@
 ESTRADA SEM FIM — versão de teste (Windows 64 bits)
 
-Como jogar: descompacte a pasta e abra EstradaSemFim.exe.
+Como jogar: a partir da v0.17 o jogo vem em DOIS arquivos (o GitHub não aceita arquivos acima de 100 MB):
+  1) EstradaSemFim_Windows_v0.17.zip  — o jogo
+  2) EstradaSemFim_Windows_v0.17_modelos.zip — armas, móveis e carros detalhados (modelos.pck)
+Descompacte OS DOIS na MESMA pasta (o modelos.pck fica ao lado do EstradaSemFim.exe) e abra EstradaSemFim.exe.
+Sem o modelos.pck o jogo abre, mas com as armas e objetos simples.
 (O Windows pode mostrar "O Windows protegeu o computador": clique em "Mais informações" > "Executar assim mesmo". O jogo não é assinado.)
 
 Precisa de placa de vídeo com Vulkan (a maioria das placas de 2016 para cá).
@@ -22,6 +26,17 @@ CONTROLES
   Z .............. binóculo       J .......... diário (cartas e fitas)
 
 O tutorial aparece no primeiro jogo. Enter pula um passo; Backspace encerra.
+
+NOVIDADES v0.17
+  - Armas novas com modelo detalhado: Pistola 1911, Rifle Kar98k, Carabina Saiga-9, Fuzil ACR e fuzil bullpup
+    (automáticos: segure o botão), Dragunov de precisão (zoom longo) e um protótipo silencioso. Munição de fuzil 5,56.
+  - Armas longas seguradas com as duas mãos: coronha no ombro, mão no guarda-mão; arma baixa ao andar.
+  - Casas mobiliadas com sofá, poltronas, estante de livros, cômodas, abajur, fogareiro, botijão, panelas, latas,
+    jornais e cinzeiros; lojas com estantes de ferro.
+  - Carros de verdade largados na estrada (Fiat Punto, viatura de polícia, carro velho enferrujado).
+  - Muro de carros amassados no ferro-velho e nas barreiras; casa móvel abandonada nos acampamentos;
+    bancos, ponto de ônibus, hidrante e caçamba nas vilas; mudas de verdade na estufa.
+  - Créditos dos modelos em assets/LEIA-ME.txt do projeto (Sketchfab, CC-BY; três são só para uso não comercial).
 
 NOVIDADES v0.16
   - Só árvores de verdade: abetos, árvores de copa, pinheirinhos e arbustos (Poly Haven) na mata e na beira da estrada.
