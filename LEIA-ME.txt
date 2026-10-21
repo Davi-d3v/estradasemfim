@@ -1,8 +1,8 @@
 ESTRADA SEM FIM — versão de teste (Windows 64 bits)
 
 Como jogar: a partir da v0.17 o jogo vem em DOIS arquivos (o GitHub não aceita arquivos acima de 100 MB):
-  1) EstradaSemFim_Windows_v0.20.zip  — o jogo
-  2) EstradaSemFim_Windows_v0.20_modelos.zip — protagonista, moradores, zumbis, armas, móveis e carros detalhados (modelos.pck)
+  1) EstradaSemFim_Windows_v0.21.zip  — o jogo
+  2) EstradaSemFim_Windows_v0.21_modelos.zip — protagonista, moradores, zumbis, armas, móveis e carros detalhados (modelos.pck)
 Descompacte OS DOIS na MESMA pasta (o modelos.pck fica ao lado do EstradaSemFim.exe) e abra EstradaSemFim.exe.
 Sem o modelos.pck o jogo abre, mas com as armas e objetos simples.
 (O Windows pode mostrar "O Windows protegeu o computador": clique em "Mais informações" > "Executar assim mesmo". O jogo não é assinado.)
@@ -18,7 +18,7 @@ CONTROLES
   Botão dir. ..... mirar          R .......... recarregar
   1-9 / roda ..... barra rápida   E .......... interagir / entrar / vasculhar
   F .............. dirigir / sair do veículo    Espaço ..... freio
-  V .............. câmera do carro              Tab ........ oficina
+  V .............. 1ª/3ª pessoa (a pé) e câmera do carro    Tab ........ oficina
   B .............. criação        H .......... curar       C ........ acampar
   G .............. engatar reboque              L .......... luz do trailer
   F1 ............. tutorial       Esc ........ soltar o mouse
@@ -26,6 +26,12 @@ CONTROLES
   Z .............. binóculo       J .......... diário (cartas e fitas)
 
 O tutorial aparece no primeiro jogo. Enter pula um passo; Backspace encerra.
+
+NOVIDADES v0.21
+  - Primeira pessoa a pé (padrão). [V] alterna para a terceira pessoa.
+  - Objetivo sempre claro: painel com os passos, marcador dourado na tela com a distância e faixa de rumo no alto.
+  - HUD e menus redesenhados (letras novas, barras com número, barra rápida mais legível).
+  - Noite com luar: dá para enxergar a estrada fora do farol.
 
 NOVIDADES v0.20
   - Moradores, recrutas e zumbis realistas, no estilo do protagonista: médicos de jaleco, militares, operários,
