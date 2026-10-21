@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/stetoskop_n.jpg-f34bca1e06a5e3bfb083baf430c20
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

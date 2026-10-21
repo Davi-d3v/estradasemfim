@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/opacity.png-f1b955650fbd51eae8f01a0ecc9c8558.
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

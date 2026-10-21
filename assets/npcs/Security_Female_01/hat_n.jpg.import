@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/hat_n.jpg-d215dc9630e93577707e985110c6ede1.ct
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

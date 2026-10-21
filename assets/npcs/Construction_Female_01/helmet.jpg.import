@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/helmet.jpg-4fed4b4faeab48cab09c8a5266c11346.c
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

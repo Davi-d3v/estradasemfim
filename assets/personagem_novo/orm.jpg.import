@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/orm.jpg-7d082cdf2d600b525118e6b1cb16830f.ctex
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
