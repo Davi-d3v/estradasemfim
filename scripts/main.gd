@@ -1772,7 +1772,7 @@ func _atualizar_ceu() -> void:
 	var cor_lua := Color(0.45, 0.55, 0.85)
 	var cor_luz := cor_tarde.lerp(cor_dia, dia_f).lerp(cor_lua, noite_f)
 	sol.light_color = cor_luz
-	sol.light_energy = lerpf(lerpf(1.5, 1.25, dia_f), 0.32, noite_f)
+	sol.light_energy = lerpf(lerpf(1.5, 1.25, dia_f), 0.45, noite_f)
 	# céu
 	var topo := Color(0.17, 0.12, 0.3).lerp(Color(0.22, 0.42, 0.75), dia_f).lerp(Color(0.02, 0.025, 0.05), noite_f)
 	var meio := Color(0.52, 0.26, 0.4).lerp(Color(0.45, 0.62, 0.85), dia_f).lerp(Color(0.06, 0.08, 0.14), noite_f)
@@ -1806,7 +1806,11 @@ func _atualizar_ceu() -> void:
 		if clima:
 			ambiente.fog_density += clima.neblina * 0.03 + clima.chuva * 0.006 + clima.neve * 0.01
 			ambiente.fog_light_color = ambiente.fog_light_color.lerp(Color(0.52, 0.54, 0.58).lerp(Color(0.04, 0.045, 0.06), noite_f), maxf(clima.neblina, clima.nuvens) * 0.7)
-	ambiente.ambient_light_energy = lerpf(1.1, 0.9, dia_f) * lerpf(1.0, 0.6, noite_f)
+	ambiente.ambient_light_energy = lerpf(1.1, 0.9, dia_f) * lerpf(1.0, 0.85, noite_f)
+	# noite: o céu escuro quase não ilumina; um luar azulado de fundo deixa ver a estrada
+	# e as silhuetas sem lanterna (o farol e a lanterna continuam fazendo diferença)
+	ambiente.ambient_light_sky_contribution = lerpf(0.85, 0.3, noite_f)
+	ambiente.ambient_light_color = Color(0.17, 0.21, 0.31)
 	if trailer:
 		trailer.luz_interna = alt < 0.2
 	if dentro is Subsolo:
@@ -2633,15 +2637,14 @@ func _atualizar_hud() -> void:
 	hud.clima_txt = "%s · %s" % [clima.nome(), clima.estacao()]
 	hud.dirigindo = comboio.dirigindo
 	hud.mira = dentro != null or (jogador.visible and not comboio.dirigindo)
-	if comboio.dirigindo:
-		var ob := progresso.objetivo()
-		hud.objetivo = ob[0]
-		hud.subobjetivo = ob[1]
-	else:
+	_objetivo_hud()
+	if not comboio.dirigindo:
 		var la := mundo.lugar_em(jogador.position)
 		if not la.is_empty() and la.tipo == "assentamento":
 			var ea: Dictionary = defesa.obter(la.id)
 			hud.objetivo = ea.nome
+			hud.passos = []
+			hud.alvo_pos = Vector3.INF
 			match ea.fase:
 				"livre":
 					hud.subobjetivo = "Fale com o líder: ficar ou seguir?"
@@ -2655,6 +2658,43 @@ func _atualizar_hud() -> void:
 					hud.subobjetivo = "Assentamento aliado"
 				"caido":
 					hud.subobjetivo = "Caiu para a horda. Cuidado."
+
+## Objetivo claro no HUD: título, passos marcáveis e o ponto para onde ir (marcador na tela).
+func _objetivo_hud() -> void:
+	var ob := progresso.objetivo()
+	var al := progresso.alvo()
+	hud.objetivo = ob[0]
+	hud.subobjetivo = ""
+	var passos: Array = []
+	var alvo: Vector3 = al.pos
+	var nome: String = al.nome
+	if dentro != null:
+		hud.objetivo = "Dentro: " + dentro.nome_exibicao() if dentro.has_method("nome_exibicao") else hud.objetivo
+		passos.append(["Mire um objeto e aperte [E]   ·   [F] Sair", false])
+		hud.passos = passos
+		hud.alvo_pos = Vector3.INF
+		return
+	var tanque_f := comboio.diesel / maxf(comboio.tanque(), 1.0)
+	if tanque_f < 0.2:
+		passos.append(["Diesel baixo (%d L): ache um posto ou galões" % int(comboio.diesel), false])
+	if jogador.fome < 0.3 or jogador.sede < 0.3:
+		passos.append(["Coma e beba (barra rápida 1-9)", false])
+	if jogador.vida < 0.4:
+		passos.append(["Cure-se: [H] remédio ou bandagem", false])
+	if comboio.dirigindo:
+		passos.push_front([ob[1], false])
+	else:
+		var d_picape := jogador.global_position.distance_to(picape.global_position)
+		if d_picape > 25.0:
+			passos.push_front(["Volte para a picape e aperte [F] para dirigir", false])
+			alvo = picape.global_position
+			nome = "Picape"
+		else:
+			passos.push_front(["Entre na picape [F] e siga viagem", d_picape < 4.0])
+			passos.append([ob[1], false])
+	hud.passos = passos
+	hud.alvo_pos = alvo
+	hud.alvo_nome = nome
 
 # ------------------------------------------------------------ interações
 func _janela_aberta() -> bool:
@@ -4792,6 +4832,45 @@ func _capturar_objetos() -> void:
 			await get_tree().process_frame
 		await _salvar("pers_jogador")
 		jogador.visible = false
+	if fazer.call("fps"):
+		# 1ª pessoa: andando com facão, mirando fuzil e pistola; e a 3ª pessoa [V]
+		var pf := mundo.ponto_estrada(2600.0, 1.0)
+		mundo.atualizar(pf)
+		for f in 8:
+			await get_tree().process_frame
+		_limpar_zumbis_perto(pf, 60.0)
+		var az := mundo.ponto_estrada(2614.0, -1.0)
+		az.y = mundo.altura(az.x, az.z)
+		var zf := mundo.criar_zumbi(mundo, az, PI, 9, "comum")
+		zf.set_physics_process(false)
+		zf.set_process(false)
+		hud.visible = true
+		jogador.primeira_pessoa = true
+		for cfg in [["facao", false, "fps_facao"], ["fuzil", true, "fps_mira_fuzil"], ["pistola", true, "fps_mira_pistola"]]:
+			jogador.corpo.arma = cfg[0]
+			jogador.corpo.construir()
+			equip.sel = cfg[0]
+			_posar_jogador(pf, az + Vector3(0, 1.3, 0), -0.04 if cfg[1] else -0.25, 0.0)
+			jogador.set_process(true)
+			for f in 10:
+				jogador.mirando = cfg[1]
+				if cfg[1]:
+					jogador.corpo.pose_mirar(1.0)
+					if Armas.eh_longa(cfg[0]):
+						jogador.corpo.mirar_para(jogador._dir_mira())
+				_atualizar_hud()
+				await get_tree().process_frame
+			await _salvar(cfg[2])
+		jogador.mirando = false
+		jogador.primeira_pessoa = false
+		for f in 8:
+			_atualizar_hud()
+			await get_tree().process_frame
+		await _salvar("fps_terceira")
+		jogador.primeira_pessoa = true
+		jogador.set_process(false)
+		jogador.visible = false
+		hud.visible = false
 	if fazer.call("inicio"):
 		# começo do jogo: quantos zumbis perto e como fica a estrada à frente
 		var pj0 := mundo.ponto_estrada(-4.0, -0.6)

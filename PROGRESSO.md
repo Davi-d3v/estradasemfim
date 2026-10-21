@@ -202,5 +202,19 @@
   por cima do material, sem as caixinhas vermelhas antigas).
 - Sem o pacote de modelos, o jogo volta para os bonecos Quaternius.
 
+## Rodada v0.21 (1ª pessoa, objetivos claros, HUD novo)
+- [x] 1ª pessoa a pé (padrão), [V] alterna com a 3ª pessoa. O corpo continua visível (mãos, arma, pés, sombra) e a
+  cabeça "encolhe" (scripts/cabeca_oculta.gd). Mirando arma longa, o olho vai para a linha da mira; pistola na frente.
+  O corpo acompanha a câmera (anda de lado/de costas).
+- [x] Objetivos claros: painel "OBJETIVO" com título, passos marcáveis e distância; marcador dourado na tela com
+  nome e distância (preso na borda quando fora da vista); faixa de rumo no alto com N/L/S/O e o objetivo.
+  Passos: voltar para a picape / entrar e seguir, diesel baixo, comer e beber, curar-se; alvo = picape ou a
+  missão/marco seguinte (Progresso.alvo).
+- [x] HUD novo: fontes Barlow / Barlow Condensed (OFL), painéis com sombra, barras arredondadas com número,
+  barra rápida com o item escolhido em dourado; menu e painéis com títulos em letra condensada.
+- [x] Noite com luar azulado de fundo (dá para ver a estrada sem farol). Sujeira das roupas dos NPCs em marrom
+  (antes eram nuvens cinza no branco).
+- [x] Testes: salvar/carregar ok; recrutas, comércio e eventos rodados.
+
 ## Próximos
 - ouvir o retorno do Davi sobre a v0.9

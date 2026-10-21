@@ -27,6 +27,7 @@ var _cd_golpe := 0.0
 var _t_dano := 0.0
 var predio_atual: Predio = null
 var mirando := false
+var primeira_pessoa := true    # [V] alterna 1ª/3ª pessoa a pé
 var zoom := 40.0
 var binoculo := false        # olhando pelo binóculo (Exploracao)
 var _t_flash := 0.0
@@ -173,6 +174,8 @@ func _process(dt: float) -> void:
 	_t_golpe = maxf(0.0, _t_golpe - dt * 3.2)
 	_t_dano = maxf(0.0, _t_dano - dt * 1.5)
 	agachado = Input.is_action_pressed("agachar")
+	if Input.is_action_just_pressed("camera") and get_viewport().get_camera_3d() == camera:
+		primeira_pessoa = not primeira_pessoa
 	_t_flash = maxf(0.0, _t_flash - dt)
 	if _flash_luz:
 		_flash_luz.visible = _t_flash > 0.0
@@ -202,6 +205,9 @@ func _process(dt: float) -> void:
 		_vel_real = position.distance_to(nova) / maxf(dt, 0.0001)
 		position = nova
 		var alvo := atan2(mov.x, mov.z)
+		# em 1ª pessoa o corpo olha sempre para onde a câmera olha (anda de lado/de costas)
+		if camera.position.length() < 1.0:
+			alvo = yaw
 		corpo.rotation.y = lerp_angle(corpo.rotation.y, alvo, 10.0 * dt)
 		intensidade = move_toward(intensidade, 1.0, dt * 4.0)
 		fase += dt * vel * 2.6
@@ -211,6 +217,8 @@ func _process(dt: float) -> void:
 		intensidade = move_toward(intensidade, 0.0, dt * 4.0)
 		estamina = minf(1.0, estamina + dt * 0.05)
 		_vel_real = 0.0
+	if camera.position.length() < 1.0:
+		corpo.rotation.y = lerp_angle(corpo.rotation.y, yaw, minf(1.0, 12.0 * dt))
 	_tremor_camera(dt)
 	_passos(dt)
 	if corpo.modelo:
@@ -325,11 +333,18 @@ func _atualizar_predio(dt: float) -> void:
 	pivo.position.y = 1.55
 	if pr:
 		pr.corte(pr.andar_em(pr.local(position).y))
-		alvo_cam = Vector3(0, 0.08, 0.12)
+	if pr or primeira_pessoa:
+		# 1ª pessoa: câmera nos olhos; mirando, desce para a linha do cano (ombro direito)
+		alvo_cam = Vector3(0, 0.08, 0.14)
+		if mirando:
+			# arma longa: olho na linha da mira, logo acima da coronha no ombro direito
+			alvo_cam = Vector3(-0.095, 0.035, -0.03) if Armas.eh_longa(corpo.arma) else Vector3(-0.055, -0.035, 0.1)
 		pivo.position.y = 1.0 if agachado else 1.55
-	camera.position = camera.position.lerp(alvo_cam, minf(1.0, dt * 10.0)) if dt > 0.0 else alvo_cam
-	corpo.visible = camera.position.length() > 1.0
-	camera.near = 0.04 if pr else 0.05
+	camera.position = camera.position.lerp(alvo_cam, minf(1.0, dt * 12.0)) if dt > 0.0 else alvo_cam
+	var dentro := camera.position.length() < 1.0
+	corpo.visible = true
+	corpo.esconder_cabeca(dentro)
+	camera.near = 0.04 if dentro else 0.05
 
 func chao(p: Vector3) -> float:
 	var pr := mundo.estrutura_em(p, 0.25) if mundo else null

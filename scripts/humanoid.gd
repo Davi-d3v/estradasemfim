@@ -425,6 +425,9 @@ func _construir_modelo(rng: RandomNumberGenerator) -> void:
 	pegada.name = "PegadaArma"
 	pegada.corpo = self
 	sk.add_child(pegada)
+	oculta = CabecaOculta.new()
+	oculta.name = "CabecaOculta"
+	sk.add_child(oculta)
 	_acessorios_modelo()
 	_arma_modelo()
 	set_process(true)
@@ -645,6 +648,14 @@ func _arma_modelo() -> void:
 
 ## Arma longa nas mãos: pegada de duas mãos. mira = direção (mundo); baixa: 0 apontando, 1 arma baixa.
 var pegada: PegadaArma
+var oculta: CabecaOculta
+
+## 1ª pessoa: esconde a cabeça (e o que está preso nela) e mantém o resto do corpo.
+func esconder_cabeca(sim: bool) -> void:
+	if oculta:
+		oculta.ativo = sim
+	if cabeca_a:
+		cabeca_a.visible = not sim
 var _mirou := false
 func mirar_para(dir: Vector3) -> void:
 	if pegada:

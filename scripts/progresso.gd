@@ -318,6 +318,24 @@ func painel_diario() -> Dictionary:
 	linhas.append(["Próximo: %s, km %d (faltam %.1f km)" % [prox.nome, int(prox.km), maxf(0.0, (z_marco(marco_idx) - main._foco().z) / 1000.0)], Color(0.7, 0.7, 0.68)])
 	return {"titulo": "DIÁRIO DA ESTRADA", "subtitulo": "%d de %d peças da história" % [cartas.size(), CARTAS.size()], "linhas": linhas, "botoes": []}
 
+## Ponto do mundo para onde o objetivo aponta: a missão ativa mais próxima ou o próximo marco.
+func alvo() -> Dictionary:
+	var foco: Vector3 = main._foco()
+	var melhor := -1
+	var dmin := INF
+	for id in missoes:
+		var ms: Dictionary = missoes[id]
+		if ms.estado == "ativa":
+			var d: float = ms.z - foco.z
+			if d > -200.0 and d < dmin:
+				dmin = d
+				melhor = id
+	if melhor >= 0 and dmin <= 9000.0:
+		var ms: Dictionary = missoes[melhor]
+		return {"pos": main.mundo.ponto_estrada(ms.z, ms.lat), "nome": TIPOS_MISSAO[ms.tipo].nome}
+	var prox := marco(marco_idx)
+	return {"pos": main.mundo.ponto_estrada(z_marco(marco_idx), 0.0), "nome": String(prox.nome)}
+
 ## Texto do objetivo no HUD enquanto dirige.
 func objetivo() -> Array:
 	var foco: Vector3 = main._foco()

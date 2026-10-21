@@ -65,3 +65,4 @@ Endereços de cada modelo em licencas/Sketchfab_creditos.txt.
   licença MIT, em licencas/Microsoft_Rocketbox_MIT.txt): médicos, militares, operários, jardineiro, lenhador,
   segurança, cozinheira, executivo, adultos e crianças. Texturas reduzidas e "sujas" por tools/preparar_npcs.py;
   ligados ao esqueleto da UAL por tools/rigar_npc.gd (pesos automáticos).
+Fontes: Barlow e Barlow Condensed (Jeremy Tribby, SIL Open Font License, licencas/Barlow_OFL.txt) em fontes/.

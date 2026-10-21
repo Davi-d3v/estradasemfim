@@ -21,13 +21,14 @@ def sujar(img, forca, semente):
     cinza = a.mean(axis=2, keepdims=True)
     a = a * (1 - 0.28 * forca) + cinza * 0.28 * forca          # dessatura
     a *= 1.0 - 0.14 * forca                                       # escurece
-    # manchas grandes de terra (marrom) e menores de graxa (quase preto)
-    m1 = ruido(lado, 64, semente) * 0.6 + ruido(lado, 16, semente + 1) * 0.4
-    m1 = np.clip((m1 - 0.5) * 2.0, 0, 1)[..., None] * forca
-    terra = np.array([0.42, 0.33, 0.24], np.float32)
-    a = a * (1 - m1 * 0.55) + terra * a.mean() * 1.6 * m1 * 0.55
-    m2 = np.clip((ruido(lado, 24, semente + 2) - 0.7) * 3.0, 0, 1)[..., None] * forca
-    a = a * (1 - m2 * 0.3)
+    # manchas de terra (marrom quente, não cinza) e marcas menores de graxa
+    m1 = ruido(lado, 40, semente) * 0.6 + ruido(lado, 12, semente + 1) * 0.4
+    m1 = np.clip((m1 - 0.52) * 2.4, 0, 1)[..., None] * forca
+    terra = np.array([0.80, 0.68, 0.52], np.float32)
+    a = a * (1 - m1 * 0.6) + a * terra * m1 * 0.6
+    m2 = np.clip((ruido(lado, 18, semente + 2) - 0.72) * 3.0, 0, 1)[..., None] * forca
+    graxa = np.array([0.62, 0.58, 0.52], np.float32)
+    a = a * (1 - m2 * 0.35) + a * graxa * m2 * 0.35
     # poeira fina geral
     g = ruido(lado, 2, semente + 3)[..., None]
     a = a * (0.92 + 0.08 * g)

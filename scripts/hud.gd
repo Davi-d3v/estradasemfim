@@ -9,8 +9,11 @@ var aliados: Array[Vector3] = []   # recrutas no acampamento
 var recrutas_txt := ""
 var dia := 1
 var hora := 18.78
-var objetivo := "Volte para o trailer"
-var subobjetivo := "Leve os recursos que saqueou (0/1)"
+var objetivo := "Pegue a estrada"
+var subobjetivo := ""
+var passos: Array = []          # [[texto, feito], ...] abaixo do objetivo
+var alvo_pos := Vector3.INF     # para onde o objetivo aponta (marcador na tela e na faixa de rumo)
+var alvo_nome := ""
 var dica := ""
 var slot_ativo := 0
 var dirigindo := false
@@ -81,9 +84,14 @@ func aviso(t: String) -> void:
 	_aviso_t = 3.5
 var itens := [["facao", 1], ["mochila", 2], ["medkit", 2], ["lata", 3], ["agua", 4], ["madeira", 12]]
 
-const FUNDO := Color(0.06, 0.06, 0.07, 0.72)
-const BORDA := Color(1, 1, 1, 0.08)
+const FUNDO := Color(0.045, 0.045, 0.05, 0.78)
+const BORDA := Color(1, 1, 1, 0.07)
 const DOURADO := Color(0.95, 0.68, 0.22)
+const TEXTO := Color(0.93, 0.92, 0.88)
+const APAGADO := Color(0.66, 0.65, 0.62)
+var _y_obj_fim := 0.0
+static var _f_texto: Font
+static var _f_titulo: Font
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -97,8 +105,16 @@ func _process(dt: float) -> void:
 	relatorio_t = maxf(0.0, relatorio_t - dt)
 	queue_redraw()
 
+## Barlow (texto) e Barlow Condensed (títulos e números), fontes livres (OFL).
 func _fonte() -> Font:
-	return ThemeDB.fallback_font
+	if _f_texto == null:
+		_f_texto = load("res://assets/fontes/Barlow-Medium.ttf") if ResourceLoader.exists("res://assets/fontes/Barlow-Medium.ttf") else ThemeDB.fallback_font
+	return _f_texto
+
+func _fonte_t() -> Font:
+	if _f_titulo == null:
+		_f_titulo = load("res://assets/fontes/BarlowCondensed-SemiBold.ttf") if ResourceLoader.exists("res://assets/fontes/BarlowCondensed-SemiBold.ttf") else _fonte()
+	return _f_titulo
 
 func _painel(r: Rect2, raio := 6) -> void:
 	var sb := StyleBoxFlat.new()
@@ -106,11 +122,24 @@ func _painel(r: Rect2, raio := 6) -> void:
 	sb.border_color = BORDA
 	sb.set_border_width_all(1)
 	sb.set_corner_radius_all(raio)
+	sb.shadow_color = Color(0, 0, 0, 0.25)
+	sb.shadow_size = 6
 	draw_style_box(sb, r)
 
-func _texto(t: String, p: Vector2, tam: int, cor := Color(0.93, 0.92, 0.88), alinh := HORIZONTAL_ALIGNMENT_LEFT, largura := -1.0) -> void:
+func _texto(t: String, p: Vector2, tam: int, cor := TEXTO, alinh := HORIZONTAL_ALIGNMENT_LEFT, largura := -1.0) -> void:
 	draw_string(_fonte(), p + Vector2(1, 1), t, alinh, largura, tam, Color(0, 0, 0, 0.6))
 	draw_string(_fonte(), p, t, alinh, largura, tam, cor)
+
+## Título em letra condensada (maiúsculas ficam elegantes e cabem mais).
+func _titulo(t: String, p: Vector2, tam: int, cor := TEXTO, alinh := HORIZONTAL_ALIGNMENT_LEFT, largura := -1.0) -> void:
+	draw_string(_fonte_t(), p + Vector2(1, 1.5), t, alinh, largura, tam, Color(0, 0, 0, 0.65))
+	draw_string(_fonte_t(), p, t, alinh, largura, tam, cor)
+
+## Distância legível: 34 m, 1,2 km.
+static func distancia_txt(d: float) -> String:
+	if d < 1000.0:
+		return "%d m" % int(round(d))
+	return ("%.1f km" % (d / 1000.0)).replace(".", ",")
 
 ## Vinheta do binóculo: dois círculos e o resto escuro.
 func _binoculo(s: Vector2, e: float) -> void:
@@ -164,6 +193,8 @@ func _draw() -> void:
 	if cochilo > 0.0:
 		draw_rect(Rect2(Vector2.ZERO, s), Color(0, 0, 0, clampf(cochilo * 1.4, 0.0, 0.96)))
 	_objetivo(e)
+	_marcador_alvo(s, e)
+	_faixa_rumo(s, e)
 	_relogio(s, e)
 	if not defesa.is_empty():
 		_painel_defesa(s, e)
@@ -236,21 +267,114 @@ func _draw() -> void:
 		_texto(dica, r.position + Vector2(0, 23 * e), int(16 * e), Color(1, 1, 1), HORIZONTAL_ALIGNMENT_CENTER, w)
 
 func _objetivo(e: float) -> void:
-	var r := Rect2(Vector2(20, 20) * e, Vector2(340, 66) * e)
+	var lista: Array = passos.duplicate()
+	if lista.is_empty() and subobjetivo != "":
+		lista = [[subobjetivo, false]]
+	var w := 380.0 * e
+	var h := (58.0 + lista.size() * 22.0) * e
+	var r := Rect2(Vector2(20, 20) * e, Vector2(w, h))
+	_y_obj_fim = r.end.y
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = FUNDO
 	sb.set_corner_radius_all(int(6 * e))
-	sb.border_width_left = int(3 * e)
+	sb.border_width_left = int(4 * e)
 	sb.border_color = DOURADO
+	sb.shadow_color = Color(0, 0, 0, 0.25)
+	sb.shadow_size = 6
 	draw_style_box(sb, r)
-	var c := r.position + Vector2(22, 22) * e
-	var losango := PackedVector2Array([c + Vector2(0, -8) * e, c + Vector2(8, 0) * e, c + Vector2(0, 8) * e, c + Vector2(-8, 0) * e])
-	draw_colored_polygon(losango, DOURADO)
-	draw_colored_polygon(PackedVector2Array([c + Vector2(0, -3.5) * e, c + Vector2(3.5, 0) * e, c + Vector2(0, 3.5) * e, c + Vector2(-3.5, 0) * e]), Color(0.1, 0.08, 0.05))
-	_texto(objetivo, r.position + Vector2(40, 28) * e, int(19 * e), DOURADO)
-	var cb := Rect2(r.position + Vector2(40, 40) * e, Vector2(13, 13) * e)
-	draw_rect(cb, Color(1, 1, 1, 0.7), false, 1.5 * e)
-	_texto(subobjetivo, r.position + Vector2(62, 52) * e, int(14 * e))
+	_titulo("OBJETIVO", r.position + Vector2(18, 20) * e, int(13 * e), DOURADO)
+	# distância até o alvo, à direita
+	if alvo_pos != Vector3.INF and jogador:
+		var d := (alvo_pos - _pos_jogador()) * Vector3(1, 0, 1)
+		_titulo(distancia_txt(d.length()), r.position + Vector2(0, 20) * e, int(15 * e), TEXTO, HORIZONTAL_ALIGNMENT_RIGHT, w - 16 * e)
+	_titulo(objetivo, r.position + Vector2(18, 44) * e, int(23 * e), TEXTO)
+	for i in lista.size():
+		var y := r.position.y + (60 + i * 22) * e
+		var feito: bool = lista[i][1]
+		var cb := Rect2(Vector2(r.position.x + 20 * e, y - 1 * e), Vector2(12, 12) * e)
+		if feito:
+			draw_rect(cb, DOURADO)
+			draw_polyline(PackedVector2Array([cb.position + Vector2(2.5, 6) * e, cb.position + Vector2(5, 9) * e, cb.position + Vector2(10, 3) * e]), Color(0.1, 0.08, 0.05), 2.0 * e)
+		else:
+			draw_rect(cb, Color(1, 1, 1, 0.75), false, 1.5 * e)
+		_texto(String(lista[i][0]), Vector2(r.position.x + 40 * e, y + 10 * e), int(15 * e), APAGADO if feito else TEXTO)
+
+func _pos_jogador() -> Vector3:
+	if jogador == null:
+		return Vector3.ZERO
+	return jogador.global_position if jogador.is_inside_tree() else jogador.position
+
+## Marcador do objetivo na tela: losango dourado com nome e distância; fora da tela,
+## fica preso na borda apontando para o lado certo.
+func _marcador_alvo(s: Vector2, e: float) -> void:
+	if alvo_pos == Vector3.INF or binoculo or cochilo > 0.3:
+		return
+	var cam := get_viewport().get_camera_3d()
+	if cam == null or jogador == null:
+		return
+	var p3 := alvo_pos + Vector3(0, 1.6, 0)
+	var dist := (alvo_pos - cam.global_position).length()
+	if dist < 6.0:
+		return
+	var atras := cam.is_position_behind(p3)
+	var p := cam.unproject_position(p3)
+	var margem := 70.0 * e
+	var dentro := not atras and p.x > margem and p.x < s.x - margem and p.y > margem and p.y < s.y - margem
+	if not dentro:
+		var c := s * 0.5
+		var dir := (p - c)
+		if atras:
+			dir = -dir
+		if dir.length() < 1.0:
+			dir = Vector2(0, 1)
+		dir = dir.normalized()
+		var lim := (s * 0.5 - Vector2(margem, margem))
+		var k := minf(lim.x / maxf(absf(dir.x), 0.001), lim.y / maxf(absf(dir.y), 0.001))
+		p = c + dir * k
+		var pt := p + dir * 20 * e
+		var lado := Vector2(-dir.y, dir.x) * 7 * e
+		draw_colored_polygon(PackedVector2Array([pt, p + dir * 11 * e + lado, p + dir * 11 * e - lado]), DOURADO)
+	var tam := 9.0 * e
+	draw_colored_polygon(PackedVector2Array([p + Vector2(0, -tam - 2 * e), p + Vector2(tam + 2 * e, 0), p + Vector2(0, tam + 2 * e), p + Vector2(-tam - 2 * e, 0)]), Color(0, 0, 0, 0.55))
+	draw_colored_polygon(PackedVector2Array([p + Vector2(0, -tam), p + Vector2(tam, 0), p + Vector2(0, tam), p + Vector2(-tam, 0)]), DOURADO)
+	draw_colored_polygon(PackedVector2Array([p + Vector2(0, -tam * 0.4), p + Vector2(tam * 0.4, 0), p + Vector2(0, tam * 0.4), p + Vector2(-tam * 0.4, 0)]), Color(0.1, 0.08, 0.05))
+	var txt := (alvo_nome.to_upper() + "  ·  " if alvo_nome != "" else "") + distancia_txt(dist)
+	_titulo(txt, p + Vector2(-160 * e, tam + 20 * e), int(15 * e), TEXTO, HORIZONTAL_ALIGNMENT_CENTER, 320 * e)
+
+## Faixa de rumo no alto da tela: pontos cardeais e o objetivo (losango dourado).
+func _faixa_rumo(s: Vector2, e: float) -> void:
+	if jogador == null or binoculo:
+		return
+	var w := 460.0 * e
+	var r := Rect2(Vector2(s.x * 0.5 - w * 0.5, 18 * e), Vector2(w, 30 * e))
+	if not defesa.is_empty():
+		r.position.y += 90 * e
+	_painel(r, 4)
+	var cam := get_viewport().get_camera_3d()
+	var yaw: float = jogador.yaw
+	if cam:
+		var f := -cam.global_basis.z
+		yaw = atan2(f.x, f.z)
+	var meio := r.position.x + w * 0.5
+	var px_por_rad := w / (PI * 0.9)
+	# norte = +Z (a estrada segue para o norte), oeste = +X
+	var marcas := {"N": 0.0, "NO": PI * 0.25, "O": PI * 0.5, "SO": PI * 0.75, "S": PI, "SE": -PI * 0.75, "L": -PI * 0.5, "NE": -PI * 0.25}
+	for i in 24:
+		var x2 := meio + wrapf(float(i) * TAU / 24.0 - yaw, -PI, PI) * -px_por_rad
+		if x2 > r.position.x + 6 * e and x2 < r.end.x - 6 * e:
+			draw_line(Vector2(x2, r.end.y - 6 * e), Vector2(x2, r.end.y - 2 * e), Color(1, 1, 1, 0.3), 1.0)
+	for k in marcas:
+		var x := meio + wrapf(float(marcas[k]) - yaw, -PI, PI) * -px_por_rad
+		if x < r.position.x + 14 * e or x > r.end.x - 14 * e:
+			continue
+		var grande := String(k).length() == 1
+		_titulo(k, Vector2(x - 20 * e, r.position.y + (21 if grande else 20) * e), int((17 if grande else 12) * e), TEXTO if grande else APAGADO, HORIZONTAL_ALIGNMENT_CENTER, 40 * e)
+	if alvo_pos != Vector3.INF:
+		var d := alvo_pos - _pos_jogador()
+		var x3 := clampf(meio + wrapf(atan2(d.x, d.z) - yaw, -PI, PI) * -px_por_rad, r.position.x + 10 * e, r.end.x - 10 * e)
+		var c := Vector2(x3, r.end.y + 3 * e)
+		draw_colored_polygon(PackedVector2Array([c, c + Vector2(6, 7) * e, c + Vector2(0, 14) * e, c + Vector2(-6, 7) * e]), DOURADO)
+	draw_line(Vector2(meio, r.position.y + 2 * e), Vector2(meio, r.position.y + 8 * e), DOURADO, 2.0 * e)
 
 func _relogio(s: Vector2, e: float) -> void:
 	var w := 168.0 * e
@@ -258,7 +382,7 @@ func _relogio(s: Vector2, e: float) -> void:
 	_painel(r)
 	var h := int(hora)
 	var m := int((hora - h) * 60.0)
-	_texto("Dia %d   %02d:%02d" % [dia, h, m], r.position + Vector2(14, 27) * e, int(19 * e))
+	_titulo("DIA %d   %02d:%02d" % [dia, h, m], r.position + Vector2(14, 28) * e, int(21 * e))
 	var c := r.position + Vector2(w - 24 * e, 22 * e)
 	var noite := hora < 6.0 or hora > 19.3
 	if noite:
@@ -319,9 +443,18 @@ func _barras(s: Vector2, e: float) -> void:
 		var y := r.position.y + (20 + i * 33) * e
 		var ic := Vector2(r.position.x + 22 * e, y + 6 * e)
 		_icone_status(i, ic, e)
-		var bar := Rect2(Vector2(r.position.x + 44 * e, y), Vector2(140, 13) * e)
-		draw_rect(bar, Color(1, 1, 1, 0.08))
-		draw_rect(Rect2(bar.position, Vector2(bar.size.x * vals[i], bar.size.y)), cores[i])
+		var bar := Rect2(Vector2(r.position.x + 44 * e, y + 2 * e), Vector2(118, 10) * e)
+		var sf := StyleBoxFlat.new()
+		sf.bg_color = Color(1, 1, 1, 0.08)
+		sf.set_corner_radius_all(int(5 * e))
+		draw_style_box(sf, bar)
+		var v: float = clampf(vals[i], 0.0, 1.0)
+		if v > 0.02:
+			var sv := StyleBoxFlat.new()
+			sv.bg_color = cores[i] if v > 0.25 or int(Time.get_ticks_msec() / 350) % 2 == 0 else cores[i].lightened(0.35)
+			sv.set_corner_radius_all(int(5 * e))
+			draw_style_box(sv, Rect2(bar.position, Vector2(maxf(bar.size.x * v, 10 * e), bar.size.y)))
+		_titulo("%d" % int(round(v * 100.0)), Vector2(bar.end.x + 4 * e, y + 12 * e), int(14 * e), APAGADO, HORIZONTAL_ALIGNMENT_RIGHT, 30 * e)
 
 func _icone_status(i: int, c: Vector2, e: float) -> void:
 	var b := Color(0.95, 0.95, 0.95)
@@ -356,11 +489,16 @@ func _barra_rapida(s: Vector2, e: float) -> void:
 	var y := s.y - tam - 22 * e
 	for i in itens.size():
 		var r := Rect2(Vector2(x0 + i * (tam + gap), y), Vector2(tam, tam))
-		_painel(r, 4)
+		_painel(r, 6)
 		if i == slot_ativo:
-			draw_rect(r.grow(-1), Color(0.95, 0.95, 0.9, 0.9), false, 2.0 * e)
-		_texto(str(i + 1), r.position + Vector2(6, 14) * e, int(12 * e), Color(1, 1, 1, 0.6))
-		_texto(str(itens[i][1]), r.position + Vector2(0, tam - 8 * e), int(15 * e), Color(1, 1, 1), HORIZONTAL_ALIGNMENT_RIGHT, tam - 6 * e)
+			var sa := StyleBoxFlat.new()
+			sa.bg_color = Color(0.95, 0.68, 0.22, 0.12)
+			sa.border_color = DOURADO
+			sa.set_border_width_all(int(maxf(2.0, 2.0 * e)))
+			sa.set_corner_radius_all(6)
+			draw_style_box(sa, r)
+		_titulo(str(i + 1), r.position + Vector2(7, 16) * e, int(14 * e), DOURADO if i == slot_ativo else Color(1, 1, 1, 0.55))
+		_titulo(str(itens[i][1]), r.position + Vector2(0, tam - 7 * e), int(17 * e), Color(1, 1, 1), HORIZONTAL_ALIGNMENT_RIGHT, tam - 7 * e)
 		_icone_item(itens[i][0], r.get_center() + Vector2(0, -2) * e, e)
 
 func _icone_item(id: String, c: Vector2, e: float) -> void:
@@ -525,8 +663,7 @@ func _mapa(d: Vector3, yaw: float) -> Vector2:
 func _recursos(e: float) -> void:
 	if estoque.is_empty():
 		return
-	var r := Rect2(Vector2(20, 94) * e, Vector2(340, 30) * e)
-	r.size.y = 52 * e
+	var r := Rect2(Vector2(20 * e, _y_obj_fim + 8 * e), Vector2(380, 52) * e)
 	_painel(r)
 	_texto("Peças %d   Sucata %d   Pneus %d   Eixos %d   Galões %d" % [estoque.get("pecas", 0), estoque.get("sucata", 0), estoque.get("pneu", 0), estoque.get("eixo", 0), estoque.get("galoes_diesel", 0)], r.position + Vector2(12, 21) * e, int(14 * e), Color(0.85, 0.85, 0.8))
 	var cheia := carga_usada >= carga_max - 0.5

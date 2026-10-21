@@ -35,9 +35,22 @@ func _fundo(alfa: float) -> void:
 	_caixa.custom_minimum_size = Vector2(760, 0)
 	centro.add_child(_caixa)
 
-func _label(t: String, tam: int, cor := Color(0.93, 0.91, 0.86), centro := true) -> Label:
+static var _f_titulo: FontVariation
+
+## Título em Barlow Condensed com letras espaçadas.
+static func fonte_titulo() -> Font:
+	if _f_titulo == null:
+		_f_titulo = FontVariation.new()
+		if ResourceLoader.exists("res://assets/fontes/BarlowCondensed-Bold.ttf"):
+			_f_titulo.base_font = load("res://assets/fontes/BarlowCondensed-Bold.ttf")
+		_f_titulo.spacing_glyph = 3
+	return _f_titulo
+
+func _label(t: String, tam: int, cor := Color(0.93, 0.91, 0.86), centro := true, titulo := false) -> Label:
 	var l := Label.new()
 	l.text = t
+	if titulo:
+		l.add_theme_font_override("font", fonte_titulo())
 	l.add_theme_font_size_override("font_size", tam)
 	l.add_theme_color_override("font_color", cor)
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -73,8 +86,9 @@ func _cartao(titulo: String, texto: String, acao: Callable, destaque := false) -
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	b.add_child(v)
 	var t := Label.new()
-	t.text = titulo
-	t.add_theme_font_size_override("font_size", 24)
+	t.text = titulo.to_upper()
+	t.add_theme_font_override("font", fonte_titulo())
+	t.add_theme_font_size_override("font_size", 26)
 	t.add_theme_color_override("font_color", DOURADO)
 	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(t)
@@ -93,8 +107,8 @@ func mostrar_inicio() -> void:
 	visible = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_fundo(0.55)
-	_label("ESTRADA SEM FIM", 64, Color(0.96, 0.93, 0.85))
-	_label("O mundo caiu. Tudo o que você tem é o seu comboio.", 18, DOURADO)
+	_label("ESTRADA SEM FIM", 84, Color(0.96, 0.93, 0.85), true, true)
+	_label("O MUNDO CAIU. TUDO O QUE VOCÊ TEM É O SEU COMBOIO.", 17, DOURADO, true, true)
 	var esp := Control.new()
 	esp.custom_minimum_size = Vector2(0, 18)
 	_caixa.add_child(esp)
@@ -112,8 +126,8 @@ func mostrar_inicio() -> void:
 	var esp2 := Control.new()
 	esp2.custom_minimum_size = Vector2(0, 8)
 	_caixa.add_child(esp2)
-	_label("CONTROLES", 15, DOURADO)
-	_label("WASD andar · Shift correr · Ctrl agachar · Espaço pular · Mouse olhar · Botão esq. atacar/usar · Botão dir. mirar · R recarregar\n1-9 / rodinha trocar item · E interagir/vasculhar · F entrar/dirigir · Tab oficina · B criação · C acampar · H remédio · Z binóculo · J diário\nNo carro: WASD dirigir · Espaço freio · G engatar · L luz · V câmera · R abastecer com galão · Esc solta o mouse · F5 salvar · J diário", 13, Color(0.8, 0.78, 0.74))
+	_label("CONTROLES", 16, DOURADO, true, true)
+	_label("WASD andar · Shift correr · Ctrl agachar · Espaço pular · Mouse olhar · Botão esq. atacar/usar · Botão dir. mirar · R recarregar · V 1ª/3ª pessoa\n1-9 / rodinha trocar item · E interagir/vasculhar · F entrar/dirigir · Tab oficina · B criação · C acampar · H remédio · Z binóculo · J diário\nNo carro: WASD dirigir · Espaço freio · G engatar · L luz · V câmera · R abastecer com galão · Esc solta o mouse · F5 salvar · J diário", 13, Color(0.8, 0.78, 0.74))
 
 func _escolher(m: String) -> void:
 	visible = false
@@ -125,7 +139,7 @@ func mostrar_morte(causa: String, linhas: Array, total: bool) -> void:
 	visible = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_fundo(0.82)
-	_label("VOCÊ MORREU" if total else "VOCÊ CAIU", 60, Color(0.85, 0.2, 0.15))
+	_label("VOCÊ MORREU" if total else "VOCÊ CAIU", 76, Color(0.85, 0.2, 0.15), true, true)
 	_label(causa, 20, Color(0.9, 0.88, 0.82))
 	var esp := Control.new()
 	esp.custom_minimum_size = Vector2(0, 10)
