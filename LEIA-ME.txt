@@ -1,8 +1,8 @@
 ESTRADA SEM FIM — versão de teste (Windows 64 bits)
 
 Como jogar: a partir da v0.17 o jogo vem em DOIS arquivos (o GitHub não aceita arquivos acima de 100 MB):
-  1) EstradaSemFim_Windows_v0.18.zip  — o jogo
-  2) EstradaSemFim_Windows_v0.18_modelos.zip — protagonista, armas, móveis e carros detalhados (modelos.pck)
+  1) EstradaSemFim_Windows_v0.19.zip  — o jogo
+  2) EstradaSemFim_Windows_v0.19_modelos.zip — protagonista, armas, móveis e carros detalhados (modelos.pck)
 Descompacte OS DOIS na MESMA pasta (o modelos.pck fica ao lado do EstradaSemFim.exe) e abra EstradaSemFim.exe.
 Sem o modelos.pck o jogo abre, mas com as armas e objetos simples.
 (O Windows pode mostrar "O Windows protegeu o computador": clique em "Mais informações" > "Executar assim mesmo". O jogo não é assinado.)
@@ -26,6 +26,12 @@ CONTROLES
   Z .............. binóculo       J .......... diário (cartas e fitas)
 
 O tutorial aparece no primeiro jogo. Enter pula um passo; Backspace encerra.
+
+NOVIDADES v0.19 (ajustes)
+  - Começo mais justo: sem zumbis colados no início e sem os bonecos parados no meio da rua.
+  - Mais leve: os objetos novos carregam bem mais rápido e gastam menos memória.
+  - Mira: a arma aponta para onde a mira acerta; câmera de mira mais para o lado.
+  - Muro de carros mais escuro e no chão; latas no lugar certo das prateleiras.
 
 NOVIDADES v0.18
   - Protagonista novo: sobrevivente de capuz e máscara de gás, com todas as animações e as armas nas duas mãos.
