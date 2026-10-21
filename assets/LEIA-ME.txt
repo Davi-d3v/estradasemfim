@@ -61,3 +61,7 @@ Endereços de cada modelo em licencas/Sketchfab_creditos.txt.
   Universal Animation Library por tools/rigar_personagem.gd — pesos de pele automáticos)
 - personagens_u/parts/ e outfits/Male_Ranger — peças soltas das roupas de camponês e patrulheiro (Quaternius,
   Modular Character Outfits - Fantasy, CC0), usadas para vestir cada profissão dos NPCs.
+- npcs/ — moradores e zumbis: Microsoft Rocketbox Avatar Library (github.com/microsoft/Microsoft-Rocketbox,
+  licença MIT, em licencas/Microsoft_Rocketbox_MIT.txt): médicos, militares, operários, jardineiro, lenhador,
+  segurança, cozinheira, executivo, adultos e crianças. Texturas reduzidas e "sujas" por tools/preparar_npcs.py;
+  ligados ao esqueleto da UAL por tools/rigar_npc.gd (pesos automáticos).

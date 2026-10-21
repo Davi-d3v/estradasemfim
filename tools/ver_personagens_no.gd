@@ -37,6 +37,7 @@ func _ready() -> void:
 			h.com_mochila = true
 		else:
 			h.visual = partes[0]
+			h.zumbi = partes[0] == "zumbi"
 			h.feminino = partes.size() > 2 and partes[2] == "f"
 			if partes[0] == "agricultor":
 				h.chapeu = true

@@ -174,6 +174,118 @@ static func sobrevivente() -> Dictionary:
 	ap.add_animation_library("q", biblioteca())
 	return {"raiz": raiz, "esqueleto": sk, "player": ap}
 
+## NPCs e zumbis: avatares realistas Rocketbox (Microsoft, MIT), com roupa de cada profissão e
+## texturas sujas para combinar com o protagonista (tools/preparar_npcs.py + tools/rigar_npc.gd).
+const NPCS_DIR := "res://assets/npcs/"
+const ADULTOS_M := ["Male_Adult_01", "Male_Adult_02", "Male_Adult_03", "Male_Adult_04", "Male_Adult_05", "Male_Adult_06", "Male_Adult_07", "Male_Adult_08"]
+const ADULTOS_F := ["Female_Adult_01", "Female_Adult_02", "Female_Adult_03", "Female_Adult_04", "Female_Adult_05", "Female_Adult_06"]
+const NPCS := {   # papel -> [homens, mulheres]
+	"medico": [["Medical_Male_01", "Medical_Male_02"], ["Medical_Female_01", "Medical_Female_02"]],
+	"soldado": [["Military_Male_01", "Military_Male_02", "Military_Male_04"], ["Military_Female_01"]],
+	"mecanico": [["Construction_Male_02"], ["Construction_Female_01"]],
+	"trabalhador": [["Construction_Male_02"], ["Construction_Female_01"]],
+	"agricultor": [["Gardener_Male_01", "Wood_Male_01"], ["Female_Adult_03", "Female_Adult_06"]],
+	"armeiro": [["Security_Male_01"], ["Security_Female_01"]],
+	"batedor": [["Military_Male_04", "Wood_Male_01"], ["Sports_Female_01"]],
+	"lider": [["Business_Male_01"], ["Female_Adult_05"]],
+	"cozinheiro": [["Male_Adult_07"], ["Chef_Female_01"]],
+	"crianca": [["Male_Child_01"], ["Female_Child_01"]],
+}
+const ZUMBIS := ["Male_Adult_01", "Male_Adult_02", "Male_Adult_03", "Male_Adult_04", "Male_Adult_05", "Male_Adult_06", "Male_Adult_08",
+	"Female_Adult_01", "Female_Adult_02", "Female_Adult_04", "Female_Adult_05", "Construction_Male_02", "Medical_Male_02", "Business_Male_01",
+	"Military_Male_02", "Medical_Female_01", "Wood_Male_01", "Sports_Female_01", "Chef_Female_01", "Gardener_Male_01"]
+static var _npc_ok := -1
+
+static func npcs_ok() -> bool:
+	if _npc_ok < 0:
+		_npc_ok = 1 if ResourceLoader.exists(NPCS_DIR + "Male_Adult_01/corpo.res") else 0
+	return _npc_ok == 1
+
+static func escolher_npc(papel: String, feminino: bool, rng: RandomNumberGenerator) -> String:
+	var lista: Array
+	if papel == "zumbi":
+		lista = ZUMBIS
+	elif NPCS.has(papel):
+		lista = NPCS[papel][1 if feminino else 0]
+	else:
+		lista = ADULTOS_F if feminino else ADULTOS_M
+	var nome: String = lista[rng.randi() % lista.size()]
+	return nome if ResourceLoader.exists(NPCS_DIR + nome + "/corpo.res") else (ADULTOS_F if feminino else ADULTOS_M)[0]
+
+static var _mats_zumbi := {}
+static var _sangue: ShaderMaterial
+static var _sangue_rosto: ShaderMaterial
+
+## Camada de sangue seco e sujeira por cima da roupa dos zumbis (manchas pelo mapa de UV,
+## estáveis enquanto o corpo anda). Vai como next_pass do material.
+static func sangue_zumbi() -> ShaderMaterial:
+	if _sangue == null:
+		var sh := Shader.new()
+		sh.code = """
+shader_type spatial;
+render_mode blend_mix, depth_draw_never, cull_back, diffuse_lambert;
+uniform float semente = 0.0;
+uniform float limiar = 0.58;
+float h(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float n(vec2 p) {
+	vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + vec2(1, 1)), f.x), f.y);
+}
+void fragment() {
+	vec2 p = UV * 7.0 + vec2(semente * 3.1, semente * 1.7);
+	float m = n(p) * 0.6 + n(p * 2.7) * 0.3 + n(p * 9.0) * 0.1;
+	float a = smoothstep(limiar, limiar + 0.1, m);
+	ALBEDO = mix(vec3(0.16, 0.02, 0.015), vec3(0.08, 0.05, 0.03), n(p * 4.0));
+	ROUGHNESS = 0.45;
+	ALPHA = a * 0.9;
+}
+"""
+		_sangue = ShaderMaterial.new()
+		_sangue.shader = sh
+		_sangue_rosto = ShaderMaterial.new()
+		_sangue_rosto.shader = sh
+		_sangue_rosto.set_shader_parameter("limiar", 0.7)
+	return _sangue
+
+## Monta um avatar no esqueleto da UAL. zumbi: pele cinza-esverdeada e roupa encardida.
+static func npc(nome: String, zumbi := false) -> Dictionary:
+	var raiz: Node3D = PersonagemU._cena(PersonagemU.DIR + "base/Superhero_Male_FullBody.gltf").instantiate()
+	var sk: Skeleton3D = raiz.find_children("*", "Skeleton3D", true, false)[0]
+	for mi in sk.get_children():
+		if mi is MeshInstance3D:
+			mi.queue_free()
+	var malha: Mesh = load(NPCS_DIR + nome + "/corpo.res")
+	var m := MeshInstance3D.new()
+	m.name = "Corpo"
+	m.mesh = malha
+	m.skin = load(NPCS_DIR + nome + "/corpo_skin.tres")
+	m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	sk.add_child(m)
+	m.skeleton = NodePath("..")
+	if zumbi:
+		for s in malha.get_surface_count():
+			var k := "%s:%d" % [nome, s]
+			if not _mats_zumbi.has(k):
+				var d: StandardMaterial3D = (malha.surface_get_material(s) as StandardMaterial3D).duplicate()
+				var cabeca := String(d.albedo_texture.resource_path if d.albedo_texture else "").ends_with("head.jpg")
+				d.albedo_color = Color(0.68, 0.78, 0.64) if cabeca else Color(0.6, 0.56, 0.5)
+				d.roughness = 0.9
+				if d.transparency == BaseMaterial3D.TRANSPARENCY_DISABLED:
+					sangue_zumbi()
+					d.next_pass = _sangue_rosto if cabeca else _sangue
+				_mats_zumbi[k] = d
+			m.set_surface_override_material(s, _mats_zumbi[k])
+	# a malha foi feita na altura do esqueleto (1,82 m); escala para a altura real do avatar
+	raiz.scale = Vector3.ONE * clampf(float(malha.get_meta("altura", 1.82)) / 1.82, 0.7, 1.1)
+	var aps := raiz.find_children("*", "AnimationPlayer", true, false)
+	var ap: AnimationPlayer = aps[0] if aps.size() > 0 else null
+	if ap == null:
+		ap = AnimationPlayer.new()
+		raiz.add_child(ap)
+	ap.root_node = ap.get_path_to(raiz)
+	ap.add_animation_library("q", biblioteca())
+	return {"raiz": raiz, "esqueleto": sk, "player": ap, "avatar": nome}
+
 ## Ponto de fixação num osso, em metros e no espaço do osso.
 static func anexo(sk: Skeleton3D, osso: String, nome: String) -> Node3D:
 	var ba := BoneAttachment3D.new()

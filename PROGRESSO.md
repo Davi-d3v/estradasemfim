@@ -193,5 +193,14 @@
 - [x] Armas e mira: a arma aponta para onde a mira acerta (não paralela à câmera); câmera de mira mais para o
   lado e mais perto; protótipo e bullpup menos fortes, ACR um pouco mais.
 
+## Rodada v0.20 (NPCs e zumbis realistas)
+- [x] Moradores, recrutas e zumbis trocados pelos avatares realistas da Microsoft Rocketbox (MIT), no mesmo estilo
+  do protagonista: médico/médica de jaleco, militares (vigias), operários (mecânicos), jardineiro e lenhador
+  (agricultor), segurança (armeiro), executivo (líder), cozinheira, adultos comuns e crianças.
+  Texturas sujas (terra, graxa, poeira) por tools/preparar_npcs.py; esqueleto da UAL por tools/rigar_npc.gd.
+- [x] Zumbis: os mesmos avatares com pele cinza-esverdeada, roupa encardida e manchas de sangue seco (shader
+  por cima do material, sem as caixinhas vermelhas antigas).
+- Sem o pacote de modelos, o jogo volta para os bonecos Quaternius.
+
 ## Próximos
 - ouvir o retorno do Davi sobre a v0.9

@@ -379,6 +379,8 @@ func _construir_modelo(rng: RandomNumberGenerator) -> void:
 		visual = "agricultor"
 	if heroi and Modelos.sobrevivente_ok():
 		_m = Modelos.sobrevivente()
+	elif Modelos.npcs_ok() and arquivo == "":
+		_m = Modelos.npc(Modelos.escolher_npc(visual, feminino, rng), zumbi)
 	else:
 		var vis := Modelos.escolher(visual, feminino, rng)
 		for k in cores:
@@ -434,11 +436,12 @@ func _construir_modelo(rng: RandomNumberGenerator) -> void:
 		_ap.seek(rng.randf() * 2.0, true)
 
 func _acessorios_modelo() -> void:
-	if zumbi:
+	if zumbi and not _m.has("avatar"):
 		_sangue_modelo()
 	if com_mochila:
 		_mochila_modelo()
-	if heroi:
+	# protagonista e avatares realistas já vêm vestidos (roupa, capacete, equipamento)
+	if heroi or _m.has("avatar"):
 		return
 	_chapeu_modelo()
 	_traje_modelo()

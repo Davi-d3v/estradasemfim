@@ -59,9 +59,10 @@ static func criar(d: Dictionary) -> Recruta:
 			r.visual = "idoso"
 			r.anim_parado = "Idle_Tired"
 		"crianca":
-			r.visual = "civil"
+			r.visual = "crianca"
 			r.anim_parado = "Idle_LookAround"
-			r.scale = Vector3.ONE * 0.64
+			if not Modelos.npcs_ok():
+				r.scale = Vector3.ONE * 0.64
 	match d.funcao:
 		"vigia":
 			r.arma = "rifle"
