@@ -24,6 +24,7 @@ const VALOR := {
 const BANCAS := {
 	"geral": ["comida", "agua", "carne_assada", "galoes_diesel", "tecido", "garrafa", "cordame", "molotov", "sinalizador", "pele", "couro"],
 	"pecas": ["pecas", "sucata", "pneu", "eixo", "chapa", "municao_pistola", "cartucho", "municao_rifle", "pistola", "espingarda", "rifle", "machado"],
+	"armas": ["municao_pistola", "cartucho", "municao_rifle", "municao_fuzil", "pistola", "espingarda", "rifle", "carabina", "fuzil", "bullpup", "precisao", "molotov", "colete_couro"],
 	"remedio": ["remedio", "bandagem", "analgesico", "agua", "comida"],
 	"marco": ["comida", "agua", "galoes_diesel", "pecas", "remedio", "bandagem", "municao_pistola", "cartucho", "municao_rifle", "rifle", "espingarda", "colete_couro"],
 }
@@ -146,6 +147,8 @@ static func banca_de(h: Node3D) -> String:
 		return "pecas"
 	if ch.ends_with(":vend_remedio"):
 		return "remedio"
+	if ch.ends_with(":vend_armas"):
+		return "armas"
 	if fn == "vendedor":
 		return "geral"
 	return ""
@@ -206,7 +209,7 @@ func painel() -> Dictionary:
 		botoes.append(["Comprar %d %s (−%d)" % [lote, main.ITENS[item].nome.to_lower(), pc * lote], _comprar.bind(id, banca, item, lote), cred >= pc * lote])
 	if botoes.is_empty():
 		linhas.append("Você não tem nada que interesse e a banca está vazia hoje.")
-	return {"titulo": "%s — troca" % _banca_aberta.nome, "subtitulo": {"geral": "Mantimentos e utilidades", "pecas": "Peças, ferragens e armas", "remedio": "Remédios", "marco": "Armazém do marco"}[banca], "linhas": linhas, "botoes": botoes}
+	return {"titulo": "%s — troca" % _banca_aberta.nome, "subtitulo": {"geral": "Mantimentos e utilidades", "pecas": "Peças, ferragens e armas", "remedio": "Remédios", "marco": "Armazém do marco", "armas": "Armas e munição"}[banca], "linhas": linhas, "botoes": botoes}
 
 func _lote(item: String) -> int:
 	if VALOR[item] <= 2:

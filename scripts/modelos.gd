@@ -68,6 +68,7 @@ static func escolher(papel: String, feminino: bool, rng: RandomNumberGenerator) 
 		"pele": PELES[rng.randi() % PELES.size()],
 		"cor_cabelo": CABELOS[rng.randi() % CABELOS.size()],
 	}
+	v.pecas = trajes(papel, rng)
 	match papel:
 		"zumbi":
 			v.pele = [Color(0.8, 1.0, 0.78), Color(0.85, 0.92, 0.88), Color(0.9, 0.95, 0.75), Color(0.78, 0.9, 0.82)][rng.randi() % 4]
@@ -84,9 +85,58 @@ static func escolher(papel: String, feminino: bool, rng: RandomNumberGenerator) 
 			v.cor_cabelo = Color(0.7, 0.7, 0.68)
 	return v
 
+## Roupa peça por peça para cada papel: camisa, braços, calça e calçado com cores próprias
+## (camponês = pano; patrulheiro = couro, cinto, botas, capuz, ombreira).
+static func trajes(papel: String, rng: RandomNumberGenerator) -> Array:
+	var lista := _trajes(papel, rng)
+	for pc in lista:
+		if pc[0] == "Peasant_Legs":
+			# a calça de camponês tem textura escura: clareia a tinta para a cor aparecer
+			pc[1] = Color(pc[1].r * 2.3, pc[1].g * 2.3, pc[1].b * 2.3)
+	return lista
+
+static func _trajes(papel: String, rng: RandomNumberGenerator) -> Array:
+	var pano := func(c: Color) -> Color:
+		return c.lerp(Color(0.85, 0.82, 0.75), rng.randf_range(0.0, 0.2))
+	var camisa: Color = pano.call(ROUPAS[rng.randi() % ROUPAS.size()])
+	var calca: Color = [Color(0.55, 0.62, 0.85), Color(0.5, 0.48, 0.45), Color(0.7, 0.62, 0.5), Color(0.42, 0.45, 0.42)][rng.randi() % 4]
+	var bota := Color(0.6, 0.5, 0.42) if rng.randf() < 0.5 else Color(0.4, 0.36, 0.33)
+	match papel:
+		"zumbi":
+			return []
+		"medico":   # jaleco branco, calça de hospital azul-clara
+			return [["Peasant_Body", Color(1.15, 1.15, 1.18)], ["Peasant_Arms", Color(1.15, 1.15, 1.18)], ["Peasant_Legs", Color(0.7, 0.85, 1.05)], ["Peasant_Feet", Color(0.9, 0.9, 0.92)]]
+		"soldado":   # farda verde-oliva e coturno
+			var oliva := Color(0.55, 0.62, 0.42).lerp(Color(0.62, 0.58, 0.45), rng.randf())
+			return [["Ranger_Body", oliva], ["Ranger_Arms", oliva], ["Ranger_Legs", oliva * 0.9], ["Ranger_Feet_Boots", Color(0.35, 0.33, 0.3)]]
+		"trabalhador", "mecanico":   # macacão azul de oficina
+			var az := Color(0.42, 0.55, 0.85)
+			return [["Peasant_Body", az], ["Peasant_Arms", az], ["Peasant_Legs", az * 0.92], ["Ranger_Feet_Boots", Color(0.45, 0.38, 0.32)]]
+		"agricultor":   # camisa xadrez avermelhada, jeans, botina
+			return [["Peasant_Body", Color(0.95, 0.6, 0.5).lerp(Color(0.85, 0.75, 0.5), rng.randf())], ["Peasant_Arms", Color(0.95, 0.65, 0.55)], ["Peasant_Legs", Color(0.5, 0.6, 0.88)], ["Ranger_Feet_Boots", Color(0.6, 0.45, 0.32)]]
+		"armeiro":   # couro escuro, calça grossa, bota
+			return [["Ranger_Body", Color(0.55, 0.45, 0.38)], ["Ranger_Arms", Color(0.5, 0.42, 0.36)], ["Peasant_Legs", Color(0.42, 0.42, 0.4)], ["Ranger_Feet_Boots", Color(0.3, 0.28, 0.26)]]
+		"batedor":   # patrulheiro de capuz, cores de mato
+			var mato := Color(0.6, 0.68, 0.5).lerp(Color(0.7, 0.62, 0.5), rng.randf())
+			return [["Ranger_Body", mato], ["Ranger_Arms", mato], ["Ranger_Legs", mato * 0.85], ["Ranger_Feet_Boots", Color(0.45, 0.4, 0.35)], ["Ranger_Head_Hood", mato * 0.95]]
+		"lider":   # casaco de couro com ombreira
+			return [["Ranger_Body", Color(0.48, 0.4, 0.36)], ["Ranger_Arms", Color(0.48, 0.4, 0.36)], ["Ranger_Legs", Color(0.4, 0.38, 0.36)], ["Ranger_Feet_Boots", Color(0.3, 0.27, 0.25)], ["Ranger_Acc_Pauldron", Color(0.6, 0.55, 0.5)]]
+		"idoso":   # cardigã bege, calça social
+			return [["Peasant_Body", Color(0.95, 0.85, 0.68)], ["Peasant_Arms", Color(0.95, 0.85, 0.68)], ["Peasant_Legs", Color(0.55, 0.5, 0.48)], ["Peasant_Feet", Color(0.55, 0.45, 0.4)]]
+		"cozinheiro":
+			return [["Peasant_Body", Color(1.15, 1.15, 1.12)], ["Peasant_Arms", Color(1.15, 1.15, 1.12)], ["Peasant_Legs", Color(0.45, 0.45, 0.48)], ["Peasant_Feet", Color(0.4, 0.4, 0.4)]]
+		"cowboy":
+			return [["Ranger_Body", Color(0.8, 0.62, 0.45)], ["Peasant_Arms", Color(0.9, 0.8, 0.65)], ["Peasant_Legs", Color(0.5, 0.6, 0.88)], ["Ranger_Feet_Boots", Color(0.6, 0.42, 0.28)]]
+		"vendedor":
+			return [["Peasant_Body", camisa], ["Peasant_Arms", camisa], ["Peasant_Legs", calca], ["Peasant_Feet", bota]]
+	# civil: mistura, às vezes com peças de couro
+	var corpo := "Ranger_Body" if rng.randf() < 0.3 else "Peasant_Body"
+	var pes := "Ranger_Feet_Boots" if rng.randf() < 0.4 else "Peasant_Feet"
+	return [[corpo, camisa], ["Peasant_Arms", camisa], ["Ranger_Legs" if rng.randf() < 0.25 else "Peasant_Legs", calca], [pes, bota]]
+
 ## Instancia um personagem. Devolve {raiz, esqueleto, player}.
 static func personagem(feminino: bool, vis: Dictionary) -> Dictionary:
-	var d := PersonagemU.montar(feminino, vis.get("cabelo", ""), vis.get("barba", false), vis.get("roupa", Color.WHITE), vis.get("pele", Color.WHITE), vis.get("cor_cabelo", Color(0.2, 0.14, 0.08)))
+	var d := PersonagemU.montar(feminino, vis.get("cabelo", ""), vis.get("barba", false), vis.get("roupa", Color.WHITE), vis.get("pele", Color.WHITE), vis.get("cor_cabelo", Color(0.2, 0.14, 0.08)), vis.get("pecas", []))
 	var ap: AnimationPlayer = d.player
 	ap.root_node = ap.get_path_to(d.raiz)
 	ap.add_animation_library("q", biblioteca())
@@ -94,6 +144,35 @@ static func personagem(feminino: bool, vis: Dictionary) -> Dictionary:
 		if mi is MeshInstance3D:
 			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	return d
+
+## Protagonista: o sobrevivente de máscara de gás (Sketchfab, "post apo character", Am I dead?),
+## malha única ligada ao esqueleto da UAL por tools/rigar_personagem.gd.
+const SOBREVIVENTE := "res://assets/personagem_novo/corpo.res"
+
+static func sobrevivente_ok() -> bool:
+	return ResourceLoader.exists(SOBREVIVENTE)
+
+static func sobrevivente() -> Dictionary:
+	var raiz: Node3D = PersonagemU._cena(PersonagemU.DIR + "base/Superhero_Male_FullBody.gltf").instantiate()
+	var sk: Skeleton3D = raiz.find_children("*", "Skeleton3D", true, false)[0]
+	for mi in sk.get_children():
+		if mi is MeshInstance3D:
+			mi.queue_free()
+	var m := MeshInstance3D.new()
+	m.name = "Sobrevivente"
+	m.mesh = load(SOBREVIVENTE)
+	m.skin = load("res://assets/personagem_novo/corpo_skin.tres")
+	m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	sk.add_child(m)
+	m.skeleton = NodePath("..")
+	var aps := raiz.find_children("*", "AnimationPlayer", true, false)
+	var ap: AnimationPlayer = aps[0] if aps.size() > 0 else null
+	if ap == null:
+		ap = AnimationPlayer.new()
+		raiz.add_child(ap)
+	ap.root_node = ap.get_path_to(raiz)
+	ap.add_animation_library("q", biblioteca())
+	return {"raiz": raiz, "esqueleto": sk, "player": ap}
 
 ## Ponto de fixação num osso, em metros e no espaço do osso.
 static func anexo(sk: Skeleton3D, osso: String, nome: String) -> Node3D:

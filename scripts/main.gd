@@ -4781,6 +4781,44 @@ func _capturar_objetos() -> void:
 				await get_tree().process_frame
 			await _salvar("mod_quarto")
 			jogador.visible = false
+	# protagonista na estrada (câmera de 3ª pessoa) e as bancas da vila
+	if fazer.call("jogador"):
+		var pj := mundo.ponto_estrada(2200.0, 2.5)
+		mundo.atualizar(pj)
+		for f in 10:
+			await get_tree().process_frame
+		_limpar_zumbis_perto(pj, 40.0)
+		_posar_jogador(pj, mundo.ponto_estrada(2230.0, 2.5), -0.12, 0.35)
+		jogador.corpo.loop("Idle_LookAround")
+		for f in 20:
+			await get_tree().process_frame
+		await _salvar("pers_jogador")
+		jogador.visible = false
+	if fazer.call("bancas"):
+		var lv := _achar_lugar("vila")
+		if not lv.is_empty():
+			mundo.atualizar(lv.pos)
+			for f in 20:
+				await get_tree().process_frame
+			_limpar_zumbis_perto(lv.pos, 80.0)
+			var est2 := _caminho_do_lugar(lv)
+			var fr2 := Vector3(0, 0, 1)
+			if est2.size() > 0:
+				fr2 = Vector3(est2[est2.size() - 1].x - lv.pos.x, 0, est2[est2.size() - 1].z - lv.pos.z).normalized()
+			var bv := Basis(Vector3.UP, atan2(fr2.x, fr2.z))
+			var cent: Vector3 = lv.pos + bv * Vector3(2.0, 1.2, -2.8)
+			var de3: Vector3 = lv.pos + bv * Vector3(2.0, 3.0, 8.0)
+			jogador.visible = false
+			cam.current = true
+			cam.fov = 55.0
+			cam.look_at_from_position(de3, cent, Vector3.UP)
+			await _salvar("pers_vila_bancas")
+			cam.look_at_from_position(lv.pos + bv * Vector3(10.6, 1.65, 1.0), lv.pos + bv * Vector3(11.5, 1.2, -3.0), Vector3.UP)
+			await _salvar("pers_armeiro")
+			if fazer.call("cima"):
+				cam.look_at_from_position(lv.pos + Vector3(0, 70, 0.01), lv.pos, bv * Vector3(0, 0, -1))
+				await _salvar("pers_vila_cima")
+			cam.fov = 60.0
 	# lugares
 	for par in [["vila", "mod_vila_praca"], ["ferro_velho", "mod_ferro_velho"]]:
 		if not fazer.call(par[0]):

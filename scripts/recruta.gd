@@ -46,15 +46,15 @@ static func criar(d: Dictionary) -> Recruta:
 			r.visual = "soldado"
 			r.anim_parado = "Idle_LookAround"
 		"mecanico":
-			r.visual = "trabalhador"
+			r.visual = "mecanico"
 			r.anim_parado = "Idle_Tired"
 		"agricultor":
-			r.visual = "trabalhador"
+			r.visual = "agricultor"
 		"medico":
 			r.visual = "medico"
 			r.anim_parado = "Idle_FoldArms"
 		"batedor":
-			r.visual = "civil"
+			r.visual = "batedor"
 		"idoso":
 			r.visual = "idoso"
 			r.anim_parado = "Idle_Tired"

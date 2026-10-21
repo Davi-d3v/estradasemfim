@@ -167,5 +167,19 @@
 - Licenças: Dragunov, carro enferrujado e dinheiro russo são CC-BY-NC (não comercial); bullpup e City Props são
   Sketchfab Padrão e ficam fora do repositório (assets/sketchfab_padrao/), só no jogo exportado.
 
+## Rodada v0.18 (protagonista novo e NPCs por profissão)
+- [x] Protagonista = "post apo character" (sobrevivente de capuz e máscara de gás, enviado pelo Davi). A malha
+  estática (925 mil triângulos, sem ossos) foi simplificada com gltfpack (45 mil) e ligada ao esqueleto da UAL por
+  tools/rigar_personagem.gd: braços do esqueleto dobrados até a pose A da malha, pesos automáticos por distância
+  aos ossos (sem misturar pernas/braços com o tronco). Todas as animações e a pegada de duas mãos valem.
+- [x] NPCs vestidos peça por peça (camponês/patrulheiro da Quaternius, cada peça com cor própria) e detalhes por
+  profissão: médico (jaleco branco, máscara, estetoscópio, braçadeira da cruz vermelha, maleta), armeiro (avental
+  de couro, bandoleira de munição, óculos de proteção, coldre), agricultor (chapéu de palha, lenço, suspensórios,
+  luvas), mecânico (macacão azul, cinto de ferramentas, pano de graxa), vigia (farda, capacete, colete tático,
+  rádio), batedor (capuz, lenço no rosto, faca, cantil), líder (casaco com ombreira, cachecol, chapéu),
+  vendedor (avental e bolsa), cozinheiro (avental e touca), idoso (cardigã, óculos).
+- [x] Armeiro novo: banca de armas e munição nas vilas e nos assentamentos (fuzis raros pedem reputação).
+  Ferramentas: tools/ver_personagens.gd (folha de papéis), prints --objetos --so=jogador,bancas.
+
 ## Próximos
 - ouvir o retorno do Davi sobre a v0.9

@@ -201,8 +201,11 @@ static func _cabeca_feminina(sk_m: Skeleton3D, corpo_m: MeshInstance3D, tinta_pe
 			_tingir(m, cor_cabelo)
 	f.free()
 
-## Monta o personagem.## Monta o personagem. visual: {feminino, cabelo, barba, tinta_roupa, tinta_pele}
-static func montar(feminino: bool, cabelo: String, barba: bool, tinta_roupa := Color.WHITE, tinta_pele := Color.WHITE, cor_cabelo := Color(0.25, 0.17, 0.1)) -> Dictionary:
+## Monta o personagem. visual: {feminino, cabelo, barba, tinta_roupa, tinta_pele}
+## pecas: roupa montada peça por peça, [[peça, tinta], ...] com peça em
+## Peasant_Body/Arms/Legs/Feet, Ranger_Body/Arms/Legs/Feet_Boots/Head_Hood/Acc_Pauldron
+## (vazio = roupa de camponês inteira com tinta_roupa).
+static func montar(feminino: bool, cabelo: String, barba: bool, tinta_roupa := Color.WHITE, tinta_pele := Color.WHITE, cor_cabelo := Color(0.25, 0.17, 0.1), pecas: Array = []) -> Dictionary:
 	# o esqueleto e o corpo são sempre os do base masculino (a roupa foi feita para ele);
 	# para mulheres, a cabeça vem do base feminino
 	var raiz: Node3D = _cena(DIR + "base/Superhero_Male_FullBody.gltf").instantiate()
@@ -224,7 +227,11 @@ static func montar(feminino: bool, cabelo: String, barba: bool, tinta_roupa := C
 			_tingir(mi, cor_cabelo)
 	if feminino:
 		_cabeca_feminina(sk, corpo, tinta_pele, cor_cabelo)
-	_vestir(sk, DIR + "outfits/Male_Peasant.gltf", tinta_roupa, tinta_pele)
+	if pecas.is_empty():
+		_vestir(sk, DIR + "outfits/Male_Peasant.gltf", tinta_roupa, tinta_pele)
+	else:
+		for pc in pecas:
+			_vestir(sk, DIR + "parts/Male_%s.gltf" % pc[0], pc[1], tinta_pele)
 	if cabelo != "":
 		_vestir(sk, DIR + "hair/%s.gltf" % cabelo, cor_cabelo)
 	if barba and not feminino:

@@ -55,3 +55,9 @@ em sketchfab_padrao/, e só vai embutida no jogo exportado — sem ela o jogo us
 - sketchfab_padrao/bullpup.glb — "Sci-fi Bullpup Rifle", Diamonddogkz
 - sketchfab_padrao/city_props.glb — "City Props Collection volume 1", TampaJoey
 Endereços de cada modelo em licencas/Sketchfab_creditos.txt.
+- personagem_novo/ — protagonista: "post apo character", Am I dead? (sketchfab.com/eqisX), CC-BY 4.0,
+  https://sketchfab.com/3d-models/post-apo-character-9e77c91967ca4263ad347b395f53c1cb
+  (simplificado de 925 mil para 45 mil triângulos com o gltfpack/meshoptimizer e ligado ao esqueleto da
+  Universal Animation Library por tools/rigar_personagem.gd — pesos de pele automáticos)
+- personagens_u/parts/ e outfits/Male_Ranger — peças soltas das roupas de camponês e patrulheiro (Quaternius,
+  Modular Character Outfits - Fantasy, CC0), usadas para vestir cada profissão dos NPCs.

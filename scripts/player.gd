@@ -54,7 +54,8 @@ signal golpeou(origem: Vector3, frente: Vector3)
 func _ready() -> void:
 	corpo = Humanoid.new()
 	corpo.com_mochila = true
-	corpo.com_bone = true
+	corpo.com_bone = false
+	corpo.heroi = true
 	corpo.arma = "facao"
 	corpo.cores = {"cabelo": "Hair_SimpleParted", "barba": true, "roupa": Color(0.72, 0.8, 0.62), "pele": Color(0.92, 0.84, 0.78), "cor_cabelo": Color(0.12, 0.08, 0.05)}
 	corpo.camisa = Color(0.24, 0.27, 0.26)

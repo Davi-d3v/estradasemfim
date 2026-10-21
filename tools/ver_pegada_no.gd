@@ -12,6 +12,9 @@ func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	var saida: String = args[0]
 	var ids: Array = args.slice(1)
+	var eh_heroi: bool = ids.size() > 0 and ids[0] == "heroi"
+	if eh_heroi:
+		ids = ids.slice(1)
 	var W := 560
 	var H := 420
 	get_viewport().size = Vector2i(W, H)
@@ -34,6 +37,7 @@ func _ready() -> void:
 	h = Humanoid.new()
 	h.semente = 7
 	h.visual = "civil"
+	h.heroi = eh_heroi
 	add_child(h)
 	var cam := Camera3D.new()
 	add_child(cam)

@@ -90,3 +90,7 @@ carros/viatura.glb
   "Fairheaven LT '80 Cop Cruiser - Low poly model" — Daniel Zhabotinsky (https://sketchfab.com/DanielZhabotinsky)
   CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
   https://sketchfab.com/3d-models/fairheaven-lt-80-cop-cruiser-low-poly-model-61766c1e6e1e4b2b803c174f33433a74
+personagem_novo/corpo.res
+  "post apo character" — Am I dead? (https://sketchfab.com/eqisX)
+  CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+  https://sketchfab.com/3d-models/post-apo-character-9e77c91967ca4263ad347b395f53c1cb

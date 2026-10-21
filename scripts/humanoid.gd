@@ -16,6 +16,7 @@ extends Node3D
 @export var semente := 0
 ## Modelo pronto (personagem com rosto + animações). Falso = corpo montado por partes.
 var modelo := false
+var heroi := false             # protagonista: sobrevivente de máscara de gás (Modelos.sobrevivente)
 var feminino := false
 var visual := "civil"          # civil, trabalhador, medico, soldado, idoso, cowboy, cozinheiro, zumbi
 var arquivo := ""              # força um visual específico (ex.: "Worker_Female")
@@ -372,14 +373,17 @@ func _construir_modelo(rng: RandomNumberGenerator) -> void:
 	modelo = true
 	if zumbi:
 		visual = "zumbi"
-	elif jaleco:
+	elif jaleco and visual == "civil":
 		visual = "medico"
-	elif chapeu:
-		visual = "trabalhador"
-	var vis := Modelos.escolher(visual, feminino, rng)
-	for k in cores:
-		vis[k] = cores[k]
-	_m = Modelos.personagem(feminino, vis)
+	elif chapeu and visual == "civil":
+		visual = "agricultor"
+	if heroi and Modelos.sobrevivente_ok():
+		_m = Modelos.sobrevivente()
+	else:
+		var vis := Modelos.escolher(visual, feminino, rng)
+		for k in cores:
+			vis[k] = cores[k]
+		_m = Modelos.personagem(feminino, vis)
 	add_child(_m.raiz)
 	_m.raiz.rotation.y = 0.0
 	_ap = _m.player
@@ -434,7 +438,115 @@ func _acessorios_modelo() -> void:
 		_sangue_modelo()
 	if com_mochila:
 		_mochila_modelo()
+	if heroi:
+		return
 	_chapeu_modelo()
+	_traje_modelo()
+
+## Detalhes de cada profissão, presos aos ossos (spine_03: +Y sobe, +Z é o peito;
+## Head: +Z é o rosto; pelvis: cintura). O peito fica a ~0,13 m do osso.
+func _traje_modelo() -> void:
+	if zumbi or _m.is_empty():
+		return
+	var sk: Skeleton3D = _m.esqueleto
+	var r := RandomNumberGenerator.new()
+	r.seed = semente + 31
+	var t := costas
+	var h := cabeca_a
+	var couro := Modelos.mat(Color(0.3, 0.2, 0.13), 0.7)
+	var couro_claro := Modelos.mat(Color(0.45, 0.31, 0.19), 0.75)
+	var metal := Modelos.mat(Color(0.55, 0.55, 0.56), 0.35, 0.8)
+	var preto := Modelos.mat(Color(0.08, 0.08, 0.08), 0.6)
+	var branco := Modelos.mat(Color(0.92, 0.92, 0.9), 0.8)
+	var vermelho := Modelos.mat(Color(0.7, 0.08, 0.06), 0.7)
+	var cintura := Modelos.anexo(sk, "pelvis", "cintura")
+	match visual:
+		"medico":
+			# máscara cirúrgica, estetoscópio no pescoço, braçadeira da cruz vermelha, crachá
+			B.box(h, Vector3(0.1, 0.06, 0.02), Vector3(0, 0.025, 0.098), Modelos.mat(Color(0.62, 0.8, 0.85), 0.9))
+			for sx in [-1.0, 1.0]:
+				B.box(h, Vector3(0.004, 0.005, 0.08), Vector3(sx * 0.055, 0.04, 0.06), branco)
+				B.cyl(t, 0.006, 0.2, Vector3(sx * 0.05, 0.12, 0.135), preto, Vector3(0, 0, sx * 8), 6)
+			B.cyl(t, 0.018, 0.012, Vector3(0.05, 0.02, 0.145), metal, Vector3(90, 0, 0), 10)
+			B.cyl(braco_e, 0.062, 0.07, Vector3(0, 0.12, 0), branco, Vector3.ZERO, 12)
+			B.box(braco_e, Vector3(0.035, 0.012, 0.006), Vector3(0, 0.12, 0.063), vermelho)
+			B.box(braco_e, Vector3(0.012, 0.035, 0.006), Vector3(0, 0.12, 0.063), vermelho)
+			B.box(t, Vector3(0.05, 0.07, 0.006), Vector3(-0.09, 0.05, 0.14), Modelos.mat(Color(0.85, 0.85, 0.8), 0.6))
+			# maleta de primeiros socorros na cintura
+			B.box(cintura, Vector3(0.16, 0.12, 0.08), Vector3(0.17, 0.0, 0.02), Modelos.mat(Color(0.75, 0.12, 0.1), 0.6))
+			B.box(cintura, Vector3(0.04, 0.012, 0.004), Vector3(0.17, 0.0, 0.062), branco)
+			B.box(cintura, Vector3(0.012, 0.04, 0.004), Vector3(0.17, 0.0, 0.062), branco)
+		"armeiro":
+			# avental de couro, bandoleira de munição atravessada, óculos de proteção na testa, coldre
+			B.box(t, Vector3(0.26, 0.3, 0.01), Vector3(0, -0.06, 0.125), couro)
+			B.box(cintura, Vector3(0.3, 0.4, 0.01), Vector3(0, -0.17, 0.115), couro)
+			var ban := Node3D.new()
+			ban.position = Vector3(0, 0.0, 0.135)
+			ban.rotation_degrees = Vector3(0, 0, -38)
+			t.add_child(ban)
+			B.box(ban, Vector3(0.06, 0.55, 0.012), Vector3.ZERO, couro_claro)
+			var latao := Modelos.mat(Color(0.75, 0.58, 0.25), 0.3, 0.9)
+			for k in 9:
+				B.cyl(ban, 0.007, 0.045, Vector3(0, -0.22 + k * 0.055, 0.012), latao, Vector3.ZERO, 6)
+			for sx in [-1.0, 1.0]:
+				B.cyl(h, 0.026, 0.02, Vector3(sx * 0.035, 0.11, 0.1), Modelos.mat(Color(0.2, 0.35, 0.3), 0.15, 0.3), Vector3(70, 0, 0), 10)
+			B.box(h, Vector3(0.2, 0.02, 0.01), Vector3(0, 0.1, 0.09), preto)
+			B.box(coxa_d, Vector3(0.1, 0.16, 0.06), Vector3(-0.07, 0.1, 0.02), couro)
+			B.box(coxa_d, Vector3(0.03, 0.06, 0.04), Vector3(-0.07, 0.2, 0.02), preto)
+			B.box(cintura, Vector3(0.36, 0.05, 0.24), Vector3(0, 0.02, 0.0), couro_claro)
+		"agricultor":
+			# lenço vermelho no pescoço, suspensórios, luvas de couro
+			B.cyl(t, 0.075, 0.05, Vector3(0, 0.22, 0.02), Modelos.mat(Color(0.65, 0.12, 0.1), 0.9), Vector3(-15, 0, 0), 12)
+			for sx in [-1.0, 1.0]:
+				B.box(t, Vector3(0.035, 0.42, 0.01), Vector3(sx * 0.08, -0.05, 0.14), Modelos.mat(Color(0.35, 0.3, 0.45), 0.9))
+				B.box(t, Vector3(0.035, 0.42, 0.01), Vector3(sx * 0.08, -0.05, -0.13), Modelos.mat(Color(0.35, 0.3, 0.45), 0.9))
+			for m in [mao_d, mao_e]:
+				B.box(m, Vector3(0.1, 0.1, 0.045), Vector3(0, 0.05, 0), couro_claro)
+		"mecanico", "trabalhador":
+			# cinto de ferramentas com chave inglesa e pano vermelho, mancha de graxa
+			B.box(cintura, Vector3(0.36, 0.06, 0.25), Vector3(0, 0.03, 0.0), couro)
+			B.box(cintura, Vector3(0.1, 0.12, 0.05), Vector3(0.14, -0.04, 0.1), couro_claro)
+			B.box(cintura, Vector3(0.1, 0.12, 0.05), Vector3(-0.14, -0.04, 0.1), couro_claro)
+			B.box(cintura, Vector3(0.02, 0.2, 0.012), Vector3(-0.14, -0.06, 0.13), metal, Vector3(0, 0, 12))
+			B.box(cintura, Vector3(0.08, 0.14, 0.01), Vector3(0.2, -0.1, -0.08), vermelho, Vector3(0, 0, -10))
+			B.box(t, Vector3(0.08, 0.05, 0.004), Vector3(0.06, -0.1, 0.142), Modelos.mat(Color(0.12, 0.11, 0.1), 0.4))
+		"soldado":
+			# colete tático com bolsos e rádio no ombro
+			var colete := Modelos.mat(Color(0.3, 0.33, 0.24), 0.85)
+			B.box(t, Vector3(0.28, 0.3, 0.03), Vector3(0, -0.06, 0.12), colete)
+			B.box(t, Vector3(0.28, 0.3, 0.03), Vector3(0, -0.06, -0.12), colete)
+			for k in 3:
+				B.box(t, Vector3(0.07, 0.08, 0.03), Vector3(-0.08 + k * 0.08, -0.14, 0.145), colete)
+			B.box(t, Vector3(0.04, 0.09, 0.03), Vector3(-0.1, 0.06, 0.145), preto)
+			B.cyl(t, 0.004, 0.1, Vector3(-0.1, 0.15, 0.145), preto, Vector3.ZERO, 4)
+		"batedor":
+			# lenço cobrindo boca e nariz, faca na perna, cantil
+			B.box(h, Vector3(0.15, 0.08, 0.04), Vector3(0, -0.005, 0.1), Modelos.mat(Color(0.35, 0.3, 0.22), 0.95))
+			B.box(coxa_e, Vector3(0.04, 0.2, 0.03), Vector3(0.08, 0.15, 0.03), couro)
+			B.cyl(cintura, 0.05, 0.14, Vector3(-0.19, -0.04, -0.06), Modelos.mat(Color(0.3, 0.35, 0.25), 0.7), Vector3.ZERO, 10)
+		"lider":
+			# cachecol e cinto com fivela grande
+			B.cyl(t, 0.085, 0.06, Vector3(0, 0.22, 0.02), Modelos.mat(Color(0.45, 0.12, 0.1), 0.95), Vector3(-15, 0, 0), 12)
+			B.box(t, Vector3(0.06, 0.2, 0.012), Vector3(0.05, 0.1, 0.13), Modelos.mat(Color(0.45, 0.12, 0.1), 0.95), Vector3(0, 0, -8))
+			B.box(cintura, Vector3(0.36, 0.05, 0.25), Vector3(0, 0.02, 0.0), couro)
+			B.box(cintura, Vector3(0.06, 0.045, 0.01), Vector3(0, 0.02, 0.13), Modelos.mat(Color(0.75, 0.6, 0.3), 0.3, 0.9))
+		"vendedor":
+			# avental de lona e bolsa a tiracolo
+			B.box(cintura, Vector3(0.3, 0.36, 0.01), Vector3(0, -0.17, 0.115), Modelos.mat(Color(0.55, 0.5, 0.38), 0.95))
+			var al := Node3D.new()
+			al.position = Vector3(0, 0.0, 0.13)
+			al.rotation_degrees = Vector3(0, 0, 35)
+			t.add_child(al)
+			B.box(al, Vector3(0.04, 0.55, 0.01), Vector3(0, 0, 0), couro_claro)
+			B.box(cintura, Vector3(0.18, 0.15, 0.07), Vector3(0.2, -0.05, 0.05), couro_claro)
+		"cozinheiro":
+			B.box(cintura, Vector3(0.3, 0.42, 0.01), Vector3(0, -0.18, 0.115), branco)
+			B.box(t, Vector3(0.24, 0.26, 0.01), Vector3(0, -0.07, 0.125), branco)
+		"idoso":
+			# óculos
+			for sx in [-1.0, 1.0]:
+				B.cyl(h, 0.022, 0.006, Vector3(sx * 0.034, 0.045, 0.1), Modelos.mat(Color(0.7, 0.75, 0.8, 0.5), 0.1, 0.2), Vector3(90, 0, 0), 10)
+			B.box(h, Vector3(0.11, 0.006, 0.006), Vector3(0, 0.05, 0.1), preto)
 
 ## Manchas de sangue e rasgos (zumbi): placas finas presas ao peito, braços e rosto.
 func _sangue_modelo() -> void:
@@ -453,6 +565,9 @@ func _sangue_modelo() -> void:
 		if r.randf() < 0.7:
 			B.box(q, Vector3(0.07, 0.1, 0.07), Vector3(0, r.randf_range(0.05, 0.2), 0), vermelho)
 
+func r_chapeu() -> float:
+	return float(posmod(semente * 7919, 100)) / 100.0
+
 ## Chapéus e capacetes por papel (osso Head: +Y para cima, +Z para a frente; cabeça ~0,45 m).
 func _chapeu_modelo() -> void:
 	var h := cabeca_a
@@ -462,10 +577,16 @@ func _chapeu_modelo() -> void:
 	match visual:
 		"soldado":
 			tipo = "capacete"
-		"trabalhador":
-			tipo = "palha" if chapeu else "obra"
-		"idoso", "cowboy":
+		"trabalhador", "mecanico":
+			tipo = "palha" if chapeu else ("bone" if r_chapeu() < 0.5 else "obra")
+		"agricultor":
+			tipo = "palha"
+		"idoso", "cowboy", "lider":
 			tipo = "chapeu"
+		"medico", "batedor", "armeiro":
+			tipo = ""
+		"cozinheiro":
+			tipo = "touca"
 	if chapeu and tipo == "":
 		tipo = "palha"
 	match tipo:
@@ -481,6 +602,8 @@ func _chapeu_modelo() -> void:
 			var am := Modelos.mat(Color(0.9, 0.7, 0.1), 0.45)
 			B.sphere(h, 0.112, Vector3(0, 0.16, -0.005), am, Vector3(1.0, 0.62, 1.1))
 			B.box(h, Vector3(0.15, 0.012, 0.06), Vector3(0, 0.15, 0.11), am)
+		"touca":
+			B.cyl(h, 0.1, 0.16, Vector3(0, 0.22, -0.01), Modelos.mat(Color(0.95, 0.95, 0.93), 0.9), Vector3.ZERO, 12, 0.12)
 		"palha", "chapeu":
 			var c := Modelos.mat(Color(0.78, 0.66, 0.4), 0.95) if tipo == "palha" else Modelos.mat(Color(0.25, 0.17, 0.1), 0.85)
 			B.cyl(h, 0.19, 0.012, Vector3(0, 0.17, 0), c, Vector3.ZERO, 16)
@@ -494,7 +617,8 @@ func _mochila_modelo() -> void:
 	var n := Node3D.new()
 	n.name = "Mochila"
 	# no osso Torso: +Y sobe pela coluna, +Z é a frente do peito
-	n.position = Vector3(0, 0.02, -0.2)
+	# o casaco do protagonista é mais justo nas costas que a roupa dos outros
+	n.position = Vector3(0, 0.0, -0.165) if heroi else Vector3(0, 0.02, -0.2)
 	t.add_child(n)
 	n.rotation_degrees = Vector3(0, 0, 0)
 	B.box(n, Vector3(0.27, 0.32, 0.13), Vector3(0, 0, 0), verde)

@@ -12,6 +12,7 @@ const FUNCOES := {
 	"medico": ["Mordida? Não esconde. Infecção mata mais que zumbi.", "Remédio está acabando. Hospital da cidade, talvez."],
 	"batedor": ["Conheço cada trilha daqui até a serra.", "Saio de madrugada e volto antes do almoço. Sempre volto."],
 	"lider": ["Aqui todo mundo trabalha e todo mundo come.", "A horda vem. Sempre vem."],
+	"armeiro": ["Arma limpa não engasga. Traz cartucho que eu troco.", "Fuzil de verdade só pra quem é de confiança aqui."],
 	"morador": ["Dizem que na serra tem um assentamento grande.", "Meu filho foi pro litoral e nunca voltou.", "Fica pra janta, se quiser."],
 }
 
@@ -102,11 +103,11 @@ static func _pessoa(p: Node3D, pos: Vector3, rot_y: float, funcao: String, r: Ra
 	h.com_bone = r.randf() < 0.4
 	h.arma = "facao" if funcao == "vigia" else ""
 	h.feminino = r.randf() < 0.42
-	h.visual = {"vendedor": "civil", "vigia": "soldado", "mecanico": "trabalhador", "agricultor": "trabalhador",
-		"medico": "medico", "batedor": "civil", "lider": "idoso", "morador": "civil"}.get(funcao, "civil")
+	h.visual = {"vendedor": "vendedor", "vigia": "soldado", "mecanico": "mecanico", "agricultor": "agricultor",
+		"medico": "medico", "batedor": "batedor", "lider": "lider", "morador": "civil", "armeiro": "armeiro"}.get(funcao, "civil")
 	if funcao == "morador" and r.randf() < 0.3:
 		h.visual = ["idoso", "cozinheiro", "cowboy"][r.randi() % 3]
-	h.anim_parado = {"vendedor": "Idle_Talking", "vigia": "Idle_LookAround", "mecanico": "Idle_Tired", "medico": "Idle_FoldArms",
+	h.anim_parado = {"vendedor": "Idle_Talking", "vigia": "Idle_LookAround", "mecanico": "Idle_Tired", "medico": "Idle_FoldArms", "armeiro": "Idle_FoldArms",
 		"lider": "Idle_FoldArms", "agricultor": "Idle"}.get(funcao, ["Idle", "Idle_Talking", "Idle_LookAround", "Idle_TalkingPhone"][r.randi() % 4])
 	h.sujeira = r.randf_range(0.0, 0.35)
 	h.position = pos
@@ -326,6 +327,9 @@ static func _vila(p: Node3D, f: Dictionary, r: RandomNumberGenerator, m: WorldGe
 	_pessoa(p, Vector3(-7.0, 0, -3.0), 0.0, "vendedor", r, m, j.id + ":vendedor")
 	_pessoa(p, Vector3(-11.5, 0, -3.0), 0.0, "mecanico", r, m, j.id + ":vend_pecas")
 	_pessoa(p, Vector3(7.0, 0, -3.0), 0.0, "medico", r, m, j.id + ":vend_remedio")
+	# armeiro: armas e munição
+	_barraca(p, Vector3(11.5, 0, -2.5), 0.0, Color(0.25, 0.25, 0.22), [Color(0.15, 0.15, 0.15), Color(0.45, 0.32, 0.2), Color(0.7, 0.55, 0.25)], r)
+	_pessoa(p, Vector3(11.5, 0, -3.0), 0.0, "armeiro", r, m, j.id + ":vend_armas")
 	# oficina comunitária com gerador
 	var of := Node3D.new()
 	of.position = Vector3(raio - 14.0, _altura_local(p, m, Vector3(raio - 14.0, 0, -22.0)), -22.0)
@@ -813,6 +817,8 @@ static func _assentamento(p: Node3D, f: Dictionary, r: RandomNumberGenerator, m:
 	# comerciante do assentamento (troca, pedidos e reputação)
 	var vend := _pessoa(p, Vector3(-4.5, 0, -6.0), 0.4, "vendedor", r, m, j.id + ":vendedor")
 	vend.set_meta("nao_mesclar", true)
+	var arm := _pessoa(p, Vector3(5.5, 0, -6.5), -0.4, "armeiro", r, m, j.id + ":vend_armas")
+	arm.set_meta("nao_mesclar", true)
 	var funcoes := ["agricultor", "mecanico", "medico", "morador", "batedor", "vigia", "morador"]
 	for i in r.randi_range(5, 7):
 		var an3 := r.randf() * TAU
