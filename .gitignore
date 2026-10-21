@@ -4,3 +4,10 @@ prints/
 
 # licença Sketchfab Padrão: não redistribuir o modelo solto (só dentro do jogo)
 assets/sketchfab_padrao/
+# objetos assados do City Props (licença Sketchfab Padrão: não vão para o repositório público)
+assets/props/ponto_onibus.scn
+assets/props/banco_praca.scn
+assets/props/banco_concreto.scn
+assets/props/cacamba_lixo.scn
+assets/props/hidrante.scn
+assets/props/caixa_eletronico.scn

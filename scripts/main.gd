@@ -3550,17 +3550,15 @@ func _rig() -> void:
 func _horda() -> void:
 	var r := RandomNumberGenerator.new()
 	r.seed = 77
-	# alguns zumbis próximos na estrada, à frente
-	for i in 6:
-		var z := 30.0 + r.randf() * 28.0
-		var p := mundo.ponto_estrada(z, r.randf_range(-3.5, 3.5))
+	# alguns zumbis lá na frente, no acostamento: dá para sair com calma e passar por eles
+	for i in 3:
+		var z := 95.0 + r.randf() * 50.0
+		var p := mundo.ponto_estrada(z, (-1.0 if i % 2 == 0 else 1.0) * r.randf_range(6.5, 10.0))
+		p.y = mundo.altura(p.x, p.z)
 		var zz := mundo.criar_zumbi(mundo, p, PI + r.randf_range(-0.5, 0.5), r.randi())
 		hud_zumbi(zz.position)
-	# horda ao longe
-	for i in 90:
-		var z := 85.0 + r.randf() * 120.0
-		var p := mundo.ponto_estrada(z, r.randf_range(-4.0, 4.0))
-		mundo.silhueta(mundo, p, r)
+	# (as silhuetas paradas da "horda ao longe" saíram: ficavam no meio da rua e o carro
+	# passava por dentro delas; a horda de verdade aparece atrás do comboio, em HordaVisivel)
 
 var _zumbis_pos: Array[Vector3] = []
 func hud_zumbi(p: Vector3) -> void:
@@ -4793,6 +4791,57 @@ func _capturar_objetos() -> void:
 		for f in 20:
 			await get_tree().process_frame
 		await _salvar("pers_jogador")
+		jogador.visible = false
+	if fazer.call("inicio"):
+		# começo do jogo: quantos zumbis perto e como fica a estrada à frente
+		var pj0 := mundo.ponto_estrada(-4.0, -0.6)
+		mundo.atualizar(pj0)
+		for f in 10:
+			await get_tree().process_frame
+		var perto := 0
+		var mais_perto := INF
+		for zv in mundo.zumbis_vivos:
+			if is_instance_valid(zv):
+				var dz: float = zv.global_position.distance_to(pj0)
+				mais_perto = minf(mais_perto, dz)
+				if dz < 80.0:
+					perto += 1
+		print("INICIO zumbis a menos de 80 m: %d, mais perto a %.0f m" % [perto, mais_perto])
+		hora = 21.0
+		_atualizar_ceu()
+		_posar_jogador(pj0, mundo.ponto_estrada(60.0, -0.6), -0.05, 0.0)
+		for f in 6:
+			await get_tree().process_frame
+		await _salvar("pers_inicio_noite")
+		hora = 15.5
+		_atualizar_ceu()
+		jogador.visible = false
+	if fazer.call("mira"):
+		var pm := mundo.ponto_estrada(2600.0, 1.0)
+		mundo.atualizar(pm)
+		for f in 10:
+			await get_tree().process_frame
+		_limpar_zumbis_perto(pm, 60.0)
+		var alvo_z := mundo.ponto_estrada(2618.0, -1.5)
+		alvo_z.y = mundo.altura(alvo_z.x, alvo_z.z)
+		var zm := mundo.criar_zumbi(mundo, alvo_z, PI, 5, "comum")
+		zm.set_physics_process(false)
+		zm.set_process(false)
+		jogador.corpo.arma = "fuzil"
+		jogador.corpo.construir()
+		equip.sel = "fuzil"
+		_posar_jogador(pm, alvo_z + Vector3(0, 1.3, 0), -0.03, 0.0)
+		jogador.set_process(true)
+		jogador.mirando = true
+		for f in 12:
+			jogador.mirando = true
+			jogador.corpo.pose_mirar(1.0)
+			jogador.corpo.mirar_para(jogador._dir_mira())
+			await get_tree().process_frame
+		hud.visible = true
+		await _salvar("pers_mira_fuzil")
+		hud.visible = false
+		jogador.set_process(false)
 		jogador.visible = false
 	if fazer.call("bancas"):
 		var lv := _achar_lugar("vila")

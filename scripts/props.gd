@@ -77,7 +77,7 @@ static var _modelos := {}   # id -> Node3D pronto (molde), ou null se faltar o a
 static var _cenas := {}
 
 static func existe(id: String) -> bool:
-	return C.has(id) and ResourceLoader.exists(C[id].arquivo)
+	return C.has(id) and (ResourceLoader.exists(ASSADOS + id + ".scn") or ResourceLoader.exists(C[id].arquivo))
 
 static func _cena(arq: String) -> Node3D:
 	if not _cenas.has(arq):
@@ -103,9 +103,16 @@ static func _caixa(lista: Array) -> AABB:
 	return ab
 
 ## Molde do objeto (só malhas, transformações já aplicadas, base na origem, frente +Z).
-static func _molde(id: String) -> Node3D:
+const ASSADOS := "res://assets/props/"
+
+static func _molde(id: String, do_glb := false) -> Node3D:
 	if _modelos.has(id):
 		return _modelos[id]
+	# versão assada (tools/assar_props.gd): só o que o objeto usa, sem abrir o .glb inteiro
+	if not do_glb and ResourceLoader.exists(ASSADOS + id + ".scn"):
+		var pr: Node3D = (load(ASSADOS + id + ".scn") as PackedScene).instantiate()
+		_modelos[id] = pr
+		return pr
 	var d: Dictionary = C[id]
 	if not ResourceLoader.exists(d.arquivo):
 		_modelos[id] = null

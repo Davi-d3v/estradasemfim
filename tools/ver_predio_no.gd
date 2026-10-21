@@ -35,8 +35,14 @@ func _ready() -> void:
 			p.andar_nos[k].visible = false
 		p.corte(0)
 		var r := maxf(p.largura, p.profundidade)
-		cam.fov = 50.0
-		cam.look_at_from_position(Vector3(0, r * 1.25, r * 0.55), Vector3(0, 0, 0.3), Vector3.UP)
+		if OS.get_environment("VISTA") == "cima":
+			cam.projection = Camera3D.PROJECTION_ORTHOGONAL
+			cam.size = r * 1.15
+			cam.look_at_from_position(Vector3(0, 20.0, 0.001), Vector3(0, 0, 0), Vector3(0, 0, -1))
+			cam.near = 0.05
+		else:
+			cam.fov = 50.0
+			cam.look_at_from_position(Vector3(0, r * 1.25, r * 0.55), Vector3(0, 0, 0.3), Vector3.UP)
 		for f in 3:
 			await RenderingServer.frame_post_draw
 		var im := get_viewport().get_texture().get_image()

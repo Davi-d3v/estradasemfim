@@ -181,5 +181,17 @@
 - [x] Armeiro novo: banca de armas e munição nas vilas e nos assentamentos (fuzis raros pedem reputação).
   Ferramentas: tools/ver_personagens.gd (folha de papéis), prints --objetos --so=jogador,bancas.
 
+## Rodada v0.19 (ajustes pedidos pelo Davi, sem nada novo)
+- [x] Começo da jornada: saíram as silhuetas paradas da "horda ao longe" no meio da rua; os zumbis da
+  abertura ficam a ~100 m, no acostamento; nada de zumbi nos primeiros ~130 m e só um ou outro, longe do
+  asfalto, até ~650 m. (Medido: 1 zumbi a menos de 80 m no início, o mais perto a 58 m.)
+- [x] Desempenho: objetos do catálogo "assados" em cenas pequenas (tools/assar_props.gd -> assets/props/), sem
+  abrir os .glb inteiros: carregar tudo caiu de 3,4 s / 419 MB para 0,7 s / 220 MB. Punto simplificado (35 mil ->
+  16 mil triângulos) e texturas embutidas reduzidas.
+- [x] Visual: muro de carros mais escuro e apoiado no ponto mais baixo do terreno; latas na altura certa das
+  prateleiras de ferro.
+- [x] Armas e mira: a arma aponta para onde a mira acerta (não paralela à câmera); câmera de mira mais para o
+  lado e mais perto; protótipo e bullpup menos fortes, ACR um pouco mais.
+
 ## Próximos
 - ouvir o retorno do Davi sobre a v0.9

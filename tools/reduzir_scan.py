@@ -129,7 +129,7 @@ def gravar(caminho, pos, uv, nm, tri, jpeg, autoria):
         'asset': {'version': '2.0', 'generator': 'reduzir_scan.py', 'extras': autoria},
         'scene': 0, 'scenes': [{'nodes': [0]}], 'nodes': [{'mesh': 0, 'name': 'muro_carros'}],
         'meshes': [{'primitives': [{'attributes': {'POSITION': 0, 'NORMAL': 1, 'TEXCOORD_0': 2}, 'indices': 3, 'material': 0}]}],
-        'materials': [{'pbrMetallicRoughness': {'baseColorTexture': {'index': 0}, 'baseColorFactor': [0.7, 0.68, 0.66, 1.0], 'metallicFactor': 0.0, 'roughnessFactor': 0.9}, 'doubleSided': True}],
+        'materials': [{'pbrMetallicRoughness': {'baseColorTexture': {'index': 0}, 'baseColorFactor': [0.5, 0.48, 0.46, 1.0], 'metallicFactor': 0.0, 'roughnessFactor': 0.9}, 'doubleSided': True}],
         'textures': [{'source': 0}], 'images': [{'bufferView': 4, 'mimeType': 'image/jpeg'}],
         'accessors': [
             {'bufferView': 0, 'componentType': 5126, 'count': len(pos), 'type': 'VEC3', 'min': pos.min(0).tolist(), 'max': pos.max(0).tolist()},

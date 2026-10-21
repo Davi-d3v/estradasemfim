@@ -236,8 +236,17 @@ static func _barricada_quarentena(n: Node3D, m: WorldGen, z: float, r: RandomNum
 	# muro de carros amassados fechando um dos lados (modelo escaneado)
 	if Props.existe("muro_carros") and r.randf() < 0.7:
 		var lado_m := -1.0 if r.randf() < 0.5 else 1.0
-		var am := _pt(m, z + r.randf_range(-3.0, 3.0), lado_m * (hw + 7.5))
-		Props.por(n, "muro_carros", am[0] - Vector3(0, 0.3, 0), rad_to_deg(am[1]) + 90.0 + r.randf_range(-8, 8), r.randf_range(0.8, 1.0), 220.0)
+		var zm := z + r.randf_range(-3.0, 3.0)
+		var am := _pt(m, zm, lado_m * (hw + 7.5))
+		# apoia no ponto mais baixo do terreno embaixo dele (não fica voando em barranco)
+		var hmin: float = am[0].y
+		for dz in [-7.0, -3.5, 3.5, 7.0]:
+			for dl in [-2.0, 2.0]:
+				var q: Vector3 = _pt(m, zm + dz, lado_m * (hw + 7.5 + dl))[0]
+				hmin = minf(hmin, m.altura(q.x, q.z))
+		var pm: Vector3 = am[0]
+		pm.y = hmin - 0.35
+		Props.por(n, "muro_carros", pm, rad_to_deg(am[1]) + 90.0 + r.randf_range(-8, 8), r.randf_range(0.8, 1.0), 220.0)
 
 static func _tambor_fogo(n: Node3D, p: Vector3, r: RandomNumberGenerator, aceso: bool) -> void:
 	B.cyl(n, 0.3, 0.9, p + Vector3(0, 0.45, 0), _m("metal", Color(0.3, 0.17, 0.1), 0.9, 0.4), Vector3.ZERO, 10)

@@ -2205,9 +2205,17 @@ func _zumbis(n: Node3D, z0: float, k: int) -> void:
 		extra += 3   # cidades tomadas
 	if noite:
 		extra += 1
-	for i in r.randi_range(0, 3 + extra):
+	# começo da jornada: os primeiros ~130 m são seguros e até ~650 m só aparece um ou outro,
+	# longe do asfalto — dá tempo de vasculhar o trailer e pegar a estrada
+	if k <= 1:
+		return
+	var inicio := z0 < 650.0
+	var qtd := r.randi_range(0, 1) if inicio else r.randi_range(0, 3 + extra)
+	for i in qtd:
 		var z := z0 + r.randf() * TAM
 		var lat := r.randf_range(-25, 25)
+		if inicio:
+			lat = signf(lat + 0.001) * r.randf_range(14.0, 28.0)
 		var p := ponto_estrada(z, lat)
 		p.y = altura(p.x, z) if absf(lat) > 5.0 else elevacao(z) + 0.06
 		criar_zumbi(n, p, r.randf() * TAU, r.randi())

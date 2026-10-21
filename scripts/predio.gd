@@ -588,7 +588,7 @@ func _mobiliar(no: Node3D, r: Rect2, uso: String, y0: float, k: int, esc: Rect2)
 						Props.por(no, "estante_ferro_larga", Vector3(x + lado * 0.3, y0, z1), 90.0 * lado, 0.95)
 					for b in 6:
 						if _rng.randf() < 0.5:
-							Props.por(no, ["lata", "lata_baixa", "pote"][_rng.randi() % 3], Vector3(x + _rng.randf_range(-0.25, 0.25), y0 + [0.07, 0.62, 1.15][_rng.randi() % 3], z1 - 0.75 + b * 0.3), _rng.randf() * 360.0, 1.0, 20.0, false)
+							Props.por(no, ["lata", "lata_baixa", "pote"][_rng.randi() % 3], Vector3(x + _rng.randf_range(-0.25, 0.25), y0 + [0.18, 0.69, 1.2][_rng.randi() % 3], z1 - 0.75 + b * 0.3), _rng.randf() * 360.0, 1.0, 20.0, false)
 					_container(no, Vector3(x + 0.5, y0 + 1.0, z1), "Prateleira", "prateleira", 0.2)
 					continue
 				B.box(no, Vector3(0.6, 1.7, 3.2), Vector3(x, y0 + 0.85, z1), _m("metal", Color(0.55, 0.55, 0.55), 0.5, 0.5))

@@ -228,7 +228,7 @@ func _process(dt: float) -> void:
 			# arma longa na mão: aponta para onde a câmera olha (mirando ou atirando do quadril)
 			corpo.rotation.y = lerp_angle(corpo.rotation.y, yaw, minf(1.0, dt * 14.0))
 			if mirando or corpo.ocupado_anim():
-				corpo.mirar_para(-camera.global_basis.z)
+				corpo.mirar_para(_dir_mira())
 		if mirando:
 			corpo.rotation.y = lerp_angle(corpo.rotation.y, yaw, minf(1.0, dt * 14.0))
 			corpo.pose_mirar(1.0)
@@ -275,6 +275,19 @@ func _sobrevivencia(dt: float) -> void:
 		position.y = chao(position) + no_ar
 		_atualizar_predio(dt)
 
+## Direção da arma: do ombro até o ponto que a mira (centro da tela) acerta — a câmera fica
+## ao lado do ombro, então mirar só "paralelo" à câmera erraria a cruz por meio metro.
+func _dir_mira() -> Vector3:
+	var o := camera.global_position
+	var fr := -camera.global_basis.z
+	var dist := 40.0
+	var q := PhysicsRayQueryParameters3D.create(o + fr * 1.6, o + fr * 120.0)
+	var r := get_world_3d().direct_space_state.intersect_ray(q)
+	if not r.is_empty():
+		dist = clampf(o.distance_to(r.position), 6.0, 120.0)
+	var ombro := global_position + Vector3(0, 1.45, 0)
+	return ((o + fr * dist) - ombro).normalized()
+
 ## Pulo [Espaço]: gasta um pouco de fôlego; não dá agachado, mirando ou ocupado.
 func _pulo(dt: float) -> void:
 	if no_ar <= 0.0 and _vy <= 0.0:
@@ -306,7 +319,7 @@ func _atualizar_predio(dt: float) -> void:
 			predio_atual.corte(-1)
 		predio_atual = pr
 	# dentro de construções a câmera vai para os olhos (1ª pessoa), como no trailer
-	var alvo_cam := Vector3(-0.85, 0.25, -3.3) if not mirando else Vector3(-0.6, 0.12, -1.7)
+	var alvo_cam := Vector3(-0.85, 0.25, -3.3) if not mirando else Vector3(-0.78, 0.16, -1.45)
 	var fov_alvo := 14.0 if binoculo else (zoom if mirando else 55.0)
 	camera.fov = lerpf(camera.fov, fov_alvo, minf(1.0, dt * 10.0)) if dt > 0.0 else camera.fov
 	pivo.position.y = 1.55
