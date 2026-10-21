@@ -1,8 +1,8 @@
 63f7b34db8d8cdea90c76aacccf841ec
 ::res://::1792517485
 CLAUDE.md::TextFile::-1::1792511036::0::1::::<><><>0<>0<><>::
-export_presets.cfg::TextFile::-1::1792545865::0::1::::<><><>0<>0<><>::
-PROGRESSO.md::TextFile::-1::1792543321::0::1::::<><><>0<>0<><>::
+export_presets.cfg::TextFile::-1::1792550259::0::1::::<><><>0<>0<><>::
+PROGRESSO.md::TextFile::-1::1792550208::0::1::::<><><>0<>0<><>::
 ::res://assets/::1792545800
 LEIA-ME.txt::TextFile::-1::1792543321::0::1::::<><><>0<>0<><>::
 ::res://assets/animais/::1792511085
@@ -893,7 +893,7 @@ rugosidade.jpg::CompressedTexture2D::7918365859438670904::1792511036::1792511078
 cor.jpg::CompressedTexture2D::7759480414169653857::1792511036::1792511078::1::::<><><>0<>0<>af530100edc188aeaf7b4be885bb54b7<>res://.godot/imported/cor.jpg-864a5dbe79a15e6c12f7987bce5be4b0.s3tc.ctex::
 normal.jpg::CompressedTexture2D::3744606854590753491::1792511036::1792511078::1::::<><><>0<>0<>75d186f9060bf9ec1d1e4e58c996eaac<>res://.godot/imported/normal.jpg-d91f0c711aa3cd0b87852f7d1b490e21.s3tc.ctex::
 rugosidade.jpg::CompressedTexture2D::6868025236240401962::1792511036::1792511078::1::::<><><>0<>0<>fc71c7f1bd0285e3084eb3afe645ea19<>res://.godot/imported/rugosidade.jpg-86ece4e09c5faee468a97448e5a9f2c5.s3tc.ctex::
-::res://prints/::1792549056
+::res://prints/::1792550227
 armas_pegada_duas_maos.jpg::CompressedTexture2D::6962526085286855045::1792524909::1792542544::1::::<><><>0<>0<>37a6350efe667f3a2fb8e38154cc48c4<>res://.godot/imported/armas_pegada_duas_maos.jpg-28c576aadffd8b0cfb4767813ae8ef66.ctex::
 arma_rifle_mira_lado.png::CompressedTexture2D::3257633172451749650::1792515461::1792515965::1::::<><><>0<>0<>59638060be962d7607be7092dbf89dbb<>res://.godot/imported/arma_rifle_mira_lado.png-cb0f8e53757e1fe9e3466ef1bf78a203.ctex::
 comboio_evoluido.png::CompressedTexture2D::7167818000658345665::1792517301::1792517717::1::::<><><>0<>0<>5e5b923ec7510e1e3c4f4ce56c22dad4<>res://.godot/imported/comboio_evoluido.png-b57171362cf6b58d014eb431dee22ee7.ctex::
@@ -910,6 +910,7 @@ mod_vila_praca.png::CompressedTexture2D::1522881957815357732::1792522707::179252
 objetos_catalogo.jpg::CompressedTexture2D::5978193834663188748::1792524922::1792542546::1::::<><><>0<>0<>e1d20951dff0d104aa18dd6e0ee34b40<>res://.godot/imported/objetos_catalogo.jpg-d2dda05a89e7f837312ad2b7ef7749c3.ctex::
 pers_heroi_animacoes.png::CompressedTexture2D::741886480383762546::1792544912::1792544930::1::::<><><>0<>0<>291fdbf4f1181a9df2fbc96cafdc57eb<>res://.godot/imported/pers_heroi_animacoes.png-f611e9e5b38eeab7644f0c5d84ab16cd.ctex::
 pers_heroi_armas.png::CompressedTexture2D::3087888373441098755::1792544912::1792544930::1::::<><><>0<>0<>cd2a84b10f8e2a243335c3a5f8f71a27<>res://.godot/imported/pers_heroi_armas.png-252e48a7502cc059856a0209720601c1.ctex::
+pers_inicio_noite.png::CompressedTexture2D::4799594913342926199::1792550186::1792550227::1::::<><><>0<>0<>801d6409d1b5319557fb35d7fecd0327<>res://.godot/imported/pers_inicio_noite.png-102a0ee25685cf64b8a1c163cdc44727.ctex::
 pers_jogador.png::CompressedTexture2D::5906180746912626628::1792546770::1792548427::1::::<><><>0<>0<>989a00cf534d7120af1a5e499930165a<>res://.godot/imported/pers_jogador.png-6ad61d98450f543152feab781880d54a.ctex::
 pers_mira_fuzil.png::CompressedTexture2D::6345491091266414322::1792548912::1792549056::1::::<><><>0<>0<>e42b61c1ae441dd111ebbafc181d9119<>res://.godot/imported/pers_mira_fuzil.png-00512b79d72edb271d1a3f48ecc8c1b9.ctex::
 pers_papeis.png::CompressedTexture2D::960614515881331733::1792544912::1792544931::1::::<><><>0<>0<>ce8db069409fc43df924e289c414d822<>res://.godot/imported/pers_papeis.png-ca39e8cdcb15f2bb08daddf3a8ba6dea.ctex::
